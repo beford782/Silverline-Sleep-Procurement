@@ -1,0 +1,103 @@
+{
+  "vendor": {
+    "legal_name": "Continental Silverline",
+    "dba": "Restonic / Spring Air / Silverline Sleep",
+    "primary_location": "Houston, Texas",
+    "profile_updated": "2026-05-13"
+  },
+  "company": {
+    "manufacturing_location": "Houston, Texas",
+    "service_geography": ["Texas", "Oklahoma", "Louisiana", "Mississippi", "Arkansas"],
+    "delivery_method": "own_fleet",
+    "delivery_services": ["dock_delivery"],
+    "lead_time_bulk": "Usually under 3-4 weeks; 3-4 weeks maximum stated"
+  },
+  "products": {
+    "dormitory_mattress": "yes",
+    "correctional_mattress": "yes",
+    "fire_retardant_mattress": "yes",
+    "fluid_resistant_mattress": "yes",
+    "medical_mattress": "yes",
+    "behavioral_health_mattress": "no",
+    "bunk_mattress": "yes (incl. 8-inch)",
+    "cot_mattress": "yes",
+    "custom_size_mattress": "yes",
+    "mattress_protectors": "no",
+    "pillows": "no",
+    "sheets_bedding_kits": "no",
+    "bed_frames": "yes",
+    "bunk_beds": "no",
+    "box_springs_foundations": "yes",
+    "mattress_removal_disposal": "no"
+  },
+  "compliance": {
+    "spec_sheets": "available",
+    "fire_safety": "available; exact standards documented per product",
+    "sealed_covers": "available if needed",
+    "tamper_resistant": "available if needed",
+    "standard_sizes": "all standard sizes; custom sizes available",
+    "private_label": "available",
+    "insurance": ["general_liability", "auto", "workers_compensation", "umbrella"]
+  },
+  "reference_contracts": [
+    {
+      "buyer": "City of Austin",
+      "solicitation": "IFB 8300 DCG1033",
+      "description": "Mattresses, box spring sets, and bed frames",
+      "award_date": "2026-05-12",
+      "contract_type": "fixed_quantity",
+      "approximate_value_usd": 58000,
+      "products_supplied": ["twin mattresses", "twin box springs", "twin frames"],
+      "reference_available": true
+    }
+  ],
+  "target_buyers": {
+    "highest": [
+      "city_governments",
+      "counties",
+      "state_agencies",
+      "prisons_jails_detention"
+    ],
+    "develop": [
+      "universities",
+      "community_colleges",
+      "school_districts",
+      "housing_authorities",
+      "homeless_shelters",
+      "emergency_management",
+      "public_hospitals",
+      "federal_military"
+    ]
+  },
+  "contract_preferences": {
+    "fixed_price_comfort": "maybe; needs price-escalation protection",
+    "large_volume_capacity": "yes",
+    "preferred_types": ["one_time", "annual", "multi_year", "cooperative", "emergency"],
+    "pricing_constraints": "raw material escalation, especially foam"
+  },
+  "portal_status": [
+    { "portal": "Texas CMBL", "status": "registered", "next_step": "Verify mattress/bedding/institutional/correctional/medical/shelter codes" },
+    { "portal": "Texas ESBD / SmartBuy", "status": "active", "next_step": "Build saved searches and weekly review" },
+    { "portal": "City of Houston / Beacon Bid", "status": "active", "next_step": "Confirm commodity notifications" },
+    { "portal": "Harris County / Bonfire", "status": "not_registered", "next_step": "Register and select commodity codes" },
+    { "portal": "Houston ISD / IonWave", "status": "not_registered", "next_step": "Register and select commodity codes" },
+    { "portal": "University portals / Bonfire", "status": "interested", "next_step": "Register with UT, A&M, UH, TSU" },
+    { "portal": "BuyBoard", "status": "interested", "next_step": "Evaluate cooperative fit" },
+    { "portal": "Choice Partners", "status": "interested", "next_step": "Evaluate cooperative fit" },
+    { "portal": "TIPS", "status": "interested", "next_step": "Evaluate cooperative fit" },
+    { "portal": "HGACBuy", "status": "interested", "next_step": "Evaluate cooperative fit" },
+    { "portal": "Sourcewell / OMNIA", "status": "interested", "next_step": "Evaluate cooperative fit" },
+    { "portal": "SAM.gov", "status": "interested", "next_step": "Decide on federal registration timing" }
+  ],
+  "setup_gaps": [
+    "Add company website or catalog link",
+    "Confirm warranty terms by product category",
+    "Confirm minimum order quantities by product category",
+    "List exact fire-safety standards and test docs per institutional product line",
+    "Confirm HUB/MBE/WBE/DBE/small-business/ISO certifications",
+    "Decide minimum and ideal contract sizes",
+    "Define no-bid conditions",
+    "Consider adding inside delivery / removal / installation via internal team or subcontractors",
+    "Build price-escalation language for foam and raw materials before multi-year fixed-price contracts"
+  ]
+}

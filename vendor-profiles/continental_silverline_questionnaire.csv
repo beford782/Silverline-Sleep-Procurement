@@ -1,0 +1,84 @@
+Section,Question / Field,Your Answer,Guidance / Examples
+Instructions,How to use this workbook,,Fill in the Your Answer column on each tab. Short answers are fine; use unknown/TBD if needed.
+Instructions,Priority fields,,"Start with Company Profile, Products, Compliance, Austin Contract, and Target Buyers."
+Instructions,Sensitive information,,"If you do not want to share a value, write private and we can still build the pursuit system."
+Instructions,After completion,,"Send back the completed spreadsheet and I will convert it into your procurement profile, portal checklist, and bid-search plan."
+Company Profile,Company legal name,Continental Silverline,Legal entity used for government bids.
+Company Profile,DBA / brand name,Restonic / Spring Air / Silverline Sleep,If different from legal name.
+Company Profile,Website,private,Company website or product catalog URL.
+Company Profile,Houston-area address or general location,"Houston, Texas",Full address or general area if preferred.
+Company Profile,Main contact person for bids,private,Name and title.
+Company Profile,Bid contact email,private,Email to use in bid materials.
+Company Profile,Bid contact phone,private,Phone to use in bid materials.
+Company Profile,Manufacturing location,"Houston, Texas","Houston, elsewhere in Texas, out of state, or multiple locations."
+Company Profile,Service geography,"Texas, Oklahoma, Louisiana, Mississippi, Arkansas","Houston metro, Texas statewide, Texas + surrounding states, national."
+Company Profile,Delivery method,Own fleet,"Own fleet, third-party freight, both, or pickup only."
+Company Profile,Delivery services offered,Dock delivery,"Dock delivery, inside delivery, room-by-room, installation, prison/jail delivery, removal/disposal."
+Company Profile,Typical lead time for bulk orders,Usually under 3-4 weeks; 3-4 weeks maximum,"In stock, 1-2 weeks, 3-4 weeks, 6-8 weeks, depends on quantity."
+Products,Standard residential mattresses,Yes,
+Products,Dormitory mattresses,Yes,"Twin XL, bunk sizes, residence hall use."
+Products,Correctional / jail / prison mattresses,Yes,"Sealed, tamper-resistant, fluid-resistant, fire-retardant, anti-ligature if applicable."
+Products,Fire-retardant mattresses,Yes,List standards or test documents if known.
+Products,Waterproof or fluid-resistant mattresses,Yes,"Vinyl, sealed cover, antimicrobial, cleanable surfaces."
+Products,Medical / healthcare mattresses,Yes,"Hospital, clinic, long-term care, pressure management if applicable."
+Products,Behavioral health / anti-ligature mattresses,No,Only mark yes if specifically designed/documented.
+Products,Bunk mattresses,Yes (including 8-inch),List standard thicknesses/sizes.
+Products,Cot mattresses,Yes,"Shelters, emergency response, camps."
+Products,Custom-size mattresses,Yes,Minimum quantities and custom lead times.
+Products,Mattress protectors,No,"Waterproof, bed bug, institutional, other."
+Products,Pillows,No,"Disposable, washable, institutional, residential."
+Products,Sheets / bedding kits,No,"Sheets, blankets, pillowcases, bundled kits."
+Products,Bed frames,Yes,"Platform, metal, institutional."
+Products,Bunk beds,No,Dorm/correctional grade if applicable.
+Products,Box springs / foundations,Yes,"Standard, low profile, bunkie boards."
+Products,Mattress removal/disposal,No,"Haul-away, recycling, disposal certificates if available."
+Compliance,Do you have product specification sheets?,Yes,Yes/no; list products covered.
+Compliance,Fire-safety testing/certifications,Available; exact standards to be documented per product,"16 CFR Part 1632, 16 CFR Part 1633, CAL TB 117, NFPA-related, other."
+Compliance,Institutional-grade vinyl or sealed covers?,Available if needed,Yes/no; describe materials.
+Compliance,Tamper-resistant or correctional-grade seams?,Available if needed,Yes/no; describe construction.
+Compliance,Warranty terms,TBD by product category,"Years, coverage, exclusions, replacement process."
+Compliance,Standard sizes available,All standard sizes; custom sizes available,"Twin, Twin XL, Full, Queen, custom jail bunk sizes, custom dorm sizes."
+Compliance,Minimum order quantities,TBD,By product type if different.
+Compliance,Private-label or agency-specific labeling?,Available,Yes/no; label types and lead time.
+Compliance,Insurance currently carried,"General liability, auto, workers compensation, umbrella","General liability, auto, workers comp, umbrella; limits if known."
+Compliance,Certifications,TBD,"Texas HUB, MBE, WBE, DBE, small/local business, ISO, other."
+Austin Contract,City of Austin contract number,IFB 8300 DCG1033,Contract or solicitation number if available.
+Austin Contract,Contract title / description,"Mattresses, box spring sets, and bed frames","Mattresses, bedding, dormitory, shelter, etc."
+Austin Contract,Award date,2026-05-12,Approximate date is okay.
+Austin Contract,Contract term and renewal options,Fixed quantity,Example: 1 year + four 1-year renewals.
+Austin Contract,Approximate annual or total value,~$58000,Use a range if preferred.
+Austin Contract,Products supplied,"Twin mattresses, twin box springs, twin frames","Mattress type, sizes, accessories, delivery services."
+Austin Contract,Pricing structure,Available upon request,"Unit prices, catalog discount, line-item schedule, delivery included/excluded."
+Austin Contract,Performance reference available?,Yes,Can City of Austin be used as reference? Who should be listed?
+Austin Contract,Lessons learned / issues,,"Specs, delivery, invoicing, portal, paperwork, renewals."
+Target Buyers,City governments,Highest priority,"Houston, Austin, San Antonio, Dallas, surrounding cities."
+Target Buyers,Counties,Highest priority,"Harris, Fort Bend, Montgomery, Galveston, Travis, Bexar, Dallas."
+Target Buyers,State agencies,Highest priority,"Texas Health and Human Services, Texas Facilities Commission, GLO, etc."
+Target Buyers,Prisons / jails / detention centers,Highest priority,"TDCJ, county jails, juvenile detention, sheriff offices."
+Target Buyers,Universities,Develop,"UT System, Texas A&M System, UH, TSU, Rice if relevant."
+Target Buyers,Community colleges,Develop,"Houston Community College, Lone Star, San Jacinto, Austin Community College."
+Target Buyers,School districts,Develop,"HISD, surrounding ISDs, residential/special programs."
+Target Buyers,Housing authorities,Develop,Houston Housing Authority and regional housing authorities.
+Target Buyers,Homeless shelters,Develop,City/county-funded shelters and nonprofits.
+Target Buyers,Emergency management / disaster response,Develop,"Shelter supplies, cots, replacement bedding, rapid deployment."
+Target Buyers,Hospitals / public health agencies,Develop,"Harris Health, county hospitals, clinics."
+Target Buyers,Military / federal buyers,Pending SAM.gov decision,If you want to pursue SAM.gov/federal opportunities.
+Contract Preferences,Smallest public contract worth pursuing,TBD,"$5k+, $25k+, $50k+, $100k+, $250k+."
+Contract Preferences,Ideal contract size,TBD,Annual value or total value range.
+Contract Preferences,Comfort with fixed unit prices for 1-3 years?,Maybe; needs price-escalation protection,Yes/no/maybe; note price escalation needs.
+Contract Preferences,Large-volume capacity,Yes,"Can you handle 500, 1,000, 5,000+ mattresses? Include timing."
+Contract Preferences,Preferred contract types,"Open to all: one-time, annual, multi-year, cooperative, emergency","One-time POs, annual term contracts, multi-year contracts, cooperative contracts, emergency/disaster contracts."
+Contract Preferences,Pricing constraints,Raw material escalation (especially foam),"Freight, fuel, raw material escalation, minimum order, custom specs."
+Contract Preferences,No-bid conditions,TBD,Requirements that would make you skip a bid.
+Portal Status,Texas CMBL,Registered; commodity codes updated,Registered? Commodity/NIGP codes updated?
+Portal Status,Texas ESBD / Texas SmartBuy,Active,Can you search/download solicitations?
+Portal Status,City of Houston / Beacon Bid,Active,Registered and receiving notifications?
+Portal Status,Harris County / Bonfire,Not registered,Registered and NIGP codes selected?
+Portal Status,Houston ISD / IonWave,Not registered,Registered and receiving notifications?
+Portal Status,University portals / Bonfire,Interested,"UT, A&M, UH, other."
+Portal Status,BuyBoard,Interested,Vendor? Interested? Existing contract?
+Portal Status,Choice Partners,Interested,Vendor? Interested? Existing contract?
+Portal Status,TIPS,Interested,Vendor? Interested? Existing contract?
+Portal Status,HGACBuy,Interested,Vendor? Interested? Existing contract?
+Portal Status,Sourcewell / OMNIA,Interested,Vendor? Interested? Existing contract?
+Portal Status,SAM.gov,Interested,Registered? Interested in federal work?

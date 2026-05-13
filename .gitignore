@@ -1,4 +1,33 @@
+# Python
 __pycache__/
 *.pyc
-*.zip
+*.pyo
+*.egg-info/
+.venv/
+venv/
+.python-version
+
+# OS
 .DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*~
+
+# Build / packaging artifacts
+*.zip
+*.tar.gz
+dist/
+build/
+
+# Tool / agent caches
+.claude/
+.cache/
+
+# Local-only environment overrides
+.env
+.env.local

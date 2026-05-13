@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/beford782/Silverline-Sleep-Procurement/vendor-profiles/schema/vendor_profile.schema.json",
+  "title": "Institutional Mattress Vendor Profile",
+  "description": "Structured profile for a public-sector mattress vendor. Mirrors the columns of templates/mattress_bid_setup_questionnaire.csv.",
+  "type": "object",
+  "required": ["vendor", "company", "products", "compliance", "target_buyers", "portal_status"],
+  "additionalProperties": false,
+  "properties": {
+    "vendor": {
+      "type": "object",
+      "required": ["legal_name"],
+      "additionalProperties": false,
+      "properties": {
+        "legal_name": { "type": "string", "minLength": 1 },
+        "dba": { "type": "string" },
+        "website": { "type": "string" },
+        "primary_location": { "type": "string" },
+        "profile_updated": { "type": "string", "description": "ISO-8601 date string (YYYY-MM-DD)." }
+      }
+    },
+    "company": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "manufacturing_location": { "type": "string" },
+        "service_geography": { "type": "array", "items": { "type": "string" } },
+        "delivery_method": { "type": "string", "enum": ["own_fleet", "third_party", "both", "pickup_only", "unknown"] },
+        "delivery_services": { "type": "array", "items": { "type": "string" } },
+        "lead_time_bulk": { "type": "string" }
+      }
+    },
+    "products": {
+      "type": "object",
+      "description": "Product fit map. Keys are canonical product slugs; values are 'yes' | 'no' | 'tbd' or a short note.",
+      "additionalProperties": { "type": "string" }
+    },
+    "compliance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "spec_sheets": { "type": "string" },
+        "fire_safety": { "type": "string" },
+        "sealed_covers": { "type": "string" },
+        "tamper_resistant": { "type": "string" },
+        "warranty_terms": { "type": "string" },
+        "standard_sizes": { "type": "string" },
+        "moq": { "type": "string" },
+        "private_label": { "type": "string" },
+        "insurance": { "type": "array", "items": { "type": "string" } },
+        "certifications": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "reference_contracts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["buyer", "solicitation"],
+        "additionalProperties": false,
+        "properties": {
+          "buyer": { "type": "string" },
+          "solicitation": { "type": "string" },
+          "description": { "type": "string" },
+          "award_date": { "type": "string" },
+          "contract_type": { "type": "string" },
+          "approximate_value_usd": { "type": "number", "minimum": 0 },
+          "products_supplied": { "type": "array", "items": { "type": "string" } },
+          "reference_available": { "type": "boolean" }
+        }
+      }
+    },
+    "target_buyers": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "highest": { "type": "array", "items": { "type": "string" } },
+        "develop": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "contract_preferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fixed_price_comfort": { "type": "string" },
+        "large_volume_capacity": { "type": "string" },
+        "preferred_types": { "type": "array", "items": { "type": "string" } },
+        "pricing_constraints": { "type": "string" },
+        "no_bid_conditions": { "type": "string" }
+      }
+    },
+    "portal_status": {
+      "type": "array",
+      "description": "One entry per registration target. Status values: registered | active | not_registered | interested | unknown.",
+      "items": {
+        "type": "object",
+        "required": ["portal", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "portal": { "type": "string" },
+          "status": { "type": "string", "enum": ["registered", "active", "not_registered", "interested", "unknown"] },
+          "next_step": { "type": "string" }
+        }
+      }
+    },
+    "setup_gaps": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

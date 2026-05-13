@@ -5,8 +5,8 @@ generate_procurement_packet.py
 Reads a filled-in mattress procurement questionnaire CSV (see
 templates/mattress_bid_setup_questionnaire.csv) and emits:
 
-  * <slug>.md   — section-grouped markdown procurement packet
-  * <slug>.html — standalone printable HTML (inline CSS, no JS)
+  * <stem>.md   — section-grouped markdown procurement packet
+  * <stem>.html — standalone printable HTML (inline CSS, no JS)
 
 The script uses only the Python standard library so the repo stays
 lightweight and cross-platform.
@@ -14,10 +14,19 @@ lightweight and cross-platform.
 Usage:
     python tools/generate_procurement_packet.py INPUT.csv \
         --vendor "Continental Silverline" \
-        --out-dir generated/
+        --output-dir build/generated/ \
+        --generated-date 2026-05-13
 
-If --vendor is omitted, the output filename is derived from the input
-CSV stem.
+Notable flags:
+    --output-dir DIR       Where to write output (default: build/generated)
+    --output-stem STEM     Filename stem (default: slug of vendor name)
+    --generated-date DATE  ISO date stamped on the packet (default: today).
+                           Pin for deterministic example output.
+    --answered-only        Drop rows whose Your Answer is blank.
+    --vendor NAME          Vendor name used in titles and filenames.
+
+`--slug` is accepted as a backwards-compatible alias for --output-stem,
+and `--out-dir` for --output-dir.
 """
 
 from __future__ import annotations
@@ -29,10 +38,11 @@ import os
 import re
 import sys
 from collections import OrderedDict
-from datetime import date
+from datetime import date, datetime
 
 
 EXPECTED_COLUMNS = ("Section", "Question / Field", "Your Answer", "Guidance / Examples")
+DEFAULT_OUTPUT_DIR = os.path.join("build", "generated")
 
 
 def slugify(value: str) -> str:
@@ -41,8 +51,22 @@ def slugify(value: str) -> str:
     return value.strip("_") or "vendor"
 
 
-def read_questionnaire(path: str) -> "OrderedDict[str, list[dict]]":
-    """Return rows grouped by Section, preserving CSV order."""
+def _parse_iso_date(value: str) -> str:
+    """Accept YYYY-MM-DD; raise argparse.ArgumentTypeError on anything else."""
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date().isoformat()
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            f"--generated-date must be YYYY-MM-DD ({exc})"
+        ) from exc
+
+
+def read_questionnaire(path: str, answered_only: bool = False) -> "OrderedDict[str, list[dict]]":
+    """Return rows grouped by Section, preserving CSV order.
+
+    If answered_only is set, rows whose Your Answer cell is blank are
+    skipped, and sections that end up empty are dropped.
+    """
     sections: "OrderedDict[str, list[dict]]" = OrderedDict()
     with open(path, "r", encoding="utf-8-sig", newline="") as fh:
         reader = csv.DictReader(fh)
@@ -52,26 +76,37 @@ def read_questionnaire(path: str) -> "OrderedDict[str, list[dict]]":
                 f"CSV is missing expected columns: {missing}. Found: {reader.fieldnames}"
             )
         for row in reader:
+            answer = (row.get("Your Answer") or "").strip()
+            if answered_only and not answer:
+                continue
             section = (row.get("Section") or "").strip() or "General"
             sections.setdefault(section, []).append(
                 {
                     "field": (row.get("Question / Field") or "").strip(),
-                    "answer": (row.get("Your Answer") or "").strip(),
+                    "answer": answer,
                     "guidance": (row.get("Guidance / Examples") or "").strip(),
                 }
             )
     return sections
 
 
-def render_markdown(vendor: str, sections: "OrderedDict[str, list[dict]]") -> str:
-    today = date.today().isoformat()
+def _counts(sections: "OrderedDict[str, list[dict]]") -> tuple[int, int]:
     answered = sum(1 for rows in sections.values() for r in rows if r["answer"])
     total = sum(len(rows) for rows in sections.values())
+    return answered, total
+
+
+def render_markdown(
+    vendor: str,
+    sections: "OrderedDict[str, list[dict]]",
+    generated_date: str,
+) -> str:
+    answered, total = _counts(sections)
 
     lines: list[str] = []
     lines.append(f"# {vendor} — Procurement Packet")
     lines.append("")
-    lines.append(f"_Generated {today} · {answered} of {total} fields answered._")
+    lines.append(f"_Generated {generated_date} · {answered} of {total} fields answered._")
     lines.append("")
     lines.append("> Built from the mattress bid setup questionnaire. Blank rows are")
     lines.append("> intentionally preserved so reviewers can see what is still")
@@ -158,10 +193,12 @@ col.guidance { width: 30%; }
 """
 
 
-def render_html(vendor: str, sections: "OrderedDict[str, list[dict]]") -> str:
-    today = date.today().isoformat()
-    answered = sum(1 for rows in sections.values() for r in rows if r["answer"])
-    total = sum(len(rows) for rows in sections.values())
+def render_html(
+    vendor: str,
+    sections: "OrderedDict[str, list[dict]]",
+    generated_date: str,
+) -> str:
+    answered, total = _counts(sections)
 
     parts: list[str] = []
     parts.append("<!DOCTYPE html>")
@@ -174,7 +211,8 @@ def render_html(vendor: str, sections: "OrderedDict[str, list[dict]]") -> str:
     parts.append("<body>")
     parts.append(f"<h1>{html.escape(vendor)} — Procurement Packet</h1>")
     parts.append(
-        f'<p class="meta">Generated {today} &middot; {answered} of {total} fields answered.</p>'
+        f'<p class="meta">Generated {html.escape(generated_date)} &middot; '
+        f"{answered} of {total} fields answered.</p>"
     )
 
     for section, rows in sections.items():
@@ -197,37 +235,68 @@ def render_html(vendor: str, sections: "OrderedDict[str, list[dict]]") -> str:
     return "\n".join(parts) + "\n"
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("csv_path", help="Path to a filled-in questionnaire CSV")
-    parser.add_argument("--vendor", default=None, help="Vendor name (used in titles and filenames)")
-    parser.add_argument("--out-dir", default="generated", help="Output directory (default: generated/)")
-    parser.add_argument("--slug", default=None, help="Override the output filename slug")
-    args = parser.parse_args(argv)
+    parser.add_argument("--vendor", default=None, help="Vendor name (titles and filenames)")
+    parser.add_argument(
+        "--output-dir", "--out-dir",
+        dest="output_dir",
+        default=DEFAULT_OUTPUT_DIR,
+        help=f"Output directory (default: {DEFAULT_OUTPUT_DIR})",
+    )
+    parser.add_argument(
+        "--output-stem", "--slug",
+        dest="output_stem",
+        default=None,
+        help="Filename stem (default: slug of vendor name)",
+    )
+    parser.add_argument(
+        "--generated-date",
+        type=_parse_iso_date,
+        default=None,
+        help="ISO date stamped on the packet (default: today). Pin for determinism.",
+    )
+    parser.add_argument(
+        "--answered-only",
+        action="store_true",
+        help="Drop questionnaire rows whose Your Answer cell is blank.",
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = _build_parser().parse_args(argv)
 
     if not os.path.isfile(args.csv_path):
         print(f"error: {args.csv_path} not found", file=sys.stderr)
         return 1
 
-    sections = read_questionnaire(args.csv_path)
+    sections = read_questionnaire(args.csv_path, answered_only=args.answered_only)
+    if not sections:
+        print("error: no rows to render (all answers blank with --answered-only?)", file=sys.stderr)
+        return 1
 
     vendor = args.vendor or os.path.splitext(os.path.basename(args.csv_path))[0].replace("_", " ").title()
-    slug = args.slug or slugify(vendor)
+    stem = args.output_stem or slugify(vendor)
+    generated_date = args.generated_date or date.today().isoformat()
 
-    os.makedirs(args.out_dir, exist_ok=True)
-    md_path = os.path.join(args.out_dir, f"{slug}.md")
-    html_path = os.path.join(args.out_dir, f"{slug}.html")
+    os.makedirs(args.output_dir, exist_ok=True)
+    md_path = os.path.join(args.output_dir, f"{stem}.md")
+    html_path = os.path.join(args.output_dir, f"{stem}.html")
 
     with open(md_path, "w", encoding="utf-8", newline="\n") as fh:
-        fh.write(render_markdown(vendor, sections))
+        fh.write(render_markdown(vendor, sections, generated_date))
     with open(html_path, "w", encoding="utf-8", newline="\n") as fh:
-        fh.write(render_html(vendor, sections))
+        fh.write(render_html(vendor, sections, generated_date))
 
-    answered = sum(1 for rows in sections.values() for r in rows if r["answer"])
-    total = sum(len(rows) for rows in sections.values())
+    answered, total = _counts(sections)
     print(f"Vendor:   {vendor}")
     print(f"Sections: {len(sections)}")
     print(f"Answered: {answered}/{total}")
+    print(f"Date:     {generated_date}")
     print(f"Wrote:    {md_path}")
     print(f"Wrote:    {html_path}")
     return 0

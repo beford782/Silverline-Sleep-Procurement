@@ -29,7 +29,7 @@ subscribed.
 
 ## 3. Fit assessment
 
-- **Product fit:** which lines in `vendor-profiles/<vendor>.json`
+- **Product fit:** which lines in `vendor-profiles/<vendor>.profile.json`
   `products` match the scope.
 - **Compliance fit:** fire safety standards, vinyl/sealed covers,
   insurance limits, MOQs. Note any gaps.

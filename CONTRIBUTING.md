@@ -24,24 +24,28 @@ the conventions below.
 | If you're adding... | Put it in |
 | --- | --- |
 | A new vendor's narrative profile | `vendor-profiles/<vendor>.md` |
-| A new vendor's structured profile | `vendor-profiles/<vendor>.json` (must pass the validator) |
+| A new vendor's structured profile | `vendor-profiles/<vendor>.profile.json` (must pass the validator) |
 | A filled-in questionnaire CSV | `vendor-profiles/<vendor>_questionnaire.csv` |
 | A blank intake form | `templates/` |
 | Portal/commodity-code plan | `portal-checklists/<vendor>_portal_setup.md` |
 | Active solicitation tracking | `bids/active/<solicitation-id>.md` |
 | Closed / awarded / no-bid | `bids/archive/<solicitation-id>.md` |
 | Reusable bid response shell | `bids/templates/` |
-| Python utility | `tools/` |
-| Generated output | `generated/` (not hand-edited) |
+| Python utility | `tools/` (legacy DreamFinder helpers go in `tools/legacy/`) |
+| Tests | `tests/` (stdlib `unittest` — `python -m unittest discover -s tests`) |
+| Committed example output | `generated/examples/` (regenerated with `--generated-date`) |
+| Ad-hoc generated output | `build/` (gitignored, not committed) |
 
 ## Schema changes
 
-When you change `vendor-profiles/schema/vendor_profile.schema.json`:
+When you change `vendor-profiles/vendor_profile.schema.json`:
 
-1. Update every `vendor-profiles/*.json` to match.
-2. Run `python tools/validate_vendor_profile.py vendor-profiles/*.json`
+1. Update every `vendor-profiles/*.profile.json` to match.
+2. Run `python tools/validate_vendor_profile.py vendor-profiles/*.profile.json`
    and confirm they all pass.
-3. If you added a field, note it in the schema's `description` and in
+3. Run `python -m unittest discover -s tests` and update tests if the
+   schema's required/enum surface changed.
+4. If you added a field, note it in the schema's `description` and in
    `vendor-profiles/README.md`.
 
 ## Style and hygiene

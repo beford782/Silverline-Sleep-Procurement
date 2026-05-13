@@ -9,8 +9,8 @@ items, properties, minLength, minimum, $schema, $id, title, description)
 so we don't pull in a jsonschema dependency.
 
 Usage:
-    python tools/validate_vendor_profile.py vendor-profiles/continental_silverline.json
-    python tools/validate_vendor_profile.py vendor-profiles/*.json
+    python tools/validate_vendor_profile.py vendor-profiles/continental_silverline.profile.json
+    python tools/validate_vendor_profile.py vendor-profiles/*.profile.json
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from typing import Any
 
 SCHEMA_PATH_DEFAULT = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "vendor-profiles", "schema", "vendor_profile.schema.json",
+    "vendor-profiles", "vendor_profile.schema.json",
 )
 
 

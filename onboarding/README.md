@@ -12,20 +12,22 @@ introduced" to "able to respond to a public-sector solicitation."
 2. **Generate the packet.** When the CSV comes back, run:
    ```sh
    python tools/generate_procurement_packet.py path/to/answers.csv \
-       --vendor "Vendor Name" --out-dir generated/
+       --vendor "Vendor Name"
    ```
    That yields a markdown packet and a print-ready HTML version under
-   `generated/`.
+   `build/generated/` (gitignored). Pass `--output-dir
+   generated/examples/ --generated-date YYYY-MM-DD` only when you
+   intentionally want to update the committed example.
 3. **Author the narrative profile.** Translate the packet into a
    sanitized public-sector pursuit profile at
    `vendor-profiles/<vendor>.md`. Strip contact details — use the
    structured profile for that data later if it ever needs to be
    committed, otherwise keep it out of the repo entirely.
 4. **Author the structured profile.** Copy
-   `vendor-profiles/continental_silverline.json` as a starting shape.
-   Validate:
+   `vendor-profiles/continental_silverline.profile.json` as a starting
+   shape. Validate:
    ```sh
-   python tools/validate_vendor_profile.py vendor-profiles/<vendor>.json
+   python tools/validate_vendor_profile.py vendor-profiles/<vendor>.profile.json
    ```
 5. **Build the portal plan.** Copy
    `portal-checklists/continental_silverline_portal_setup.md` and
@@ -39,7 +41,7 @@ introduced" to "able to respond to a public-sector solicitation."
 
 - [ ] `vendor-profiles/<vendor>_questionnaire.csv` committed
 - [ ] `vendor-profiles/<vendor>.md` reviewed
-- [ ] `vendor-profiles/<vendor>.json` validated against the schema
+- [ ] `vendor-profiles/<vendor>.profile.json` validated against the schema
 - [ ] `portal-checklists/<vendor>_portal_setup.md` committed
 - [ ] At least one entry under `bids/active/` or `bids/archive/`
 - [ ] Generated packet linked from the vendor PR description

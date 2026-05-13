@@ -23,6 +23,8 @@ desktop.ini
 *.tar.gz
 dist/
 build/
+# Note: build/ is the default output of tools/generate_procurement_packet.py.
+# Committed example output lives under generated/examples/.
 
 # Tool / agent caches
 .claude/

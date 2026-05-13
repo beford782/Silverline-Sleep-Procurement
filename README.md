@@ -18,12 +18,16 @@ bids/
 portal-checklists/     Per-vendor portal-registration + commodity-code plans
 templates/             Blank intake forms (questionnaires, etc.)
 vendor-profiles/       Vendor profiles in markdown and structured JSON
-  schema/              JSON Schema for the structured profile
-generated/             Output of tools/ (markdown packets, HTML, etc.)
+                       (vendor_profile.schema.json lives here too)
+generated/
+  examples/            Committed reference output (regenerated deterministically)
 onboarding/            Internal onboarding notes for new vendors
 procurement/           Domain overview and entry-point docs
+tests/                 Stdlib unittest coverage for tools/
 tools/                 Python utilities (stdlib-only where possible)
   hooks/               Git hooks (e.g., pre-push fast-forward guard)
+  legacy/              Pre-split DreamFinder helpers — not procurement tooling
+build/                 Default output of tools/ (gitignored, do not commit)
 ```
 
 ## Common workflows
@@ -32,17 +36,20 @@ tools/                 Python utilities (stdlib-only where possible)
 
 1. Copy `templates/mattress_bid_setup_questionnaire.csv` and have the
    vendor fill in the **Your Answer** column.
-2. Run the packet generator:
+2. Run the packet generator (writes to `build/generated/` by default,
+   which is gitignored):
    ```sh
    python tools/generate_procurement_packet.py path/to/answers.csv \
-       --vendor "Vendor Name" --out-dir generated/
+       --vendor "Vendor Name"
    ```
+   Add `--generated-date YYYY-MM-DD` to pin the timestamp (used for
+   committed examples), or `--answered-only` to drop blank rows.
 3. Save the answered CSV under `vendor-profiles/<vendor>_questionnaire.csv`.
-4. Author a structured `vendor-profiles/<vendor>.json` (see
-   `vendor-profiles/continental_silverline.json` for shape).
+4. Author a structured `vendor-profiles/<vendor>.profile.json` (see
+   `vendor-profiles/continental_silverline.profile.json` for shape).
 5. Validate:
    ```sh
-   python tools/validate_vendor_profile.py vendor-profiles/<vendor>.json
+   python tools/validate_vendor_profile.py vendor-profiles/<vendor>.profile.json
    ```
 6. Capture the narrative profile in `vendor-profiles/<vendor>.md`.
 
@@ -76,10 +83,16 @@ Lightweight Python utilities, all stdlib-only where possible:
 | Script | Purpose |
 | --- | --- |
 | `tools/generate_procurement_packet.py` | CSV questionnaire → markdown + printable HTML packet |
-| `tools/validate_vendor_profile.py` | Validate `vendor-profiles/*.json` against the schema |
+| `tools/validate_vendor_profile.py` | Validate `vendor-profiles/*.profile.json` against the schema |
 
-See `tools/README.md` for the full list (including legacy DreamFinder
-helpers preserved during the split).
+Run the test suite with:
+
+```sh
+python -m unittest discover -s tests
+```
+
+See `tools/README.md` for the full tool inventory and
+`tools/legacy/README.md` for the pre-split DreamFinder helpers.
 
 ## Contributing
 

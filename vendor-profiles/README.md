@@ -5,7 +5,7 @@ Each vendor has up to three files in this folder:
 | File | Purpose |
 | --- | --- |
 | `<vendor>.md` | Narrative public-sector pursuit profile. Human-reviewed. |
-| `<vendor>.json` | Structured profile, validated against `schema/vendor_profile.schema.json`. |
+| `<vendor>.profile.json` | Structured profile, validated against `vendor_profile.schema.json`. |
 | `<vendor>_questionnaire.csv` | The filled-in intake questionnaire that produced the packet. |
 
 The structured JSON is the canonical machine-readable record. The
@@ -14,11 +14,12 @@ provenance trail showing where the profile came from.
 
 ## Schema
 
-`schema/vendor_profile.schema.json` is JSON Schema 2020-12 with a
-deliberately narrow surface (type, required, enum, additionalProperties,
-items, properties, minLength, minimum). The
-`tools/validate_vendor_profile.py` script implements exactly that
-subset, so no external dependency is needed.
+`vendor_profile.schema.json` is JSON Schema 2020-12 with a deliberately
+narrow surface (type, required, enum, additionalProperties, items,
+properties, minLength, minimum). The `tools/validate_vendor_profile.py`
+script reads this schema at runtime and walks it — there is no parallel
+hardcoded list of required fields, so the schema is the single source
+of truth.
 
 Top-level sections:
 
@@ -37,19 +38,20 @@ Top-level sections:
 
 1. Drop the filled questionnaire CSV in here as
    `<vendor>_questionnaire.csv`.
-2. Run the packet generator to produce starter markdown:
+2. Run the packet generator to produce starter markdown (writes to
+   `build/generated/` by default):
    ```sh
    python tools/generate_procurement_packet.py \
        vendor-profiles/<vendor>_questionnaire.csv \
-       --vendor "<Vendor Name>" --out-dir generated/
+       --vendor "<Vendor Name>"
    ```
 3. Curate the markdown into `<vendor>.md` (the generated packet is a
    starting point; the committed narrative should be tighter and
    strip contact info).
-4. Hand-author `<vendor>.json` against the schema.
+4. Hand-author `<vendor>.profile.json` against the schema.
 5. Validate:
    ```sh
-   python tools/validate_vendor_profile.py vendor-profiles/<vendor>.json
+   python tools/validate_vendor_profile.py vendor-profiles/<vendor>.profile.json
    ```
 
 ## Privacy

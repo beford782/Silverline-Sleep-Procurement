@@ -1,23 +1,30 @@
-# Generated Output
+# Generated output
 
-Output of scripts in `tools/`. Files here are not hand-edited; if you
-need to change them, change the input and re-run the generator.
+Two roles for this folder:
 
-Committing generated output is a deliberate choice: it makes the repo
-useful as-is without forcing every reader to run Python, and it lets
-PRs review the rendered packet alongside the input that produced it.
+| Path | Role | Tracked? |
+| --- | --- | --- |
+| `generated/examples/` | Committed reference output for reviewers. Regenerated deterministically with `--generated-date`. | yes |
+| (none — defaults route elsewhere) | Default output of new runs writes to `build/generated/`. | no (gitignored) |
 
-## Current samples
+The split prevents a routine `python tools/generate_procurement_packet.py …`
+from overwriting the committed example. If you intentionally want to
+update the example, pass `--output-dir generated/examples/` and pin
+`--generated-date` so the diff is reviewable.
 
-| File | Generated from |
-| --- | --- |
-| `continental_silverline.md` | `vendor-profiles/continental_silverline_questionnaire.csv` |
-| `continental_silverline.html` | same |
-
-## Regenerate
+## Regenerating the committed example
 
 ```sh
 python tools/generate_procurement_packet.py \
     vendor-profiles/continental_silverline_questionnaire.csv \
-    --vendor "Continental Silverline" --out-dir generated/
+    --vendor "Continental Silverline" \
+    --output-dir generated/examples/ \
+    --generated-date 2026-05-13
 ```
+
+## Currently committed samples
+
+| File | Generated from |
+| --- | --- |
+| `examples/continental_silverline.md` | `vendor-profiles/continental_silverline_questionnaire.csv` |
+| `examples/continental_silverline.html` | same |

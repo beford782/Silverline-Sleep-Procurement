@@ -1,0 +1,55 @@
+#!/bin/sh
+# DreamFinder — pre-push guard for `main`.
+#
+# Refuses any push to main that isn't a strict fast-forward, so a stale
+# local `main` can't overwrite newer commits on the remote. This is the
+# exact failure mode that lost two commits on 2026-04-22.
+#
+# Triggered by git as: .git/hooks/pre-push <remote-name> <remote-url>
+# Receives one line per ref on stdin:
+#   <local ref> <local sha> <remote ref> <remote sha>
+#
+# Escape hatch for genuine rewinds:
+#   GIT_ALLOW_MAIN_REWIND=1 git push origin HEAD:main --force
+
+set -u
+
+zero="0000000000000000000000000000000000000000"
+status=0
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+    # Only guard main.
+    [ "$remote_ref" = "refs/heads/main" ] || continue
+
+    # Allow branch creation (first push) and branch deletion.
+    [ "$remote_sha" = "$zero" ] && continue
+    [ "$local_sha"  = "$zero" ] && continue
+
+    if [ "${GIT_ALLOW_MAIN_REWIND:-0}" = "1" ]; then
+        echo "[pre-push] GIT_ALLOW_MAIN_REWIND=1 — skipping main fast-forward check." >&2
+        continue
+    fi
+
+    # remote_sha must be an ancestor of local_sha for this to be a fast-forward.
+    if ! git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
+        echo "" >&2
+        echo "[pre-push] REFUSED: push to main is not a fast-forward." >&2
+        echo "           local:  $local_sha" >&2
+        echo "           remote: $remote_sha" >&2
+        echo "" >&2
+        echo "  Your local main does not contain origin/main. Pushing would" >&2
+        echo "  rewrite or discard commits on the remote. Fix with:" >&2
+        echo "" >&2
+        echo "    git fetch origin" >&2
+        echo "    git checkout main" >&2
+        echo "    git merge --ff-only origin/main" >&2
+        echo "    # then re-run your push" >&2
+        echo "" >&2
+        echo "  If you genuinely intend to rewind main (rare), override:" >&2
+        echo "    GIT_ALLOW_MAIN_REWIND=1 git push origin HEAD:main --force" >&2
+        echo "" >&2
+        status=1
+    fi
+done
+
+exit $status

@@ -40,6 +40,36 @@ A short, opinionated dictionary of the terms used across this repo.
 - **No-bid conditions** — the bright-line requirements that
   automatically disqualify a solicitation from pursuit (e.g., MOQ,
   delivery scope, insurance limits, payment terms).
+- **Opportunity pipeline** — the running CSV of opportunities at
+  `bids/active/_pipeline.csv` (closed rows move to
+  `bids/archive/_pipeline_archive.csv`). Managed via
+  `tools/pipeline.py`. Each opportunity has a stable `opportunity_id`
+  that doubles as the filename for any matching narrative markdown
+  under `bids/active/`.
+- **Source registry** — `sources/procurement_sources.json`, a
+  machine-readable list of opportunity portals (SAM.gov, ESBD, Beacon
+  Bid, Bonfire, cooperatives, etc.) plus the search vocabularies and
+  intake methods we use against each. Currently data-only; a future
+  phase will read it to drive automated intake.
+- **Fit score / risk level** — keyword-driven scoring applied by
+  `tools/pipeline.py score`. Positive keywords (mattress, dormitory,
+  correctional, cot, shelter, …) add to the score; caution keywords
+  (anti-ligature, removal, installation, nationwide, multi-year, …)
+  subtract. Strong-caution terms (`anti-ligature`, `liquidated
+  damages`, `nationwide`) force `risk_level=high` regardless. Score
+  thresholds: `<40` high, `40–69` medium, `≥70` low.
+
+## Operational workflow at a glance
+
+1. **Intake** — `tools/pipeline.py add …` to register a new
+   opportunity. SAM.gov / ESBD ingestion is not yet automated; rows
+   are added manually for now.
+2. **Triage** — `tools/pipeline.py score` to compute fit and risk
+   bands deterministically from the title + commodity terms + notes.
+3. **Decide** — author per-solicitation prose in
+   `bids/active/<opportunity-id>.md` from the bid response template.
+4. **Close** — `tools/pipeline.py move-to-archive <opportunity-id>`
+   and `git mv` the markdown into `bids/archive/`.
 
 ## Companion docs
 
@@ -47,4 +77,5 @@ A short, opinionated dictionary of the terms used across this repo.
 - Onboarding playbook: [`../onboarding/README.md`](../onboarding/README.md)
 - Vendor profiles: [`../vendor-profiles/README.md`](../vendor-profiles/README.md)
 - Portal checklists: [`../portal-checklists/README.md`](../portal-checklists/README.md)
-- Bid tracking: [`../bids/README.md`](../bids/README.md)
+- Bid tracking and pipeline: [`../bids/README.md`](../bids/README.md)
+- Source registry: [`../sources/README.md`](../sources/README.md)

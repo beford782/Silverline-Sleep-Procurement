@@ -1,0 +1,291 @@
+[
+  {
+    "name": "SAM.gov Contract Opportunities",
+    "source_type": "federal_portal",
+    "official_url": "https://sam.gov/opportunities",
+    "has_api": true,
+    "requires_login": false,
+    "intake_method": "api",
+    "geography": ["US"],
+    "buyer_level": "federal",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "cot",
+      "shelter bedding",
+      "institutional furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "furniture",
+      "shelter supplies",
+      "household furnishings"
+    ],
+    "cadence": "daily",
+    "notes": "Federal opportunity board. Public API documented at api.sam.gov. SAM.gov vendor registration is a prerequisite to submit a federal bid but not to read postings. Ingestion is a later phase."
+  },
+  {
+    "name": "Texas ESBD / Texas SmartBuy",
+    "source_type": "state_portal",
+    "official_url": "https://www.txsmartbuy.gov/esbd",
+    "has_api": false,
+    "requires_login": false,
+    "intake_method": "saved_search",
+    "geography": ["TX"],
+    "buyer_level": "state",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "box spring",
+      "bed frame",
+      "dormitory",
+      "correctional mattress",
+      "jail mattress",
+      "shelter bedding"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "institutional furniture"
+    ],
+    "cadence": "weekly",
+    "notes": "State opportunity board. No public API; rely on saved searches and weekly review."
+  },
+  {
+    "name": "Texas CMBL",
+    "source_type": "vendor_database",
+    "official_url": "https://comptroller.texas.gov/purchasing/vendor/cmbl/",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "portal_registration",
+    "geography": ["TX"],
+    "buyer_level": "state",
+    "search_terms": [],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "institutional furniture",
+      "dormitory furniture",
+      "correctional",
+      "medical",
+      "emergency shelter"
+    ],
+    "cadence": "ad_hoc",
+    "notes": "Vendor profile and NIGP commodity codes feed downstream Texas agency notifications. Maintain commodity selections and contact email here."
+  },
+  {
+    "name": "City of Houston Beacon Bid",
+    "source_type": "city_portal",
+    "official_url": "https://www.beaconbid.com/solicitations/city-of-houston/open",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "geography": ["TX", "Houston"],
+    "buyer_level": "city",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "furniture",
+      "shelter bedding"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "institutional furniture"
+    ],
+    "cadence": "weekly",
+    "notes": "City of Houston electronic bidding portal. Supplier registration via SAP Business Network; commodity-based notifications managed in Beacon Bid."
+  },
+  {
+    "name": "Harris County Bonfire",
+    "source_type": "county_portal",
+    "official_url": "https://harriscountytx.bonfirehub.com/",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "geography": ["TX", "Harris County"],
+    "buyer_level": "county",
+    "search_terms": [
+      "mattress",
+      "jail mattress",
+      "detention bedding",
+      "medical mattress",
+      "shelter bedding"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "correctional",
+      "medical",
+      "institutional furniture"
+    ],
+    "cadence": "weekly",
+    "notes": "Harris County opportunity portal. Free vendor registration. High-fit categories include jail, public health, facilities."
+  },
+  {
+    "name": "Houston ISD IonWave",
+    "source_type": "isd_portal",
+    "official_url": "https://houstonisd.ionwave.net/Login.aspx",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "geography": ["TX", "Houston"],
+    "buyer_level": "isd",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "dormitory",
+      "residence hall",
+      "institutional furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "institutional furniture",
+      "dormitory furniture"
+    ],
+    "cadence": "weekly",
+    "notes": "Houston Independent School District procurement portal. Email notifications driven by selected commodity categories."
+  },
+  {
+    "name": "University portals",
+    "source_type": "university_portal",
+    "official_url": "",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "portal_registration",
+    "geography": ["TX"],
+    "buyer_level": "university",
+    "search_terms": [
+      "mattress",
+      "dormitory",
+      "residence hall",
+      "twin xl",
+      "campus housing",
+      "student housing"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "residence hall furniture"
+    ],
+    "cadence": "weekly",
+    "notes": "Umbrella entry for UT System, Texas A&M System, University of Houston, Texas Southern University, and community-college Bonfire instances. Official URLs to be confirmed per institution; split into separate entries when individual portals are onboarded."
+  },
+  {
+    "name": "BuyBoard",
+    "source_type": "cooperative",
+    "official_url": "",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "manual_review",
+    "geography": ["US"],
+    "buyer_level": "cooperative",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "institutional furniture",
+      "dormitory"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "furniture",
+      "bedding"
+    ],
+    "cadence": "monthly",
+    "notes": "Cooperative purchasing program serving Texas public entities. Official URL to be confirmed before automated intake."
+  },
+  {
+    "name": "Choice Partners",
+    "source_type": "cooperative",
+    "official_url": "",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "manual_review",
+    "geography": ["US"],
+    "buyer_level": "cooperative",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "institutional furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "furniture",
+      "bedding"
+    ],
+    "cadence": "monthly",
+    "notes": "Texas-region cooperative purchasing organization. Official URL to be confirmed before automated intake."
+  },
+  {
+    "name": "TIPS",
+    "source_type": "cooperative",
+    "official_url": "",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "manual_review",
+    "geography": ["US"],
+    "buyer_level": "cooperative",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "institutional furniture",
+      "shelter bedding"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "furniture",
+      "bedding"
+    ],
+    "cadence": "monthly",
+    "notes": "National cooperative procurement program. Official URL to be confirmed before automated intake."
+  },
+  {
+    "name": "HGACBuy",
+    "source_type": "cooperative",
+    "official_url": "",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "manual_review",
+    "geography": ["TX", "Gulf Coast"],
+    "buyer_level": "cooperative",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "institutional furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "furniture",
+      "bedding"
+    ],
+    "cadence": "monthly",
+    "notes": "Houston-Galveston Area Council cooperative purchasing. Official URL to be confirmed before automated intake."
+  },
+  {
+    "name": "Sourcewell / OMNIA",
+    "source_type": "cooperative",
+    "official_url": "",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "manual_review",
+    "geography": ["US"],
+    "buyer_level": "cooperative",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "institutional furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "furniture",
+      "bedding"
+    ],
+    "cadence": "monthly",
+    "notes": "Two distinct national cooperatives (Sourcewell and OMNIA Partners) tracked together until split-evaluation. Official URLs to be confirmed before automated intake; consider splitting into separate entries when one is prioritized."
+  }
+]

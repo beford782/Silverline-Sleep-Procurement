@@ -5,10 +5,28 @@ or contract number.
 
 ```
 bids/
-  active/      In-progress: watching, drafting, or already submitted
-  archive/     Closed: awarded, lost, no-bid
-  templates/   Reusable response shells
+  active/                In-progress: watching, drafting, or already submitted
+    _pipeline.csv        Live opportunity pipeline (one row per opportunity)
+  archive/               Closed: awarded, lost, no-bid, cancelled
+    _pipeline_archive.csv  Archived rows moved out of active
+  templates/             Reusable response shells
 ```
+
+## Two layers
+
+This folder holds two coordinated views of the same opportunities:
+
+- **`_pipeline.csv`** — the structured pipeline, one row per
+  opportunity. Sorted, scored, summarized, and moved via
+  `tools/pipeline.py`. This is the source of truth for *what we are
+  pursuing right now*.
+- **`<jurisdiction>-<solicitation-id>.md`** — per-solicitation
+  markdown using the bid-response template, holding the prose,
+  open-questions list, and decision rationale that doesn't fit a CSV
+  cell.
+
+The CSV is for tracking; the markdown is for thinking. They share an
+`opportunity_id` so the link is obvious.
 
 ## File naming
 
@@ -25,17 +43,40 @@ Each bid file should start with a short status block (see
 truth for fit, owner, and next action — easier to scan than digging
 through the body text.
 
-## Moving from active to archive
+## Working the pipeline
 
-When a bid closes, move the file with `git mv` so the history follows
-it:
+```sh
+# Append a new opportunity row (default writes to bids/active/_pipeline.csv)
+python tools/pipeline.py add \
+    --source "Texas ESBD" \
+    --buyer "Texas Facilities Commission" \
+    --solicitation-number "IFB 529-XYZ" \
+    --title "Dormitory mattresses pilot" \
+    --due-date 2026-06-15
+
+# See what's open, sorted by due_date (blanks last)
+python tools/pipeline.py list
+
+# Counts by status, source, risk_level
+python tools/pipeline.py summary
+
+# Recompute fit_score and risk_level from text columns
+python tools/pipeline.py score --dry-run
+python tools/pipeline.py score   # apply
+
+# Close out: move the CSV row to the archive
+python tools/pipeline.py move-to-archive city-of-austin-ifb-8300-dcg1033
+```
+
+When a bid closes, also move the matching markdown file with `git mv`
+so history follows it:
 
 ```sh
 git mv bids/active/<file>.md bids/archive/<file>.md
 ```
 
-Update the status block to reflect the outcome (`awarded`, `lost`,
-`no-bid`, `cancelled`) and the close date.
+Update the status block in the markdown to match the new pipeline
+row.
 
 ## What does NOT live here
 

@@ -65,7 +65,7 @@ python tools/pipeline.py score --dry-run
 python tools/pipeline.py score   # apply
 
 # Close out: move the CSV row to the archive
-python tools/pipeline.py move-to-archive city-of-austin-ifb-8300-dcg1033
+python tools/pipeline.py move-to-archive <opportunity-id>
 ```
 
 When a bid closes, also move the matching markdown file with `git mv`

@@ -27,6 +27,10 @@ the conventions below.
 | A new vendor's structured profile | `vendor-profiles/<vendor>.profile.json` (must pass the validator) |
 | A filled-in questionnaire CSV | `vendor-profiles/<vendor>_questionnaire.csv` |
 | A blank intake form | `templates/` |
+| A reusable bid-package checklist | `templates/bid_package_checklist.md` (copy per bid) |
+| A no-bid memo | `templates/no_bid_memo_template.md` (saved at `bids/archive/<id>_no_bid.md` when kept) |
+| Portal-registration tracker (per vendor) | `templates/trackers/portal_registration_tracker.csv` (copy + populate per vendor) |
+| Commodity-code subscriptions tracker | `templates/trackers/commodity_code_tracker.csv` (copy + populate per vendor) |
 | Portal/commodity-code plan | `portal-checklists/<vendor>_portal_setup.md` |
 | Active solicitation tracking | `bids/active/<solicitation-id>.md` |
 | Closed / awarded / no-bid | `bids/archive/<solicitation-id>.md` |

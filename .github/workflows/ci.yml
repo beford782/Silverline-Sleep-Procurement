@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests, smoke, leak check (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Byte-compile tools and tests
+        run: python -m compileall -q tools tests
+
+      - name: JSON files parse
+        run: |
+          python -m json.tool sources/procurement_sources.json > /dev/null
+          python -m json.tool vendor-profiles/vendor_profile.schema.json > /dev/null
+          python -m json.tool vendor-profiles/continental_silverline.profile.json > /dev/null
+
+      - name: Unit tests
+        run: python -m unittest discover -s tests
+
+      - name: Smoke — vendor profile validator
+        run: python tools/validate_vendor_profile.py vendor-profiles/continental_silverline.profile.json
+
+      - name: Smoke — procurement packet generator
+        run: |
+          python tools/generate_procurement_packet.py \
+            vendor-profiles/continental_silverline_questionnaire.csv \
+            --vendor "Continental Silverline" \
+            --output-dir build/generated \
+            --generated-date 2026-05-13
+
+      - name: Smoke — draft bid response
+        run: |
+          python tools/draft_bid_response.py city-of-austin-ifb-8300-dcg1033 \
+            --vendor vendor-profiles/continental_silverline.profile.json \
+            --generated-date 2026-05-14 \
+            --force
+
+      - name: Machine-path leak check
+        run: |
+          if grep -rn \
+              --include='*.py' --include='*.md' --include='*.json' --include='*.csv' \
+              --exclude-dir='.git' --exclude-dir='build' --exclude-dir='__pycache__' \
+              -E 'C:\\Users|/Users/|/home/[a-z]|BlakeFord' .; then
+            echo "::error::Machine-specific path leaked into a committed file."
+            exit 1
+          fi
+
+      - name: Whitespace and conflict-marker check
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          git diff --check origin/${{ github.base_ref }}...HEAD

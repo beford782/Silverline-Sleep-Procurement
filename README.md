@@ -124,11 +124,11 @@ dependencies.
 export SAM_API_KEY=...    # never commit; sign up at sam.gov
 
 python tools/ingest_sam.py \
-    --query "mattress" \
+    --title "mattress" \
     --posted-from 2026-05-01 \
     --posted-to 2026-05-14 \
     [--naics-code 337910] \
-    [--notice-type "Solicitation"] \
+    [--notice-type o] \
     [--dry-run]
 ```
 
@@ -142,6 +142,9 @@ Behavior:
   `opportunity_id` and `solicitation_number`, so re-running with an
   overlapping date range is safe.
 - `--dry-run` previews what would be added without writing.
+- HTTP 404 from SAM.gov is treated as "no results" per the API's
+  documented semantics — that's a normal exit-0 outcome when your
+  filters match nothing in the date range.
 
 `sources/procurement_sources.json` is the machine-readable list of
 where opportunities surface. State/local portal ingestion (ESBD,

@@ -110,19 +110,22 @@ class SearchUrlTests(unittest.TestCase):
             api_key="TESTKEY",
             posted_from="2026-05-01",
             posted_to="2026-05-14",
-            query="mattress",
+            title="mattress",
             limit=50,
             offset=0,
             naics_code="337910",
-            notice_type="Solicitation",
+            notice_type="o",
         )
         self.assertIn("api_key=TESTKEY", url)
         # SAM.gov expects MM/dd/yyyy in the query string.
         self.assertIn("postedFrom=05%2F01%2F2026", url)
         self.assertIn("postedTo=05%2F14%2F2026", url)
-        self.assertIn("q=mattress", url)
-        self.assertIn("naicsCode=337910", url)
-        self.assertIn("noticeType=Solicitation", url)
+        # `title` is the documented parameter (not the made-up `q`).
+        self.assertIn("title=mattress", url)
+        self.assertNotIn("q=mattress", url)
+        # NAICS code goes as `ncode`, notice type as `ptype` per docs.
+        self.assertIn("ncode=337910", url)
+        self.assertIn("ptype=o", url)
         self.assertIn("limit=50", url)
         self.assertIn("offset=0", url)
 
@@ -132,9 +135,10 @@ class SearchUrlTests(unittest.TestCase):
             posted_from="2026-05-01",
             posted_to="2026-05-14",
         )
+        self.assertNotIn("title=", url)
         self.assertNotIn("q=", url)
-        self.assertNotIn("naicsCode=", url)
-        self.assertNotIn("noticeType=", url)
+        self.assertNotIn("ncode=", url)
+        self.assertNotIn("ptype=", url)
 
 
 class CliTests(unittest.TestCase):
@@ -238,6 +242,36 @@ class CliTests(unittest.TestCase):
             out = ingest_sam.fetch_page("https://api.sam.gov/opportunities/v2/search?api_key=x")
         mocked.assert_called_once()
         self.assertEqual(out, payload)
+
+    def test_http_404_is_treated_as_zero_results(self) -> None:
+        # SAM.gov returns 404 when no opportunities match the query, per
+        # their docs. The script must treat that as a normal empty
+        # result, exit 0, and not write anything.
+        import urllib.error
+
+        def raise_404(*_a, **_kw):
+            raise urllib.error.HTTPError(
+                url="https://api.sam.gov/opportunities/v2/search",
+                code=404,
+                msg="No Data found",
+                hdrs=None,
+                fp=io.BytesIO(b""),
+            )
+
+        with mock.patch("urllib.request.urlopen", side_effect=raise_404), \
+             mock.patch.dict(os.environ, {"SAM_API_KEY": "fakekey"}, clear=False):
+            rc, out, err = self._run(
+                "--posted-from", "2026-05-01",
+                "--posted-to", "2026-05-14",
+                "--title", "no-match-keyword",
+                "--active", str(self.active),
+            )
+        self.assertEqual(rc, 0, err)
+        self.assertIn("fetched: 0", out)
+        self.assertIn("no new rows", out)
+        # No rows should have landed in the pipeline.
+        rows = _read_csv(self.active)
+        self.assertEqual(rows, [])
 
 
 if __name__ == "__main__":

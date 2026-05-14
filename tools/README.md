@@ -49,17 +49,22 @@ mattress vocabulary you actually see in solicitations.
 ```sh
 export SAM_API_KEY=...
 python tools/ingest_sam.py \
-    --query "mattress" \
+    --title "mattress" \
     --posted-from 2026-05-01 \
     --posted-to 2026-05-14
 ```
 
 Flags worth knowing:
 
-- `--query TEXT` — keyword passed as `?q=` to the API.
-- `--naics-code CODE` — e.g. `337910` (mattress manufacturing).
-- `--notice-type TEXT` — e.g. `Solicitation`,
-  `"Combined Synopsis/Solicitation"`, `"Sources Sought"`.
+- `--title TEXT` — substring match against opportunity title (the
+  documented SAM.gov `title` parameter; SAM.gov has no general
+  keyword/free-text search).
+- `--naics-code CODE` — e.g. `337910` (mattress manufacturing); sent
+  as `ncode`.
+- `--notice-type CODE` — single-letter procurement type code per
+  SAM.gov docs: `o`=Solicitation, `k`=Combined Synopsis/Solicitation,
+  `r`=Sources Sought, `p`=Pre-solicitation, `a`=Award, `s`=Special
+  Notice; sent as `ptype`.
 - `--limit N` — page size (SAM caps at 1000; default 50).
 - `--max-pages N` — safety cap on pagination (default 10).
 - `--api-key KEY` — overrides the `SAM_API_KEY` env var.

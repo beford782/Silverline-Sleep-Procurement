@@ -28,10 +28,14 @@ Details → API Key). NEVER commit the key.
 
 Usage:
     SAM_API_KEY=... python tools/ingest_sam.py \
-        --query "mattress" \
+        --title "mattress" \
         --posted-from 2026-05-01 \
         --posted-to 2026-05-14 \
         [--limit 50] [--dry-run] [--active PATH]
+
+The SAM.gov API uses HTTP 404 (with "No Data found" semantics) when
+zero opportunities match — this script handles that as a normal
+empty-result case rather than an error.
 """
 
 from __future__ import annotations
@@ -88,13 +92,18 @@ def build_search_url(
     api_key: str,
     posted_from: str,
     posted_to: str,
-    query: str | None = None,
+    title: str | None = None,
     limit: int = DEFAULT_LIMIT,
     offset: int = 0,
     naics_code: str | None = None,
     notice_type: str | None = None,
 ) -> str:
-    """Compose the SAM.gov search URL with safely encoded params."""
+    """Compose the SAM.gov search URL with safely encoded params.
+
+    Parameter names match the documented SAM.gov v2 search API: `title`,
+    `ncode`, `ptype`. There is no documented free-text keyword param;
+    use `title` for keyword-style matching against opportunity titles.
+    """
     params: dict[str, str] = {
         "api_key": api_key,
         "postedFrom": _iso_to_sam_date(posted_from),
@@ -102,12 +111,15 @@ def build_search_url(
         "limit": str(limit),
         "offset": str(offset),
     }
-    if query:
-        params["q"] = query
+    if title:
+        params["title"] = title
     if naics_code:
-        params["naicsCode"] = naics_code
+        # Docs use `ncode` for the request parameter despite the response
+        # field being `naicsCode`. Both names are accepted by the API;
+        # we use the documented request-side name.
+        params["ncode"] = naics_code
     if notice_type:
-        params["noticeType"] = notice_type
+        params["ptype"] = notice_type
     return SAM_SEARCH_URL + "?" + urllib.parse.urlencode(params)
 
 
@@ -250,11 +262,11 @@ def _read_existing_or_empty(active_path: Path) -> list[dict]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--query", default=None, help="Free-text keyword passed as ?q=")
-    parser.add_argument("--posted-from", required=True, type=_parse_iso_date, help="YYYY-MM-DD (inclusive)")
-    parser.add_argument("--posted-to", required=True, type=_parse_iso_date, help="YYYY-MM-DD (inclusive)")
-    parser.add_argument("--naics-code", default=None, help="Filter by NAICS code (e.g. 337910 for mattress mfg)")
-    parser.add_argument("--notice-type", default=None, help="Filter by noticeType (e.g. 'Solicitation', 'Combined Synopsis/Solicitation')")
+    parser.add_argument("--title", default=None, help="Match opportunity title (SAM.gov 'title' parameter; substring match)")
+    parser.add_argument("--posted-from", required=True, type=_parse_iso_date, help="YYYY-MM-DD (inclusive); max 1-year range per SAM.gov")
+    parser.add_argument("--posted-to", required=True, type=_parse_iso_date, help="YYYY-MM-DD (inclusive); max 1-year range per SAM.gov")
+    parser.add_argument("--naics-code", default=None, help="NAICS code, e.g. 337910 for mattress manufacturing (sent as 'ncode')")
+    parser.add_argument("--notice-type", default=None, help="Procurement type code: o=Solicitation, k=Combined Synopsis/Solicitation, r=Sources Sought, p=Pre-solicitation, a=Award, etc. (sent as 'ptype')")
     parser.add_argument("--limit", type=int, default=DEFAULT_LIMIT, help=f"Page size (default {DEFAULT_LIMIT}, SAM max 1000).")
     parser.add_argument("--max-pages", type=int, default=10, help="Stop after this many pages (safety cap).")
     parser.add_argument("--api-key", default=None, help="Override SAM_API_KEY env var.")
@@ -288,7 +300,7 @@ def main(argv: list[str] | None = None) -> int:
                 api_key=api_key,
                 posted_from=args.posted_from,
                 posted_to=args.posted_to,
-                query=args.query,
+                title=args.title,
                 limit=args.limit,
                 offset=offset,
                 naics_code=args.naics_code,
@@ -297,9 +309,20 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 payload = fetch_page(url)
             except urllib.error.HTTPError as exc:
-                body = exc.read().decode("utf-8", errors="replace")[:500]
-                print(f"error: HTTP {exc.code} from SAM.gov: {body}", file=sys.stderr)
-                return 1
+                if exc.code == 404:
+                    # SAM.gov returns 404 with "No Data found" semantics
+                    # per its public docs; treat as zero results, not as
+                    # an error.
+                    payload = {
+                        "totalRecords": 0,
+                        "limit": args.limit,
+                        "offset": offset,
+                        "opportunitiesData": [],
+                    }
+                else:
+                    body = exc.read().decode("utf-8", errors="replace")[:500]
+                    print(f"error: HTTP {exc.code} from SAM.gov: {body}", file=sys.stderr)
+                    return 1
             except urllib.error.URLError as exc:
                 print(f"error: network error contacting SAM.gov: {exc}", file=sys.stderr)
                 return 1

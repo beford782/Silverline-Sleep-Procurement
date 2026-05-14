@@ -6,8 +6,41 @@ Lightweight Python utilities for the procurement toolkit.
 
 | Script | Stdlib only? | Purpose |
 | --- | --- | --- |
+| `pipeline.py` | yes | Manage the opportunity pipeline at `bids/active/_pipeline.csv`. Subcommands: `add`, `list`, `summary`, `score`, `move-to-archive`. Source registry at `sources/procurement_sources.json` documents where opportunities surface (SAM.gov / ESBD / Beacon Bid / Bonfire / cooperatives) — automated ingestion from those sources is **not yet implemented**. |
 | `generate_procurement_packet.py` | yes | Reads a questionnaire CSV, writes a markdown packet and printable HTML. Default output dir is `build/generated/` (gitignored). |
 | `validate_vendor_profile.py` | yes | Validates `vendor-profiles/*.profile.json` against `vendor-profiles/vendor_profile.schema.json`. Walks the schema at runtime; no parallel hardcoded rules. |
+
+### Work the opportunity pipeline
+
+```sh
+python tools/pipeline.py add \
+    --source "Texas ESBD" \
+    --buyer "Texas Facilities Commission" \
+    --solicitation-number "IFB 529-XYZ" \
+    --title "Dormitory mattresses pilot" \
+    --due-date 2026-06-15
+
+python tools/pipeline.py list             # active rows, sorted by due_date
+python tools/pipeline.py summary          # counts by status, source, risk
+python tools/pipeline.py score --dry-run  # preview keyword-driven fit/risk
+python tools/pipeline.py score            # write recomputed values
+python tools/pipeline.py move-to-archive <opportunity-id>
+```
+
+Flags worth knowing:
+
+- `--active PATH` / `--archive PATH` — override the default CSV
+  locations (`bids/active/_pipeline.csv` /
+  `bids/archive/_pipeline_archive.csv`).
+- `--overwrite` (on `add`) — replace a row with the same
+  `opportunity_id` instead of refusing.
+- `--dry-run` (on `score`) — print the would-be changes and exit
+  without touching the CSV.
+
+The scoring vocabularies live at the top of `tools/pipeline.py`
+(`POSITIVE_KEYWORDS`, `CAUTION_KEYWORDS`, `STRONG_CAUTION`) and are
+deliberately readable so they can be tuned to the institutional
+mattress vocabulary you actually see in solicitations.
 
 ### Generate a packet
 

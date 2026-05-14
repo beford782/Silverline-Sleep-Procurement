@@ -129,7 +129,15 @@ python tools/ingest_sam.py \
     --posted-to 2026-05-14 \
     [--naics-code 337910] \
     [--notice-type o] \
+    [--response-deadline-after 2026-05-14] \
     [--dry-run]
+
+# NAICS 337910 = mattress manufacturing. Use it to drop most false
+# positives (concrete mattresses for civil works, aircraft hardware
+# under different NAICS, services-only postings, etc.).
+#
+# By default the ingester filters out past-due opportunities (rdlfrom
+# defaults to today). Pass --include-past-due if you want them back in.
 ```
 
 Behavior:
@@ -145,6 +153,12 @@ Behavior:
 - HTTP 404 from SAM.gov is treated as "no results" per the API's
   documented semantics — that's a normal exit-0 outcome when your
   filters match nothing in the date range.
+- The keyword scoring vocabulary in `tools/pipeline.py` was tuned
+  against real federal-procurement titles. Caution keywords like
+  `aircraft`, `concrete`, `inspection services`, `refinish`,
+  `reupholster`, and `overseas` catch the false positives we've seen
+  in actual SAM.gov mattress ingests (aviation hardware, civil works,
+  services-only postings, refurbishment, out-of-geography work).
 
 `sources/procurement_sources.json` is the machine-readable list of
 where opportunities surface. State/local portal ingestion (ESBD,

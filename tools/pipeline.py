@@ -105,13 +105,24 @@ CAUTION_KEYWORDS = (
     "fixed price",
     "multi-year",
     "liquidated damages",
+    # Calibration from real SAM.gov ingest: these federal-data patterns
+    # were repeatedly producing false-positive mattress matches.
+    "aircraft",              # military aviation hardware, not bedding
+    "concrete",              # civil-engineering "concrete mattress" (erosion mat)
+    "inspection services",   # buyer wants an inspector, not a manufacturer
+    "refinish",              # furniture refurbishment, not new bedding
+    "reupholster",           # furniture refurbishment
+    "overseas",              # outside vendor service geography
 )
 
 # Strong-caution keywords force the row to high-risk regardless of score.
 STRONG_CAUTION = ("anti-ligature", "liquidated damages", "nationwide")
 
-POSITIVE_WEIGHT = 8
-CAUTION_WEIGHT = 12
+# Weights tuned against real SAM.gov titles, which are typically terse
+# (1-2 keyword hits). At weight 25, one positive hit lands at the
+# medium-risk threshold; two hits land at the bottom of low.
+POSITIVE_WEIGHT = 25
+CAUTION_WEIGHT = 25
 
 
 def slugify(text: str) -> str:
@@ -325,9 +336,9 @@ def score_text(text: str) -> tuple[int, str, dict]:
     raw = positive_hits * POSITIVE_WEIGHT - caution_hits * CAUTION_WEIGHT
     score = max(0, min(100, raw))
 
-    if strong_caution or score < 40:
+    if strong_caution or score < 25:
         risk = "high"
-    elif score < 70:
+    elif score < 75:
         risk = "medium"
     else:
         risk = "low"

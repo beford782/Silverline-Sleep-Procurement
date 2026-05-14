@@ -205,25 +205,76 @@ class PipelineCliTests(unittest.TestCase):
         self.assertIn("Texas ESBD", out)
         self.assertIn("SAM.gov", out)
 
-    def test_score_text_known_inputs(self) -> None:
-        # Strong-fit text: lots of positive keywords, no caution.
+    def test_score_text_strong_fit_lands_low_risk(self) -> None:
         score, risk, detail = pipeline.score_text(
             "Twin dormitory mattresses, box spring foundation, bed frame for residence hall"
         )
-        self.assertGreaterEqual(score, 40)
-        self.assertIn(risk, ("low", "medium"))
+        # 7+ positive keyword hits at weight 25 clamps to 100.
+        self.assertEqual(score, 100)
+        self.assertEqual(risk, "low")
         self.assertEqual(detail["caution_hits"], 0)
 
-        # Strong-caution: anti-ligature forces high regardless.
-        score2, risk2, _ = pipeline.score_text(
+    def test_score_text_terse_federal_title_lands_medium(self) -> None:
+        # The kind of title SAM.gov actually returns: 1-2 keyword hits.
+        score, risk, _ = pipeline.score_text("BED MATTRESS")
+        # Single hit on "mattress" -> 25 -> medium band [25, 75).
+        self.assertEqual(score, 25)
+        self.assertEqual(risk, "medium")
+
+        score2, risk2, _ = pipeline.score_text("Mattresses")
+        # Two hits ("mattress" and "mattresses") -> 50 -> medium.
+        self.assertEqual(score2, 50)
+        self.assertEqual(risk2, "medium")
+
+    def test_score_text_strong_caution_forces_high(self) -> None:
+        score, risk, _ = pipeline.score_text(
             "Anti-ligature mattresses for behavioral health unit"
         )
-        self.assertEqual(risk2, "high")
+        # 2 positive (mattress, mattresses) - 1 caution (anti-ligature) = 25,
+        # but anti-ligature is STRONG_CAUTION → forced high regardless.
+        self.assertEqual(risk, "high")
 
-        # Empty text → all zero → high (score < 40).
-        score3, risk3, _ = pipeline.score_text("")
-        self.assertEqual(score3, 0)
-        self.assertEqual(risk3, "high")
+    def test_score_text_empty_input_is_high(self) -> None:
+        score, risk, _ = pipeline.score_text("")
+        self.assertEqual(score, 0)
+        self.assertEqual(risk, "high")
+
+    def test_score_text_aircraft_caution_drops_to_high(self) -> None:
+        # Real SAM.gov example: "16--MATTRESS,AIRCRAFT" was a false-positive
+        # match for an institutional mattress vendor. The 'aircraft' caution
+        # offsets the single positive hit and parks it at high risk.
+        score, risk, detail = pipeline.score_text("16--MATTRESS,AIRCRAFT")
+        self.assertEqual(score, 0)  # 25 - 25 = 0
+        self.assertEqual(risk, "high")
+        self.assertGreaterEqual(detail["caution_hits"], 1)
+
+    def test_score_text_concrete_caution_drops_to_high(self) -> None:
+        # USACE "Casting Articulated Concrete Mattress" is an erosion-control
+        # mat for waterways, not bedding. Concrete caution should catch it.
+        score, risk, _ = pipeline.score_text(
+            "2026 Casting Articulated Concrete Mattress"
+        )
+        self.assertEqual(score, 0)
+        self.assertEqual(risk, "high")
+
+    def test_score_text_inspection_services_caution(self) -> None:
+        # VA wanted an inspector, not a manufacturer. We still surface as
+        # medium because the hospital + mattress keywords compete with the
+        # caution — operator triage is the right outcome.
+        score, risk, _ = pipeline.score_text(
+            "Hospital Grade Mattress Inspection Services"
+        )
+        # mattress + hospital positive = 50; inspection services caution = -25.
+        self.assertEqual(score, 25)
+        self.assertEqual(risk, "medium")
+
+    def test_score_text_refurbishment_cautions(self) -> None:
+        # Army Chinhae refurbishment row — refinish + reupholster cautions
+        # plus an "overseas" geographic caution wipe out the positive hits.
+        score, risk, _ = pipeline.score_text(
+            "Repair, refinish, and reupholster furniture, sterilize mattresses overseas"
+        )
+        self.assertEqual(risk, "high")
 
     def test_score_updates_fit_score_and_risk(self) -> None:
         argv = [

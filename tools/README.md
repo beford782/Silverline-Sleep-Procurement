@@ -60,11 +60,19 @@ Flags worth knowing:
   documented SAM.gov `title` parameter; SAM.gov has no general
   keyword/free-text search).
 - `--naics-code CODE` — e.g. `337910` (mattress manufacturing); sent
-  as `ncode`.
+  as `ncode`. The strongest single filter for cutting false positives.
 - `--notice-type CODE` — single-letter procurement type code per
   SAM.gov docs: `o`=Solicitation, `k`=Combined Synopsis/Solicitation,
   `r`=Sources Sought, `p`=Pre-solicitation, `a`=Award, `s`=Special
   Notice; sent as `ptype`.
+- `--response-deadline-after YYYY-MM-DD` — sent as `rdlfrom`. **Default
+  is today**, so past-due opportunities are excluded automatically.
+  Override with an earlier date to include some recent past-due, or
+  pass `--include-past-due` to drop the filter entirely.
+- `--response-deadline-before YYYY-MM-DD` — sent as `rdlto`. SAM.gov
+  caps response-deadline ranges at 1 year.
+- `--include-past-due` — opt out of the default `rdlfrom=today`
+  filter. Useful for back-fill analysis; never use for live triage.
 - `--limit N` — page size (SAM caps at 1000; default 50).
 - `--max-pages N` — safety cap on pagination (default 10).
 - `--api-key KEY` — overrides the `SAM_API_KEY` env var.

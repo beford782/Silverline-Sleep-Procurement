@@ -139,6 +139,20 @@ class SearchUrlTests(unittest.TestCase):
         self.assertNotIn("q=", url)
         self.assertNotIn("ncode=", url)
         self.assertNotIn("ptype=", url)
+        self.assertNotIn("rdlfrom=", url)
+        self.assertNotIn("rdlto=", url)
+
+    def test_search_url_includes_response_deadline_filters(self) -> None:
+        url = ingest_sam.build_search_url(
+            api_key="K",
+            posted_from="2026-01-01",
+            posted_to="2026-05-14",
+            response_deadline_after="2026-05-15",
+            response_deadline_before="2026-12-31",
+        )
+        # Same MM/dd/yyyy encoding as postedFrom/postedTo.
+        self.assertIn("rdlfrom=05%2F15%2F2026", url)
+        self.assertIn("rdlto=12%2F31%2F2026", url)
 
 
 class CliTests(unittest.TestCase):
@@ -242,6 +256,67 @@ class CliTests(unittest.TestCase):
             out = ingest_sam.fetch_page("https://api.sam.gov/opportunities/v2/search?api_key=x")
         mocked.assert_called_once()
         self.assertEqual(out, payload)
+
+    def test_default_response_deadline_after_is_today(self) -> None:
+        # Without --response-deadline-after or --include-past-due, the
+        # ingester should send rdlfrom=today so past-due opportunities are
+        # excluded. Capture the URL passed to fetch_page.
+        captured: dict[str, str] = {}
+
+        def fake_fetch_page(url, timeout=30):
+            captured["url"] = url
+            return {"opportunitiesData": [], "totalRecords": 0, "limit": 50, "offset": 0}
+
+        with mock.patch.object(ingest_sam, "fetch_page", side_effect=fake_fetch_page), \
+             mock.patch.dict(os.environ, {"SAM_API_KEY": "fakekey"}, clear=False):
+            rc, _, err = self._run(
+                "--posted-from", "2026-04-14",
+                "--posted-to", "2026-05-14",
+                "--active", str(self.active),
+                "--dry-run",
+            )
+        self.assertEqual(rc, 0, err)
+        self.assertIn("url", captured)
+        self.assertIn("rdlfrom=", captured["url"])
+
+    def test_include_past_due_skips_default_rdlfrom(self) -> None:
+        captured: dict[str, str] = {}
+
+        def fake_fetch_page(url, timeout=30):
+            captured["url"] = url
+            return {"opportunitiesData": [], "totalRecords": 0, "limit": 50, "offset": 0}
+
+        with mock.patch.object(ingest_sam, "fetch_page", side_effect=fake_fetch_page), \
+             mock.patch.dict(os.environ, {"SAM_API_KEY": "fakekey"}, clear=False):
+            rc, _, err = self._run(
+                "--posted-from", "2026-04-14",
+                "--posted-to", "2026-05-14",
+                "--include-past-due",
+                "--active", str(self.active),
+                "--dry-run",
+            )
+        self.assertEqual(rc, 0, err)
+        self.assertNotIn("rdlfrom=", captured["url"])
+
+    def test_explicit_response_deadline_after_wins_over_include_past_due(self) -> None:
+        captured: dict[str, str] = {}
+
+        def fake_fetch_page(url, timeout=30):
+            captured["url"] = url
+            return {"opportunitiesData": [], "totalRecords": 0, "limit": 50, "offset": 0}
+
+        with mock.patch.object(ingest_sam, "fetch_page", side_effect=fake_fetch_page), \
+             mock.patch.dict(os.environ, {"SAM_API_KEY": "fakekey"}, clear=False):
+            rc, _, _ = self._run(
+                "--posted-from", "2026-04-14",
+                "--posted-to", "2026-05-14",
+                "--response-deadline-after", "2026-06-01",
+                "--include-past-due",  # ignored because explicit flag wins
+                "--active", str(self.active),
+                "--dry-run",
+            )
+        self.assertEqual(rc, 0)
+        self.assertIn("rdlfrom=06%2F01%2F2026", captured["url"])
 
     def test_http_404_is_treated_as_zero_results(self) -> None:
         # SAM.gov returns 404 when no opportunities match the query, per

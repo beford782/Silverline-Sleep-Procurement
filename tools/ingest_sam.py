@@ -97,12 +97,15 @@ def build_search_url(
     offset: int = 0,
     naics_code: str | None = None,
     notice_type: str | None = None,
+    response_deadline_after: str | None = None,
+    response_deadline_before: str | None = None,
 ) -> str:
     """Compose the SAM.gov search URL with safely encoded params.
 
     Parameter names match the documented SAM.gov v2 search API: `title`,
-    `ncode`, `ptype`. There is no documented free-text keyword param;
-    use `title` for keyword-style matching against opportunity titles.
+    `ncode`, `ptype`, `rdlfrom`, `rdlto`. There is no documented
+    free-text keyword param; use `title` for keyword-style matching
+    against opportunity titles.
     """
     params: dict[str, str] = {
         "api_key": api_key,
@@ -120,6 +123,10 @@ def build_search_url(
         params["ncode"] = naics_code
     if notice_type:
         params["ptype"] = notice_type
+    if response_deadline_after:
+        params["rdlfrom"] = _iso_to_sam_date(response_deadline_after)
+    if response_deadline_before:
+        params["rdlto"] = _iso_to_sam_date(response_deadline_before)
     return SAM_SEARCH_URL + "?" + urllib.parse.urlencode(params)
 
 
@@ -267,6 +274,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--posted-to", required=True, type=_parse_iso_date, help="YYYY-MM-DD (inclusive); max 1-year range per SAM.gov")
     parser.add_argument("--naics-code", default=None, help="NAICS code, e.g. 337910 for mattress manufacturing (sent as 'ncode')")
     parser.add_argument("--notice-type", default=None, help="Procurement type code: o=Solicitation, k=Combined Synopsis/Solicitation, r=Sources Sought, p=Pre-solicitation, a=Award, etc. (sent as 'ptype')")
+    parser.add_argument("--response-deadline-after", type=_parse_iso_date, default=None,
+                        help="Filter to opportunities with response deadline on or after YYYY-MM-DD (sent as 'rdlfrom'). "
+                             "Default: today, so past-due opportunities are excluded.")
+    parser.add_argument("--response-deadline-before", type=_parse_iso_date, default=None,
+                        help="Filter to opportunities with response deadline on or before YYYY-MM-DD (sent as 'rdlto'). "
+                             "Max 1-year range when combined with --response-deadline-after.")
+    parser.add_argument("--include-past-due", action="store_true",
+                        help="Opt out of the default 'rdlfrom=today' filter so past-due opportunities are also returned. "
+                             "Ignored if --response-deadline-after is given.")
     parser.add_argument("--limit", type=int, default=DEFAULT_LIMIT, help=f"Page size (default {DEFAULT_LIMIT}, SAM max 1000).")
     parser.add_argument("--max-pages", type=int, default=10, help="Stop after this many pages (safety cap).")
     parser.add_argument("--api-key", default=None, help="Override SAM_API_KEY env var.")
@@ -293,6 +309,15 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 2
 
+        # Default: exclude past-due opportunities. Operator can pin a
+        # different rdlfrom explicitly, or opt out with --include-past-due.
+        if args.response_deadline_after:
+            rdl_after = args.response_deadline_after
+        elif args.include_past_due:
+            rdl_after = None
+        else:
+            rdl_after = today
+
         payloads = []
         offset = 0
         for page in range(args.max_pages):
@@ -305,6 +330,8 @@ def main(argv: list[str] | None = None) -> int:
                 offset=offset,
                 naics_code=args.naics_code,
                 notice_type=args.notice_type,
+                response_deadline_after=rdl_after,
+                response_deadline_before=args.response_deadline_before,
             )
             try:
                 payload = fetch_page(url)

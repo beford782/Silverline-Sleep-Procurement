@@ -1,0 +1,68 @@
+{
+  "totalRecords": 3,
+  "limit": 50,
+  "offset": 0,
+  "opportunitiesData": [
+    {
+      "noticeId": "synthetic-notice-aaa111",
+      "title": "Twin mattresses and pillow-top mattress sets for federal detention center",
+      "solicitationNumber": "15B30025R00000001",
+      "fullParentPathName": "DEPT OF JUSTICE.FEDERAL BUREAU OF PRISONS",
+      "department": "DEPT OF JUSTICE",
+      "subTier": "FEDERAL BUREAU OF PRISONS",
+      "office": "",
+      "postedDate": "2026-05-08",
+      "type": "Solicitation",
+      "baseType": "Solicitation",
+      "responseDeadLine": "2026-06-15T17:00:00-04:00",
+      "naicsCode": "337910",
+      "classificationCode": "7105",
+      "active": "Yes",
+      "placeOfPerformance": {
+        "city": {"code": "12345", "name": "Houston"},
+        "state": {"code": "TX", "name": "Texas"},
+        "country": {"code": "USA", "name": "UNITED STATES"}
+      },
+      "uiLink": "https://sam.gov/opp/synthetic-notice-aaa111/view"
+    },
+    {
+      "noticeId": "synthetic-notice-bbb222",
+      "title": "Dormitory bedding for VA medical center residential rehab",
+      "solicitationNumber": "36C24225Q00000002",
+      "fullParentPathName": "VETERANS AFFAIRS, DEPARTMENT OF.VHA MEDICAL CENTERS",
+      "department": "VETERANS AFFAIRS, DEPARTMENT OF",
+      "subTier": "VHA MEDICAL CENTERS",
+      "office": "",
+      "postedDate": "2026-05-10",
+      "type": "Combined Synopsis/Solicitation",
+      "baseType": "Combined Synopsis/Solicitation",
+      "responseDeadLine": "2026-05-30T15:00:00-05:00",
+      "naicsCode": "337910",
+      "classificationCode": "7210",
+      "placeOfPerformance": {
+        "city": {"name": "San Antonio"},
+        "state": {"code": "TX", "name": "Texas"}
+      },
+      "uiLink": "https://sam.gov/opp/synthetic-notice-bbb222/view"
+    },
+    {
+      "noticeId": "synthetic-notice-ccc333",
+      "title": "Cot mattresses for FEMA disaster-response shelter pre-positioning",
+      "solicitationNumber": "70FA3025R00000003",
+      "fullParentPathName": "HOMELAND SECURITY, DEPARTMENT OF.FEDERAL EMERGENCY MANAGEMENT AGENCY",
+      "department": "HOMELAND SECURITY, DEPARTMENT OF",
+      "subTier": "FEDERAL EMERGENCY MANAGEMENT AGENCY",
+      "office": "",
+      "postedDate": "2026-05-12",
+      "type": "Solicitation",
+      "baseType": "Solicitation",
+      "responseDeadLine": "2026-07-01T16:00:00-04:00",
+      "naicsCode": "337910",
+      "classificationCode": "7105",
+      "placeOfPerformance": {
+        "state": {"code": "GA", "name": "Georgia"}
+      },
+      "uiLink": "https://sam.gov/opp/synthetic-notice-ccc333/view"
+    }
+  ]
+}

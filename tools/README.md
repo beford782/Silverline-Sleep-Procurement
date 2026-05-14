@@ -8,6 +8,7 @@ Lightweight Python utilities for the procurement toolkit.
 | --- | --- | --- |
 | `pipeline.py` | yes | Manage the opportunity pipeline at `bids/active/_pipeline.csv`. Subcommands: `add`, `list`, `summary`, `score`, `move-to-archive`. Source registry at `sources/procurement_sources.json` documents where opportunities surface (SAM.gov / ESBD / Beacon Bid / Bonfire / cooperatives) — automated ingestion from those sources is **not yet implemented**. |
 | `draft_bid_response.py` | yes | Render a starter bid response by combining one pipeline row (looked up by `opportunity_id` in active first, then archive) with a vendor profile JSON. Output is markdown under `build/drafts/` (gitignored) so generated content never collides with committed bid markdown. |
+| `ingest_sam.py` | yes | Pull federal opportunities from SAM.gov's public API (`api.sam.gov/opportunities/v2/search`) into `bids/active/_pipeline.csv`. Stdlib HTTPS via `urllib.request`. Requires `SAM_API_KEY` env var. Dedupes by `solicitation_number` + `opportunity_id`. |
 | `generate_procurement_packet.py` | yes | Reads a questionnaire CSV, writes a markdown packet and printable HTML. Default output dir is `build/generated/` (gitignored). |
 | `validate_vendor_profile.py` | yes | Validates `vendor-profiles/*.profile.json` against `vendor-profiles/vendor_profile.schema.json`. Walks the schema at runtime; no parallel hardcoded rules. |
 
@@ -42,6 +43,33 @@ The scoring vocabularies live at the top of `tools/pipeline.py`
 (`POSITIVE_KEYWORDS`, `CAUTION_KEYWORDS`, `STRONG_CAUTION`) and are
 deliberately readable so they can be tuned to the institutional
 mattress vocabulary you actually see in solicitations.
+
+### Ingest from SAM.gov
+
+```sh
+export SAM_API_KEY=...
+python tools/ingest_sam.py \
+    --query "mattress" \
+    --posted-from 2026-05-01 \
+    --posted-to 2026-05-14
+```
+
+Flags worth knowing:
+
+- `--query TEXT` — keyword passed as `?q=` to the API.
+- `--naics-code CODE` — e.g. `337910` (mattress manufacturing).
+- `--notice-type TEXT` — e.g. `Solicitation`,
+  `"Combined Synopsis/Solicitation"`, `"Sources Sought"`.
+- `--limit N` — page size (SAM caps at 1000; default 50).
+- `--max-pages N` — safety cap on pagination (default 10).
+- `--api-key KEY` — overrides the `SAM_API_KEY` env var.
+- `--active PATH` — pipeline CSV to append to.
+- `--dry-run` — print what would be added; don't write.
+- `--fixture PATH` — read a local JSON response (for tests / offline
+  demos); skips the API call entirely.
+
+The script never reads or writes `pointOfContact` fields from SAM.gov
+responses — contact PII stays out of the repo by design.
 
 ### Draft a bid response
 

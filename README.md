@@ -114,14 +114,40 @@ are deliberately readable — tweak `POSITIVE_KEYWORDS`,
 `CAUTION_KEYWORDS`, and `STRONG_CAUTION` to match the institutional
 mattress vocabulary you actually see in solicitations.
 
-### 5. Future opportunity ingestion
+### 5. Federal opportunity ingestion (SAM.gov)
+
+`tools/ingest_sam.py` pulls federal contract opportunities from the
+SAM.gov public API into the active pipeline. Stdlib only — no new
+dependencies.
+
+```sh
+export SAM_API_KEY=...    # never commit; sign up at sam.gov
+
+python tools/ingest_sam.py \
+    --query "mattress" \
+    --posted-from 2026-05-01 \
+    --posted-to 2026-05-14 \
+    [--naics-code 337910] \
+    [--notice-type "Solicitation"] \
+    [--dry-run]
+```
+
+Behavior:
+
+- Fetches all matching opportunities (paginated, capped by
+  `--max-pages`).
+- Maps documented SAM.gov fields onto the pipeline schema; never
+  pulls contact PII.
+- Dedupes against `bids/active/_pipeline.csv` by both
+  `opportunity_id` and `solicitation_number`, so re-running with an
+  overlapping date range is safe.
+- `--dry-run` previews what would be added without writing.
 
 `sources/procurement_sources.json` is the machine-readable list of
-where opportunities surface (SAM.gov, Texas ESBD, Beacon Bid, Bonfire,
-cooperatives, etc.). It's data, not code — later phases will read it
-to drive automated ingestion. **SAM.gov / ESBD ingestion is not yet
-implemented in this repo**; opportunities are added to the pipeline
-manually via `tools/pipeline.py add`.
+where opportunities surface. State/local portal ingestion (ESBD,
+Beacon Bid, Bonfire, IonWave, cooperatives) is **not yet implemented**
+— rely on portal-side email notifications and add those rows
+manually via `tools/pipeline.py add` for now.
 
 ### 6. Track commodity codes
 
@@ -138,6 +164,7 @@ Lightweight Python utilities, all stdlib-only where possible:
 | --- | --- |
 | `tools/pipeline.py` | Manage `bids/active/_pipeline.csv`: add, list, summary, score, move-to-archive |
 | `tools/draft_bid_response.py` | Combine an opportunity row with a vendor profile to render a starter response markdown under `build/drafts/` |
+| `tools/ingest_sam.py` | Pull federal opportunities from the SAM.gov public API (stdlib `urllib`) into the pipeline. Requires `SAM_API_KEY`. |
 | `tools/generate_procurement_packet.py` | CSV questionnaire → markdown + printable HTML packet |
 | `tools/validate_vendor_profile.py` | Validate `vendor-profiles/*.profile.json` against the schema |
 

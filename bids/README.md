@@ -28,6 +28,14 @@ This folder holds two coordinated views of the same opportunities:
 The CSV is for tracking; the markdown is for thinking. They share an
 `opportunity_id` so the link is obvious.
 
+## Starter drafts from the vendor profile
+
+`tools/draft_bid_response.py` writes a starter response markdown to
+`build/drafts/<opportunity-id>_draft.md` (gitignored) by combining a
+pipeline row with a vendor profile JSON. Copy the draft into
+`bids/active/<opportunity-id>.md` once it's worth committing; the draft
+is regenerable and is intentionally kept out of git.
+
 ## File naming
 
 `<jurisdiction>-<solicitation-id>.md`, lowercased, dashes for spaces.

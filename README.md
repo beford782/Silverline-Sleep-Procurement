@@ -75,15 +75,30 @@ build/                   Default output of tools/ (gitignored, do not commit)
        --title "Dormitory mattresses pilot" \
        --due-date 2026-06-15
    ```
-2. Copy `bids/templates/bid_response_template.md` into
-   `bids/active/<opportunity-id>.md` for the prose, open questions,
-   and decision notes. Use the `opportunity_id` from the pipeline row
-   as the filename.
-3. On award/decline, archive both:
+2. Render a starter draft from the pipeline row + a vendor profile:
+   ```sh
+   python tools/draft_bid_response.py <opportunity-id> \
+       --vendor vendor-profiles/continental_silverline.profile.json
+   ```
+   The draft lands at `build/drafts/<opportunity-id>_draft.md`
+   (gitignored). It pre-fills the bid-template table, product-fit
+   intersection (vendor `products: yes` ∩ opportunity primary
+   products), compliance-availability lines, delivery-fit notes, the
+   Required Documents checklist, and a decision suggestion derived
+   from `risk_level`.
+3. When the draft is in shape, copy it into
+   `bids/active/<opportunity-id>.md` and edit the prose, open
+   questions, and final decision by hand. The draft is regenerable;
+   the committed markdown is the operator's source of truth.
+4. On award/decline, archive both:
    ```sh
    python tools/pipeline.py move-to-archive <opportunity-id>
    git mv bids/active/<opportunity-id>.md bids/archive/<opportunity-id>.md
    ```
+
+   (The corresponding `build/drafts/<opportunity-id>_draft.md` can be
+   left in `build/`; it's gitignored and regenerable from the archived
+   pipeline row.)
 
 ### 4. Work the opportunity pipeline
 
@@ -122,6 +137,7 @@ Lightweight Python utilities, all stdlib-only where possible:
 | Script | Purpose |
 | --- | --- |
 | `tools/pipeline.py` | Manage `bids/active/_pipeline.csv`: add, list, summary, score, move-to-archive |
+| `tools/draft_bid_response.py` | Combine an opportunity row with a vendor profile to render a starter response markdown under `build/drafts/` |
 | `tools/generate_procurement_packet.py` | CSV questionnaire → markdown + printable HTML packet |
 | `tools/validate_vendor_profile.py` | Validate `vendor-profiles/*.profile.json` against the schema |
 

@@ -35,6 +35,7 @@ the conventions below.
 | Tests | `tests/` (stdlib `unittest` — `python -m unittest discover -s tests`) |
 | Committed example output | `generated/examples/` (regenerated with `--generated-date`) |
 | Ad-hoc generated output | `build/` (gitignored, not committed) |
+| Auto-drafted bid responses | `build/drafts/` (gitignored — copy into `bids/active/<id>.md` before editing) |
 
 ## Schema changes
 

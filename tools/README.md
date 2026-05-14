@@ -7,6 +7,7 @@ Lightweight Python utilities for the procurement toolkit.
 | Script | Stdlib only? | Purpose |
 | --- | --- | --- |
 | `pipeline.py` | yes | Manage the opportunity pipeline at `bids/active/_pipeline.csv`. Subcommands: `add`, `list`, `summary`, `score`, `move-to-archive`. Source registry at `sources/procurement_sources.json` documents where opportunities surface (SAM.gov / ESBD / Beacon Bid / Bonfire / cooperatives) — automated ingestion from those sources is **not yet implemented**. |
+| `draft_bid_response.py` | yes | Render a starter bid response by combining one pipeline row (looked up by `opportunity_id` in active first, then archive) with a vendor profile JSON. Output is markdown under `build/drafts/` (gitignored) so generated content never collides with committed bid markdown. |
 | `generate_procurement_packet.py` | yes | Reads a questionnaire CSV, writes a markdown packet and printable HTML. Default output dir is `build/generated/` (gitignored). |
 | `validate_vendor_profile.py` | yes | Validates `vendor-profiles/*.profile.json` against `vendor-profiles/vendor_profile.schema.json`. Walks the schema at runtime; no parallel hardcoded rules. |
 
@@ -41,6 +42,29 @@ The scoring vocabularies live at the top of `tools/pipeline.py`
 (`POSITIVE_KEYWORDS`, `CAUTION_KEYWORDS`, `STRONG_CAUTION`) and are
 deliberately readable so they can be tuned to the institutional
 mattress vocabulary you actually see in solicitations.
+
+### Draft a bid response
+
+```sh
+python tools/draft_bid_response.py <opportunity-id> \
+    --vendor vendor-profiles/<vendor>.profile.json \
+    [--generated-date YYYY-MM-DD] [--force]
+```
+
+Flags worth knowing:
+
+- `--active PATH` / `--archive PATH` — override the pipeline CSV
+  locations searched for the opportunity.
+- `--schema PATH` — override the profile-validation schema (defaults to
+  `vendor-profiles/vendor_profile.schema.json`).
+- `--output-dir DIR` — destination (default: `build/drafts/`).
+- `--generated-date YYYY-MM-DD` — pin the timestamp for deterministic
+  output.
+- `--force` — overwrite an existing draft file.
+
+The script validates the vendor profile against the schema before
+drafting; a validation failure exits non-zero with the error list and
+does not write a draft.
 
 ### Generate a packet
 

@@ -54,8 +54,10 @@ data are hard to spot once they're checked in.
 
 ## What this registry does NOT do
 
-- It does not fetch opportunities. SAM.gov / ESBD ingestion is a
-  future phase.
+- It does not directly fetch opportunities. The first ingestion
+  consumer is `tools/ingest_sam.py`, which currently reads the
+  `intake_method: api` entry for SAM.gov. State/local portal
+  ingestion is still future work.
 - It does not enforce credentials, rate limits, or scrape sessions.
 - It does not duplicate vendor commodity-code selections; those live
   in `portal-checklists/<vendor>_portal_setup.md`.

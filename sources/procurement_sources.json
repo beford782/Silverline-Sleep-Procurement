@@ -151,9 +151,9 @@
     "notes": "Houston Independent School District procurement portal. Email notifications driven by selected commodity categories."
   },
   {
-    "name": "University portals",
+    "name": "The University of Texas System",
     "source_type": "university_portal",
-    "official_url": "",
+    "official_url": "https://www.utsystem.edu/offices/contracts-and-procurement",
     "has_api": false,
     "requires_login": true,
     "intake_method": "portal_registration",
@@ -173,13 +173,65 @@
       "dormitory furniture",
       "residence hall furniture"
     ],
-    "cadence": "weekly",
-    "notes": "Umbrella entry for UT System, Texas A&M System, University of Houston, Texas Southern University, and community-college Bonfire instances. Official URLs to be confirmed per institution; split into separate entries when individual portals are onboarded."
+    "cadence": "monthly",
+    "notes": "System-level Contracts and Procurement office. Individual UT campuses (UT Austin, UT Arlington, UT Dallas, UT San Antonio, UT El Paso, UT Rio Grande Valley, plus health institutions) post solicitations through their own campus purchasing offices; register at the campus level for bid notifications."
+  },
+  {
+    "name": "The Texas A&M University System",
+    "source_type": "university_portal",
+    "official_url": "https://www.tamus.edu/procurement/",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "portal_registration",
+    "geography": ["TX"],
+    "buyer_level": "university",
+    "search_terms": [
+      "mattress",
+      "dormitory",
+      "residence hall",
+      "twin xl",
+      "campus housing",
+      "student housing"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "residence hall furniture"
+    ],
+    "cadence": "monthly",
+    "notes": "System-level procurement landing. Campus solicitations (Texas A&M College Station, A&M-Commerce, A&M-Corpus Christi, Prairie View A&M, Tarleton State, West Texas A&M, etc.) post via campus purchasing offices, typically through AggieBuy or campus-specific portals. Register at the campus level."
+  },
+  {
+    "name": "University of Houston",
+    "source_type": "university_portal",
+    "official_url": "https://www.uh.edu/office-of-finance/purchasing/",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "portal_registration",
+    "geography": ["TX", "Houston"],
+    "buyer_level": "university",
+    "search_terms": [
+      "mattress",
+      "dormitory",
+      "residence hall",
+      "twin xl",
+      "campus housing",
+      "student housing"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "residence hall furniture"
+    ],
+    "cadence": "monthly",
+    "notes": "UH main-campus Purchasing Department. UH System institutions (UH-Downtown, UH-Clear Lake, UH-Victoria) run separate purchasing offices; the UH-System office coordinates but bid postings are at the campus level."
   },
   {
     "name": "BuyBoard",
     "source_type": "cooperative",
-    "official_url": "",
+    "official_url": "https://www.buyboard.com/",
     "has_api": false,
     "requires_login": true,
     "intake_method": "manual_review",
@@ -197,12 +249,12 @@
       "bedding"
     ],
     "cadence": "monthly",
-    "notes": "Cooperative purchasing program serving Texas public entities. Official URL to be confirmed before automated intake."
+    "notes": "Cooperative purchasing program operated by the Texas Association of School Boards (TASB), serving Texas public-sector members (ISDs, municipalities, counties). Vendor participation is via BuyBoard's RFP process; once awarded, vendors sell directly to BuyBoard members under the cooperative contract."
   },
   {
     "name": "Choice Partners",
     "source_type": "cooperative",
-    "official_url": "",
+    "official_url": "https://www.choicepartners.org/",
     "has_api": false,
     "requires_login": true,
     "intake_method": "manual_review",
@@ -219,12 +271,12 @@
       "bedding"
     ],
     "cadence": "monthly",
-    "notes": "Texas-region cooperative purchasing organization. Official URL to be confirmed before automated intake."
+    "notes": "Texas-headquartered national cooperative operated by Harris County Department of Education. Vendor participation is via Choice Partners RFP; awarded contracts are available to public-sector members nationwide."
   },
   {
     "name": "TIPS",
     "source_type": "cooperative",
-    "official_url": "",
+    "official_url": "https://www.tips-usa.com/",
     "has_api": false,
     "requires_login": true,
     "intake_method": "manual_review",
@@ -242,12 +294,12 @@
       "bedding"
     ],
     "cadence": "monthly",
-    "notes": "National cooperative procurement program. Official URL to be confirmed before automated intake."
+    "notes": "The Interlocal Purchasing System, a national cooperative operated by Region 8 Education Service Center (Pittsburg, TX). Vendor participation is via TIPS RFP; awarded contracts are available to TIPS members (public agencies, ISDs, higher-ed, non-profits) nationwide."
   },
   {
     "name": "HGACBuy",
     "source_type": "cooperative",
-    "official_url": "",
+    "official_url": "https://www.hgacbuy.org/",
     "has_api": false,
     "requires_login": true,
     "intake_method": "manual_review",
@@ -264,12 +316,12 @@
       "bedding"
     ],
     "cadence": "monthly",
-    "notes": "Houston-Galveston Area Council cooperative purchasing. Official URL to be confirmed before automated intake."
+    "notes": "Houston-Galveston Area Council cooperative purchasing program. Strong fit for Gulf Coast public entities. Vendor participation is via HGACBuy RFP; awarded contracts are available to H-GAC members."
   },
   {
-    "name": "Sourcewell / OMNIA",
+    "name": "Sourcewell",
     "source_type": "cooperative",
-    "official_url": "",
+    "official_url": "https://www.sourcewell-mn.gov/",
     "has_api": false,
     "requires_login": true,
     "intake_method": "manual_review",
@@ -286,6 +338,28 @@
       "bedding"
     ],
     "cadence": "monthly",
-    "notes": "Two distinct national cooperatives (Sourcewell and OMNIA Partners) tracked together until split-evaluation. Official URLs to be confirmed before automated intake; consider splitting into separate entries when one is prioritized."
+    "notes": "Sourcewell (formerly NJPA) is a Minnesota local unit of government operating a national cooperative procurement program. Vendor participation is via Sourcewell solicitations; awarded vendors sell to Sourcewell-member public-sector entities nationwide under the cooperative contract."
+  },
+  {
+    "name": "OMNIA Partners",
+    "source_type": "cooperative",
+    "official_url": "https://www.omniapartners.com/",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "manual_review",
+    "geography": ["US"],
+    "buyer_level": "cooperative",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "institutional furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "furniture",
+      "bedding"
+    ],
+    "cadence": "monthly",
+    "notes": "National cooperative formed from the 2019 merger of National IPA and US Communities. Member entities buy under awarded cooperative contracts; vendor participation is via OMNIA's lead-agency RFPs (a public agency runs a competitive procurement and the resulting contract is made available cooperatively)."
   }
 ]

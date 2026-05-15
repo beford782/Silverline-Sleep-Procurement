@@ -57,6 +57,7 @@ from typing import Iterable
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_ACTIVE = REPO_ROOT / "bids" / "active" / "_pipeline.csv"
+DEFAULT_ARCHIVE = REPO_ROOT / "bids" / "archive" / "_pipeline_archive.csv"
 
 # Make pipeline helpers reusable without duplication.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -286,14 +287,27 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--limit", type=int, default=DEFAULT_LIMIT, help=f"Page size (default {DEFAULT_LIMIT}, SAM max 1000).")
     parser.add_argument("--max-pages", type=int, default=10, help="Stop after this many pages (safety cap).")
     parser.add_argument("--api-key", default=None, help="Override SAM_API_KEY env var.")
-    parser.add_argument("--active", default=str(DEFAULT_ACTIVE), help=f"Pipeline CSV (default: {DEFAULT_ACTIVE.relative_to(REPO_ROOT)})")
+    parser.add_argument("--active", default=str(DEFAULT_ACTIVE), help=f"Pipeline CSV write target (default: {DEFAULT_ACTIVE.relative_to(REPO_ROOT)})")
+    parser.add_argument(
+        "--archive",
+        default=str(DEFAULT_ARCHIVE),
+        help=(
+            f"Archive pipeline CSV consulted for dedup only; never written. "
+            f"Default: {DEFAULT_ARCHIVE.relative_to(REPO_ROOT)}"
+        ),
+    )
     parser.add_argument("--dry-run", action="store_true", help="Show what would be added; do not write.")
     parser.add_argument("--fixture", default=None, help="Read response JSON from a file instead of the live API (testing).")
     args = parser.parse_args(argv)
 
     today = datetime.now().date().isoformat()
     active_path = Path(args.active)
-    existing_rows = _read_existing_or_empty(active_path)
+    archive_path = Path(args.archive)
+    existing_active = _read_existing_or_empty(active_path)
+    existing_archive = _read_existing_or_empty(archive_path)
+    # Dedup against both pipelines so previously-closed opportunities (e.g.
+    # archived no-bids) do not get re-ingested into the active pipeline.
+    existing_rows = existing_active + existing_archive
 
     if args.fixture:
         with open(args.fixture, "r", encoding="utf-8") as fh:
@@ -369,9 +383,20 @@ def main(argv: list[str] | None = None) -> int:
 
     new_rows, dupes, _ = ingest(records, existing_rows, today)
 
+    # Attribute each dupe to active vs archive so the operator can tell
+    # "already tracking it" from "previously closed, ignore."
+    archive_ids, archive_sols = existing_ids(existing_archive)
+    n_archive_dupes = sum(
+        1
+        for d in dupes
+        if d["opportunity_id"] in archive_ids
+        or (d.get("solicitation_number") and d["solicitation_number"] in archive_sols)
+    )
+    n_active_dupes = len(dupes) - n_archive_dupes
+
     print(f"SAM.gov fetched: {len(records)} record(s)")
     print(f"  new:    {len(new_rows)}")
-    print(f"  dupes:  {len(dupes)}")
+    print(f"  dupes:  {len(dupes)} ({n_active_dupes} active, {n_archive_dupes} archive)")
     if new_rows:
         for r in new_rows:
             print(f"  + {r['opportunity_id']} :: {r['title']}")
@@ -383,7 +408,9 @@ def main(argv: list[str] | None = None) -> int:
         print("(no new rows to write)")
         return 0
 
-    write_rows_atomic(active_path, existing_rows + new_rows)
+    # Write target is active only; archive rows were consulted for dedup
+    # but must never be echoed back into the active pipeline.
+    write_rows_atomic(active_path, existing_active + new_rows)
     print(f"wrote {len(new_rows)} new row(s) to {active_path}")
     return 0
 

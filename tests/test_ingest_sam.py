@@ -160,9 +160,26 @@ class CliTests(unittest.TestCase):
         self.tmp = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, str(self.tmp), True)
         self.active = self.tmp / "active.csv"
-        # Header-only starting state.
-        with self.active.open("w", encoding="utf-8", newline="") as fh:
-            fh.write(",".join(pipeline.CANONICAL_HEADER) + "\n")
+        self.archive = self.tmp / "archive.csv"
+        # Header-only starting state for both files.
+        for path in (self.active, self.archive):
+            with path.open("w", encoding="utf-8", newline="") as fh:
+                fh.write(",".join(pipeline.CANONICAL_HEADER) + "\n")
+
+    def _seed_archive_with_first_fixture_row(self) -> dict:
+        """Write the first fixture row into the archive CSV as a closed no-bid."""
+        with FIXTURE.open("r", encoding="utf-8") as fh:
+            payload = json.load(fh)
+        first_record = payload["opportunitiesData"][0]
+        archive_row = ingest_sam.record_to_row(first_record, today="2026-05-14")
+        archive_row["status"] = "no-bid"
+        archive_row["next_action"] = "No-bid archived"
+        archive_row["last_reviewed"] = "2026-05-15"
+        with self.archive.open("w", encoding="utf-8", newline="") as fh:
+            writer = csv.DictWriter(fh, fieldnames=pipeline.CANONICAL_HEADER, lineterminator="\n")
+            writer.writeheader()
+            writer.writerow({k: archive_row.get(k, "") for k in pipeline.CANONICAL_HEADER})
+        return archive_row
 
     def _run(self, *argv: str, env: dict | None = None) -> tuple[int, str, str]:
         out, err = io.StringIO(), io.StringIO()
@@ -317,6 +334,120 @@ class CliTests(unittest.TestCase):
             )
         self.assertEqual(rc, 0)
         self.assertIn("rdlfrom=06%2F01%2F2026", captured["url"])
+
+    def test_archive_row_is_reported_as_dupe_and_not_written_to_active(self) -> None:
+        archived = self._seed_archive_with_first_fixture_row()
+        rc, out, err = self._run(
+            "--posted-from", "2026-05-01",
+            "--posted-to", "2026-05-14",
+            "--fixture", str(FIXTURE),
+            "--active", str(self.active),
+            "--archive", str(self.archive),
+        )
+        self.assertEqual(rc, 0, err)
+        # Fixture has 3 records; one matches the archived row, so 2 new + 1 dupe.
+        self.assertIn("fetched: 3", out)
+        self.assertIn("new:    2", out)
+        self.assertIn("dupes:  1 (0 active, 1 archive)", out)
+
+        # Active must contain only the 2 non-archived records — the archived
+        # row must NOT have been echoed back into active.
+        active_rows = _read_csv(self.active)
+        self.assertEqual(len(active_rows), 2)
+        active_ids = {r["opportunity_id"] for r in active_rows}
+        self.assertNotIn(archived["opportunity_id"], active_ids)
+
+        # Archive must remain untouched (still just the one seeded row).
+        archive_rows = _read_csv(self.archive)
+        self.assertEqual(len(archive_rows), 1)
+        self.assertEqual(archive_rows[0]["opportunity_id"], archived["opportunity_id"])
+        self.assertEqual(archive_rows[0]["status"], "no-bid")
+
+    def test_archive_dedupe_with_solicitation_number_only(self) -> None:
+        # Archive entry shares only the solicitation_number with the fixture
+        # record — dedup must still catch it even when opportunity_id differs.
+        with self.archive.open("w", encoding="utf-8", newline="") as fh:
+            writer = csv.DictWriter(fh, fieldnames=pipeline.CANONICAL_HEADER, lineterminator="\n")
+            writer.writeheader()
+            row = {k: "" for k in pipeline.CANONICAL_HEADER}
+            row.update({
+                "opportunity_id": "manual-tracking-id-not-from-sam",
+                "source": "SAM.gov",
+                "buyer": "DEPT OF JUSTICE",
+                "solicitation_number": "15B30025R00000001",  # fixture row 1
+                "title": "previously closed",
+                "status": "no-bid",
+            })
+            writer.writerow(row)
+
+        rc, out, err = self._run(
+            "--posted-from", "2026-05-01",
+            "--posted-to", "2026-05-14",
+            "--fixture", str(FIXTURE),
+            "--active", str(self.active),
+            "--archive", str(self.archive),
+        )
+        self.assertEqual(rc, 0, err)
+        self.assertIn("dupes:  1 (0 active, 1 archive)", out)
+        active_rows = _read_csv(self.active)
+        self.assertEqual(len(active_rows), 2)
+        self.assertNotIn(
+            "15B30025R00000001",
+            {r["solicitation_number"] for r in active_rows},
+        )
+
+    def test_missing_archive_file_treated_as_empty(self) -> None:
+        # --archive pointing at a non-existent file should not error; ingest
+        # should fall back to active-only dedup.
+        missing = self.tmp / "does_not_exist.csv"
+        self.assertFalse(missing.exists())
+        rc, out, err = self._run(
+            "--posted-from", "2026-05-01",
+            "--posted-to", "2026-05-14",
+            "--fixture", str(FIXTURE),
+            "--active", str(self.active),
+            "--archive", str(missing),
+        )
+        self.assertEqual(rc, 0, err)
+        self.assertIn("new:    3", out)
+        self.assertIn("dupes:  0 (0 active, 0 archive)", out)
+        self.assertEqual(len(_read_csv(self.active)), 3)
+
+    def test_active_and_archive_dupes_break_out_separately(self) -> None:
+        # First run: write all 3 fixture records to active.
+        rc, _, err = self._run(
+            "--posted-from", "2026-05-01",
+            "--posted-to", "2026-05-14",
+            "--fixture", str(FIXTURE),
+            "--active", str(self.active),
+            "--archive", str(self.archive),
+        )
+        self.assertEqual(rc, 0, err)
+        # Now move row 1 into the archive manually (simulates close-and-archive).
+        active_rows = _read_csv(self.active)
+        moved = next(r for r in active_rows if r["solicitation_number"] == "15B30025R00000001")
+        remaining = [r for r in active_rows if r["solicitation_number"] != "15B30025R00000001"]
+        with self.active.open("w", encoding="utf-8", newline="") as fh:
+            writer = csv.DictWriter(fh, fieldnames=pipeline.CANONICAL_HEADER, lineterminator="\n")
+            writer.writeheader()
+            writer.writerows(remaining)
+        with self.archive.open("w", encoding="utf-8", newline="") as fh:
+            writer = csv.DictWriter(fh, fieldnames=pipeline.CANONICAL_HEADER, lineterminator="\n")
+            writer.writeheader()
+            moved["status"] = "no-bid"
+            writer.writerow(moved)
+
+        # Second run: 2 active dupes + 1 archive dupe expected.
+        rc2, out2, err2 = self._run(
+            "--posted-from", "2026-05-01",
+            "--posted-to", "2026-05-14",
+            "--fixture", str(FIXTURE),
+            "--active", str(self.active),
+            "--archive", str(self.archive),
+        )
+        self.assertEqual(rc2, 0, err2)
+        self.assertIn("dupes:  3 (2 active, 1 archive)", out2)
+        self.assertEqual(len(_read_csv(self.active)), 2)
 
     def test_http_404_is_treated_as_zero_results(self) -> None:
         # SAM.gov returns 404 when no opportunities match the query, per

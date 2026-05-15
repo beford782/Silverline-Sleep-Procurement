@@ -335,6 +335,83 @@ class PipelineCliTests(unittest.TestCase):
         self.assertEqual(rc, 1)
         self.assertIn("not found", err)
 
+    def test_move_to_archive_preserves_metadata_without_flags(self) -> None:
+        # Regression: bare move-to-archive must not silently mutate the row.
+        argv = self._base_add_args(
+            status="watching",
+            next_action="Triage and decide",
+            notes="seed note",
+            last_reviewed="2026-05-10",
+        )
+        self._run(*argv)
+        rc, _, err = self._run(
+            "--active", str(self.active), "--archive", str(self.archive),
+            "move-to-archive", "texas-esbd-texas-facilities-commission-ifb-529-xyz",
+        )
+        self.assertEqual(rc, 0, err)
+        _, archive_rows = _read_csv(self.archive)
+        self.assertEqual(archive_rows[0]["status"], "watching")
+        self.assertEqual(archive_rows[0]["next_action"], "Triage and decide")
+        self.assertEqual(archive_rows[0]["notes"], "seed note")
+        self.assertEqual(archive_rows[0]["last_reviewed"], "2026-05-10")
+
+    def test_move_to_archive_sets_close_status(self) -> None:
+        self._run(*self._base_add_args(next_action="Triage and decide", notes="seed"))
+        rc, _, err = self._run(
+            "--active", str(self.active), "--archive", str(self.archive),
+            "move-to-archive", "texas-esbd-texas-facilities-commission-ifb-529-xyz",
+            "--status", "no-bid",
+            "--next-action", "No-bid archived",
+            "--note", "out of scope",
+        )
+        self.assertEqual(rc, 0, err)
+        _, archive_rows = _read_csv(self.archive)
+        self.assertEqual(archive_rows[0]["status"], "no-bid")
+        self.assertEqual(archive_rows[0]["next_action"], "No-bid archived")
+        self.assertEqual(archive_rows[0]["notes"], "seed; out of scope")
+        # last_reviewed bumps to today when metadata is changed.
+        from datetime import datetime as _dt
+        self.assertEqual(archive_rows[0]["last_reviewed"], _dt.now().date().isoformat())
+
+    def test_move_to_archive_rejects_invalid_status(self) -> None:
+        self._run(*self._base_add_args())
+        rc, _, err = self._run(
+            "--active", str(self.active), "--archive", str(self.archive),
+            "move-to-archive", "texas-esbd-texas-facilities-commission-ifb-529-xyz",
+            "--status", "maybe",
+        )
+        self.assertEqual(rc, 1)
+        self.assertIn("status", err)
+        # Row must remain in active and not appear in archive.
+        _, active_rows = _read_csv(self.active)
+        _, archive_rows = _read_csv(self.archive)
+        self.assertEqual(len(active_rows), 1)
+        self.assertEqual(archive_rows, [])
+
+    def test_move_to_archive_note_sets_when_notes_empty(self) -> None:
+        # Add a row with empty notes (default), then archive with --note.
+        self._run(*self._base_add_args())
+        rc, _, err = self._run(
+            "--active", str(self.active), "--archive", str(self.archive),
+            "move-to-archive", "texas-esbd-texas-facilities-commission-ifb-529-xyz",
+            "--note", "first note",
+        )
+        self.assertEqual(rc, 0, err)
+        _, archive_rows = _read_csv(self.archive)
+        self.assertEqual(archive_rows[0]["notes"], "first note")
+
+    def test_move_to_archive_next_action_can_clear(self) -> None:
+        # Passing --next-action "" explicitly clears the field.
+        self._run(*self._base_add_args(next_action="Triage and decide"))
+        rc, _, err = self._run(
+            "--active", str(self.active), "--archive", str(self.archive),
+            "move-to-archive", "texas-esbd-texas-facilities-commission-ifb-529-xyz",
+            "--next-action", "",
+        )
+        self.assertEqual(rc, 0, err)
+        _, archive_rows = _read_csv(self.archive)
+        self.assertEqual(archive_rows[0]["next_action"], "")
+
 
 if __name__ == "__main__":
     unittest.main()

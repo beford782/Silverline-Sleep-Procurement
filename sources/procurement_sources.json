@@ -24,7 +24,7 @@
       "household furnishings"
     ],
     "cadence": "daily",
-    "notes": "Federal opportunity board. Public API documented at api.sam.gov. SAM.gov vendor registration is a prerequisite to submit a federal bid but not to read postings. Ingestion is a later phase."
+    "notes": "Federal opportunity board. Public API documented at api.sam.gov. SAM.gov vendor registration is a prerequisite to submit a federal bid but not to read postings. Ingestion is implemented via tools/ingest_sam.py; bid submission remains manual."
   },
   {
     "name": "Texas ESBD / Texas SmartBuy",

@@ -402,7 +402,28 @@ def cmd_move_to_archive(args: argparse.Namespace) -> int:
         print(f"error: opportunity_id {args.opportunity_id!r} not found in {active}", file=sys.stderr)
         return 1
 
+    if args.status and args.status not in STATUS_VALUES:
+        print(
+            f"error: status {args.status!r} not in {list(STATUS_VALUES)}",
+            file=sys.stderr,
+        )
+        return 1
+
     moved_row = rows.pop(idx)
+
+    metadata_changed = False
+    if args.status:
+        moved_row["status"] = args.status
+        metadata_changed = True
+    if args.next_action is not None:
+        moved_row["next_action"] = args.next_action
+        metadata_changed = True
+    if args.note:
+        existing = moved_row.get("notes") or ""
+        moved_row["notes"] = f"{existing}; {args.note}" if existing else args.note
+        metadata_changed = True
+    if metadata_changed:
+        moved_row["last_reviewed"] = datetime.now().date().isoformat()
 
     if not archive.exists():
         write_rows_atomic(archive, [])
@@ -473,6 +494,21 @@ def build_parser() -> argparse.ArgumentParser:
     p_arc = sub.add_parser("move-to-archive", help="Move a row from active to archive.")
     p_arc.set_defaults(func=cmd_move_to_archive)
     p_arc.add_argument("opportunity_id", help="Opportunity id to move.")
+    p_arc.add_argument(
+        "--status",
+        default=None,
+        help=f"Set close status on the archived row. One of {list(STATUS_VALUES)}.",
+    )
+    p_arc.add_argument(
+        "--next-action",
+        default=None,
+        help="Replace next_action on the archived row. Pass '' to clear.",
+    )
+    p_arc.add_argument(
+        "--note",
+        default=None,
+        help="Append text to the notes column (separator '; '). Empty notes are set rather than prefixed.",
+    )
 
     return parser
 

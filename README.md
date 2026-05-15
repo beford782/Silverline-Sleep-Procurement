@@ -146,9 +146,11 @@ Behavior:
   `--max-pages`).
 - Maps documented SAM.gov fields onto the pipeline schema; never
   pulls contact PII.
-- Dedupes against `bids/active/_pipeline.csv` by both
-  `opportunity_id` and `solicitation_number`, so re-running with an
-  overlapping date range is safe.
+- Dedupes against both `bids/active/_pipeline.csv` and
+  `bids/archive/_pipeline_archive.csv` by `opportunity_id` and
+  `solicitation_number`, so previously-closed no-bids are reported as
+  archive dupes instead of being re-ingested into active. Re-running
+  with an overlapping date range is safe.
 - `--dry-run` previews what would be added without writing.
 - HTTP 404 from SAM.gov is treated as "no results" per the API's
   documented semantics — that's a normal exit-0 outcome when your
@@ -165,6 +167,15 @@ where opportunities surface. State/local portal ingestion (ESBD,
 Beacon Bid, Bonfire, IonWave, cooperatives) is **not yet implemented**
 — rely on portal-side email notifications and add those rows
 manually via `tools/pipeline.py add` for now.
+
+**Scheduled run.** `.github/workflows/weekly_sam_ingest.yml` runs the
+ingest every Monday at 13:00 UTC (08:00 Houston CDT) and on manual
+`workflow_dispatch`. It scores the new rows and, if
+`bids/active/_pipeline.csv` changed, opens a PR for human triage. It
+never auto-archives, never auto-submits, and never pushes to `main`.
+Requires the `SAM_API_KEY` repo secret to be set
+(*Settings → Secrets and variables → Actions*); the workflow fails
+fast with a clear error if it is missing.
 
 ### 6. Track commodity codes
 

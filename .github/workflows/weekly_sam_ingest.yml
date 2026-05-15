@@ -1,0 +1,138 @@
+name: Weekly SAM.gov mattress ingest
+
+on:
+  schedule:
+    # Mondays 13:00 UTC = 08:00 Houston CDT / 07:00 CST.
+    - cron: '0 13 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  ingest:
+    name: Ingest, score, open PR if active changed
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify SAM_API_KEY secret is present
+        env:
+          SAM_API_KEY: ${{ secrets.SAM_API_KEY }}
+        run: |
+          if [ -z "$SAM_API_KEY" ]; then
+            echo "::error::SAM_API_KEY repo secret is not set. Add it at Settings -> Secrets and variables -> Actions, then re-run this workflow."
+            exit 1
+          fi
+          echo "SAM_API_KEY present (${#SAM_API_KEY} chars)"
+
+      - name: Compute posted-date window (today-7 .. today, UTC)
+        id: window
+        run: |
+          POSTED_FROM=$(date -u +%F -d "7 days ago")
+          POSTED_TO=$(date -u +%F)
+          echo "posted_from=$POSTED_FROM" >> "$GITHUB_OUTPUT"
+          echo "posted_to=$POSTED_TO" >> "$GITHUB_OUTPUT"
+          echo "Window: $POSTED_FROM .. $POSTED_TO"
+
+      - name: Run SAM.gov ingest (live API)
+        env:
+          SAM_API_KEY: ${{ secrets.SAM_API_KEY }}
+          POSTED_FROM: ${{ steps.window.outputs.posted_from }}
+          POSTED_TO: ${{ steps.window.outputs.posted_to }}
+        run: |
+          python tools/ingest_sam.py \
+            --title "mattress" \
+            --posted-from "$POSTED_FROM" \
+            --posted-to "$POSTED_TO"
+
+      - name: Re-score active pipeline
+        run: python tools/pipeline.py score
+
+      - name: Detect whether active pipeline changed
+        id: diff
+        run: |
+          if git diff --quiet -- bids/active/_pipeline.csv; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Active pipeline unchanged - no PR will be opened."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Active pipeline has changes - will open PR."
+            git --no-pager diff --stat -- bids/active/_pipeline.csv
+          fi
+
+      - name: Open PR with new rows
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          POSTED_FROM: ${{ steps.window.outputs.posted_from }}
+          POSTED_TO: ${{ steps.window.outputs.posted_to }}
+          EVENT_NAME: ${{ github.event_name }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          BRANCH="auto/weekly-ingest-${POSTED_TO}-${RUN_NUMBER}"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git checkout -b "$BRANCH"
+          git add bids/active/_pipeline.csv
+          git commit -m "Weekly SAM.gov ingest: posted ${POSTED_FROM}..${POSTED_TO}"
+          git push -u origin "$BRANCH"
+
+          cat > /tmp/pr_body.md <<'EOF'
+          Automated weekly SAM.gov mattress ingest. **Human triage required before merge.**
+
+          Posted-date window: `__POSTED_FROM__` to `__POSTED_TO__` (inclusive, today minus 7 days, UTC).
+
+          ## Reviewer checklist
+
+          1. Open `bids/active/_pipeline.csv` and review each new row.
+          2. For rows that are out-of-scope, past-due, or false-positive (aircraft / concrete / inspection-services / refurbishment / overseas), archive with:
+
+             ```
+             python tools/pipeline.py move-to-archive <opportunity-id> \
+               --status no-bid --next-action "No-bid archived" --note "<reason>"
+             ```
+
+             then amend this PR.
+          3. For rows worth pursuing: refine `next_action`, assign an `owner`, and merge.
+          4. If everything is out of scope, archive all new rows and close this PR without merging.
+
+          ## CI note
+
+          Commits authored by `GITHUB_TOKEN` do not trigger PR-event workflows.
+          The repo CI will not auto-run on this PR's initial commit. Either push
+          a follow-up commit (which will trigger CI) or use the "Re-run all
+          checks" button on this PR.
+
+          ---
+
+          Triggered by: `__EVENT_NAME__` (run #__RUN_NUMBER__).
+          EOF
+
+          sed -i "s|__POSTED_FROM__|${POSTED_FROM}|g" /tmp/pr_body.md
+          sed -i "s|__POSTED_TO__|${POSTED_TO}|g" /tmp/pr_body.md
+          sed -i "s|__EVENT_NAME__|${EVENT_NAME}|g" /tmp/pr_body.md
+          sed -i "s|__RUN_NUMBER__|${RUN_NUMBER}|g" /tmp/pr_body.md
+
+          gh pr create \
+            --title "Weekly SAM.gov ingest: posted ${POSTED_FROM}..${POSTED_TO}" \
+            --body-file /tmp/pr_body.md \
+            --base main \
+            --head "$BRANCH"
+
+      - name: Summary
+        run: |
+          if [ "${{ steps.diff.outputs.changed }}" = "true" ]; then
+            echo "Weekly ingest opened a PR for human triage."
+          else
+            echo "Weekly ingest ran clean - no new rows, no PR."
+          fi

@@ -166,7 +166,9 @@ Behavior:
 where opportunities surface. State/local portal ingestion (ESBD,
 Beacon Bid, Bonfire, IonWave, cooperatives) is **not yet implemented**
 — rely on portal-side email notifications and add those rows
-manually via `tools/pipeline.py add` for now.
+manually via `tools/pipeline.py add`. See section 7 below for the
+operator-checklist tool that turns the registry into a ready-to-walk
+weekly worksheet.
 
 **Scheduled run.** `.github/workflows/weekly_sam_ingest.yml` runs the
 ingest every Monday at 13:00 UTC (08:00 Houston CDT) and on manual
@@ -184,6 +186,42 @@ Commodity-code groups live alongside each vendor's
 list there so all portals (CMBL, Bonfire, IonWave, Beacon Bid, etc.)
 get the same vocabulary.
 
+### 7. Weekly state/local portal review
+
+`tools/source_review.py` turns `sources/procurement_sources.json` into
+a dated Markdown checklist of the non-API portals an operator needs to
+walk manually each week (Texas ESBD, Beacon Bid, Bonfire, IonWave —
+plus the monthly universities and cooperatives). SAM.gov and any
+future `has_api: true` source is always excluded; it's handled by
+`tools/ingest_sam.py` and the scheduled GitHub Action.
+
+The generated worksheet lands at
+`build/portal_reviews/<date>_<cadence>.md` (gitignored, regenerable).
+Walk each portal's UI / saved searches, record anything worth
+pursuing via `python tools/pipeline.py add ...`, then discard the
+worksheet. The registry and pipeline CSVs are the committed source of
+truth.
+
+```sh
+# Default: weekly cadence (Texas ESBD, Beacon Bid, Bonfire, IonWave).
+python tools/source_review.py
+
+# Monthly cadence (3 Texas university systems + 6 cooperatives).
+python tools/source_review.py --cadence monthly
+
+# Everything except SAM.gov (or any API-driven source).
+python tools/source_review.py --cadence all
+
+# Preview without writing a file.
+python tools/source_review.py --dry-run
+
+# Pin the date stamp (useful for reproducible reviews).
+python tools/source_review.py --date 2026-05-18
+
+# What cadence buckets are present in the registry?
+python tools/source_review.py --list-cadences
+```
+
 ## Tools
 
 Lightweight Python utilities, all stdlib-only where possible:
@@ -193,6 +231,7 @@ Lightweight Python utilities, all stdlib-only where possible:
 | `tools/pipeline.py` | Manage `bids/active/_pipeline.csv`: add, list, summary, score, move-to-archive |
 | `tools/draft_bid_response.py` | Combine an opportunity row with a vendor profile to render a starter response markdown under `build/drafts/` |
 | `tools/ingest_sam.py` | Pull federal opportunities from the SAM.gov public API (stdlib `urllib`) into the pipeline. Requires `SAM_API_KEY`. |
+| `tools/source_review.py` | Generate an operator portal-review checklist from the source registry. Writes to `build/portal_reviews/` (gitignored). |
 | `tools/generate_procurement_packet.py` | CSV questionnaire → markdown + printable HTML packet |
 | `tools/validate_vendor_profile.py` | Validate `vendor-profiles/*.profile.json` against the schema |
 

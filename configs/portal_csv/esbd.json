@@ -1,15 +1,15 @@
 {
     "source": "Texas ESBD",
     "columns": {
-        "solicitation_number": "PLACEHOLDER_solicitation",
-        "title": "PLACEHOLDER_title",
-        "buyer": "PLACEHOLDER_agency",
-        "portal_url": "PLACEHOLDER_url",
-        "posted_date": "PLACEHOLDER_posted",
-        "due_date": "PLACEHOLDER_due",
-        "delivery_location": "PLACEHOLDER_location",
-        "commodity_terms": "PLACEHOLDER_class",
-        "notes": "PLACEHOLDER_notice_type"
+        "solicitation_number": "Solicitation #",
+        "title": "Title",
+        "buyer": "Agency",
+        "portal_url": "URL",
+        "posted_date": "Posted Date",
+        "due_date": "Due Date",
+        "delivery_location": "Delivery Location",
+        "commodity_terms": "Class/Item",
+        "notes": "Notice Type"
     },
     "date_formats": ["%m/%d/%Y", "%Y-%m-%d"]
 }

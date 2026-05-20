@@ -1,4 +1,4 @@
-PLACEHOLDER_solicitation,PLACEHOLDER_title,PLACEHOLDER_agency,PLACEHOLDER_url,PLACEHOLDER_posted,PLACEHOLDER_due,PLACEHOLDER_location,PLACEHOLDER_class,PLACEHOLDER_notice_type
-PLC-001,Synthetic Mattress Solicitation A,Placeholder State Agency Alpha,https://example.invalid/notice/PLC-001,05/01/2026,06/15/2026,"Austin, TX",NIGP 71500,Solicitation
-PLC-002,Synthetic Mattress RFP B,Placeholder State Agency Beta,https://example.invalid/notice/PLC-002,2026-05-08,2026-06-22,"Houston, TX",NIGP 71500,RFP
-PLC-003,Synthetic Mattress IFB C,Placeholder State Agency Gamma,https://example.invalid/notice/PLC-003,not-a-date,also-not-a-date,"Dallas, TX",NIGP 71500,IFB
+Solicitation #,Title,Agency,URL,Posted Date,Due Date,Delivery Location,Class/Item,Notice Type
+ESBD-2026-0001,Synthetic Mattress Solicitation A,Synthetic State Agency Alpha,https://www.txsmartbuy.gov/esbd/ESBD-2026-0001,05/01/2026,06/15/2026,"Austin, TX",NIGP 71500,Solicitation
+ESBD-2026-0002,Synthetic Mattress RFP B,Synthetic State Agency Beta,https://www.txsmartbuy.gov/esbd/ESBD-2026-0002,2026-05-08,2026-06-22,"Houston, TX",NIGP 71500,RFP
+ESBD-2026-0003,Synthetic Mattress IFB C,Synthetic State Agency Gamma,https://www.txsmartbuy.gov/esbd/ESBD-2026-0003,not-a-date,also-not-a-date,"Dallas, TX",NIGP 71500,IFB

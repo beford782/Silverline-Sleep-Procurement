@@ -327,21 +327,21 @@ class CliTests(unittest.TestCase):
         self.assertIn("2 unparseable", err)
 
         rows = _read_csv(self.active)
-        plc001 = next(r for r in rows if r["solicitation_number"] == "PLC-001")
-        plc002 = next(r for r in rows if r["solicitation_number"] == "PLC-002")
-        plc003 = next(r for r in rows if r["solicitation_number"] == "PLC-003")
+        row1 = next(r for r in rows if r["solicitation_number"] == "ESBD-2026-0001")
+        row2 = next(r for r in rows if r["solicitation_number"] == "ESBD-2026-0002")
+        row3 = next(r for r in rows if r["solicitation_number"] == "ESBD-2026-0003")
         # MM/DD/YYYY parsed
-        self.assertEqual(plc001["posted_date"], "2026-05-01")
-        self.assertEqual(plc001["due_date"], "2026-06-15")
+        self.assertEqual(row1["posted_date"], "2026-05-01")
+        self.assertEqual(row1["due_date"], "2026-06-15")
         # ISO parsed via fromisoformat fallback (or the second strptime format)
-        self.assertEqual(plc002["posted_date"], "2026-05-08")
-        self.assertEqual(plc002["due_date"], "2026-06-22")
+        self.assertEqual(row2["posted_date"], "2026-05-08")
+        self.assertEqual(row2["due_date"], "2026-06-22")
         # Unparseable -> empty
-        self.assertEqual(plc003["posted_date"], "")
-        self.assertEqual(plc003["due_date"], "")
+        self.assertEqual(row3["posted_date"], "")
+        self.assertEqual(row3["due_date"], "")
         # Non-date fields on the bad-date row still come through.
-        self.assertEqual(plc003["title"], "Synthetic Mattress IFB C")
-        self.assertEqual(plc003["delivery_location"], "Dallas, TX")
+        self.assertEqual(row3["title"], "Synthetic Mattress IFB C")
+        self.assertEqual(row3["delivery_location"], "Dallas, TX")
         # All rows stamped with the config's source.
         self.assertTrue(all(r["source"] == "Texas ESBD" for r in rows))
         # All rows start in 'watching'.
@@ -380,7 +380,7 @@ class CliTests(unittest.TestCase):
         self.assertEqual(len(_read_csv(self.active)), 3)
 
     def test_archive_match_is_attributed_to_archive_not_active(self) -> None:
-        # Pre-seed archive with PLC-001 (matched via solicitation_number).
+        # Pre-seed archive with ESBD-2026-0001 (matched via solicitation_number).
         with self.archive.open("w", encoding="utf-8", newline="") as fh:
             w = csv.DictWriter(fh, fieldnames=pipeline.CANONICAL_HEADER, lineterminator="\n")
             w.writeheader()
@@ -389,7 +389,7 @@ class CliTests(unittest.TestCase):
                 "opportunity_id": "previously-closed-id",
                 "source": "Texas ESBD",
                 "buyer": "Whoever",
-                "solicitation_number": "PLC-001",
+                "solicitation_number": "ESBD-2026-0001",
                 "title": "previously closed",
                 "status": "no-bid",
             })
@@ -408,7 +408,7 @@ class CliTests(unittest.TestCase):
         # Active gets only the 2 non-archived rows.
         active_rows = _read_csv(self.active)
         self.assertEqual(len(active_rows), 2)
-        self.assertNotIn("PLC-001", {r["solicitation_number"] for r in active_rows})
+        self.assertNotIn("ESBD-2026-0001", {r["solicitation_number"] for r in active_rows})
 
         # Archive untouched (still just the seed row).
         archive_rows = _read_csv(self.archive)
@@ -416,15 +416,15 @@ class CliTests(unittest.TestCase):
         self.assertEqual(archive_rows[0]["opportunity_id"], "previously-closed-id")
 
     def test_cli_buyer_column_override_beats_mapping(self) -> None:
-        # CSV uses a different header for buyer than the mapping config.
+        # CSV uses a different header for buyer than the mapping config
+        # (REAL_BUYER_HEADER instead of the mapping's "Agency").
         csv_path = self.tmp / "override.csv"
         with csv_path.open("w", encoding="utf-8", newline="") as fh:
             fh.write(
-                "PLACEHOLDER_solicitation,PLACEHOLDER_title,REAL_BUYER_HEADER,"
-                "PLACEHOLDER_url,PLACEHOLDER_posted,PLACEHOLDER_due,"
-                "PLACEHOLDER_location,PLACEHOLDER_class,PLACEHOLDER_notice_type\n"
+                "Solicitation #,Title,REAL_BUYER_HEADER,URL,Posted Date,"
+                "Due Date,Delivery Location,Class/Item,Notice Type\n"
                 "OV-1,Title,Override Agency,https://example.invalid/o,"
-                "05/01/2026,06/01/2026,Austin,NIGP,Solicitation\n"
+                "05/01/2026,06/01/2026,Austin,NIGP 71500,Solicitation\n"
             )
         rc, _, err = self._run(
             str(csv_path),

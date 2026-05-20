@@ -304,5 +304,53 @@ class CliTests(unittest.TestCase):
         self.assertNotIn("SAM.gov", body)
 
 
+class RegistryDataShapeTests(unittest.TestCase):
+    """Assertions over the committed source registry's data shape."""
+
+    def setUp(self) -> None:
+        with REAL_REGISTRY.open(encoding="utf-8") as fh:
+            self.entries = json.load(fh)
+
+    def _by_name(self, name: str) -> dict:
+        for entry in self.entries:
+            if entry.get("name") == name:
+                return entry
+        raise AssertionError(f"registry missing entry named {name!r}")
+
+    def test_csv_export_supported_is_bool_when_present(self) -> None:
+        # Field is intentionally absent on entries that have not been
+        # walked. When present, it MUST be a Python bool - a string
+        # "true"/"false" or null would silently break flag-driven routing.
+        for entry in self.entries:
+            if "csv_export_supported" in entry:
+                self.assertIsInstance(
+                    entry["csv_export_supported"],
+                    bool,
+                    f"{entry.get('name')!r}: csv_export_supported must be bool, "
+                    f"got {type(entry['csv_export_supported']).__name__}",
+                )
+
+    def test_walked_weekly_portals_have_expected_csv_export_values(self) -> None:
+        # Codifies the operator's documented walk findings so silent
+        # drift (entry removal, value flip, name rename) fails loudly.
+        expected = {
+            "Texas ESBD / Texas SmartBuy": True,
+            "City of Houston Beacon Bid": False,
+            "Harris County Bonfire": False,
+            "Houston ISD IonWave": False,
+        }
+        for name, want in expected.items():
+            entry = self._by_name(name)
+            self.assertIn(
+                "csv_export_supported", entry,
+                f"{name!r}: csv_export_supported missing",
+            )
+            self.assertEqual(
+                entry["csv_export_supported"], want,
+                f"{name!r}: csv_export_supported={entry['csv_export_supported']!r}, "
+                f"expected {want!r}",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

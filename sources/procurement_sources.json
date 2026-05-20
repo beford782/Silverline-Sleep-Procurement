@@ -33,6 +33,7 @@
     "has_api": false,
     "requires_login": false,
     "intake_method": "saved_search",
+    "csv_export_supported": true,
     "geography": ["TX"],
     "buyer_level": "state",
     "search_terms": [
@@ -83,6 +84,7 @@
     "has_api": false,
     "requires_login": true,
     "intake_method": "email_notification",
+    "csv_export_supported": false,
     "geography": ["TX", "Houston"],
     "buyer_level": "city",
     "search_terms": [
@@ -106,6 +108,7 @@
     "has_api": false,
     "requires_login": true,
     "intake_method": "email_notification",
+    "csv_export_supported": false,
     "geography": ["TX", "Harris County"],
     "buyer_level": "county",
     "search_terms": [
@@ -132,6 +135,7 @@
     "has_api": false,
     "requires_login": true,
     "intake_method": "email_notification",
+    "csv_export_supported": false,
     "geography": ["TX", "Houston"],
     "buyer_level": "isd",
     "search_terms": [

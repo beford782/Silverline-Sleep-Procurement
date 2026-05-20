@@ -100,6 +100,9 @@ def render_checklist(sources: list[dict], cadence: str, date: str) -> str:
         geography = _fmt_list(s.get("geography"))
         lines.append(f"- Buyer level: {s.get('buyer_level','')} ({geography})")
         lines.append(f"- Intake method: {s.get('intake_method','')}")
+        if "csv_export_supported" in s:
+            yes_no = "yes" if s["csv_export_supported"] else "no"
+            lines.append(f"- CSV export: {yes_no}")
         lines.append(f"- Cadence: {s.get('cadence','')}")
         lines.append(f"- Search terms: {_fmt_list(s.get('search_terms'))}")
         lines.append(f"- Commodity terms: {_fmt_list(s.get('commodity_terms'))}")

@@ -514,6 +514,48 @@ class CliTests(unittest.TestCase):
         self.assertIn("dupes:  0 (0 active, 0 archive)", out)
         self.assertEqual(len(_read_csv(self.active)), 3)
 
+    def test_non_utf8_csv_returns_controlled_error_not_traceback(self) -> None:
+        # Write a CSV containing cp1252-only bytes (smart-quote 0x91/0x92
+        # in the title cell) that are invalid as UTF-8. Default decoding
+        # (utf-8-sig) MUST surface as a controlled CLI error pointing the
+        # operator at --encoding, not as a Python traceback. Re-running
+        # with the suggested encoding MUST then succeed.
+        csv_path = self.tmp / "cp1252.csv"
+        csv_path.write_bytes(
+            b"Solicitation #,Title,Agency,URL,Posted Date,Due Date,"
+            b"Delivery Location,Class/Item,Notice Type\n"
+            b"NUTF-001,\x91Smart Quote Title\x92,Some Agency,"
+            b"https://example.invalid/n,05/01/2026,06/01/2026,"
+            b"Austin,NIGP 71500,Solicitation\n"
+        )
+
+        # (a) Default utf-8-sig: controlled error, no write.
+        rc, _, err = self._run(
+            str(csv_path),
+            "--mapping", str(ESBD_CONFIG),
+            "--active", str(self.active),
+            "--archive", str(self.archive),
+        )
+        self.assertEqual(rc, 1)
+        self.assertIn("cannot decode", err)
+        self.assertIn("--encoding", err)
+        self.assertEqual(_read_csv(self.active), [])
+
+        # (b) Operator follows the guidance and retries with cp1252:
+        # ingestion succeeds and the row lands in the active pipeline.
+        rc2, _, err2 = self._run(
+            str(csv_path),
+            "--mapping", str(ESBD_CONFIG),
+            "--encoding", "cp1252",
+            "--active", str(self.active),
+            "--archive", str(self.archive),
+        )
+        self.assertEqual(rc2, 0, err2)
+        active_rows = _read_csv(self.active)
+        self.assertEqual(len(active_rows), 1)
+        self.assertEqual(active_rows[0]["solicitation_number"], "NUTF-001")
+        self.assertIn("Smart Quote Title", active_rows[0]["title"])
+
 
 if __name__ == "__main__":
     unittest.main()

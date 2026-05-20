@@ -378,6 +378,13 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"error: {exc}", file=sys.stderr)
                 return 1
             csv_rows = list(reader)
+    except UnicodeDecodeError as exc:
+        print(
+            f"error: cannot decode {csv_path} as {args.encoding}: {exc}. "
+            f"Try a different encoding with --encoding (e.g. --encoding cp1252).",
+            file=sys.stderr,
+        )
+        return 1
     except OSError as exc:
         print(f"error: cannot read {csv_path}: {exc}", file=sys.stderr)
         return 1

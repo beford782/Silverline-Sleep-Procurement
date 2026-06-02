@@ -12,6 +12,7 @@ import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parent.parent
 TOOLS = ROOT / "tools"
@@ -162,6 +163,20 @@ class PipelineCliTests(unittest.TestCase):
         rc, _, err = self._run(*self._base_add_args(status="maybe"))
         self.assertEqual(rc, 1)
         self.assertIn("status", err)
+
+    def test_invalid_risk_level_is_rejected(self) -> None:
+        rc, _, err = self._run(*self._base_add_args(risk_level="maybe"))
+        self.assertEqual(rc, 1)
+        self.assertIn("risk_level", err)
+        _, rows = _read_csv(self.active)
+        self.assertEqual(rows, [])
+
+    def test_invalid_fit_score_is_rejected(self) -> None:
+        rc, _, err = self._run(*self._base_add_args(fit_score="101"))
+        self.assertEqual(rc, 1)
+        self.assertIn("fit_score", err)
+        _, rows = _read_csv(self.active)
+        self.assertEqual(rows, [])
 
     def test_list_sorts_by_due_date_blanks_last(self) -> None:
         # Three rows: due 2026-07-01, due 2026-06-15, no due.
@@ -383,6 +398,27 @@ class PipelineCliTests(unittest.TestCase):
         self.assertEqual(rc, 1)
         self.assertIn("status", err)
         # Row must remain in active and not appear in archive.
+        _, active_rows = _read_csv(self.active)
+        _, archive_rows = _read_csv(self.archive)
+        self.assertEqual(len(active_rows), 1)
+        self.assertEqual(archive_rows, [])
+
+    def test_move_to_archive_keeps_active_when_archive_write_fails(self) -> None:
+        self._run(*self._base_add_args())
+        original_write = pipeline.write_rows_atomic
+
+        def fail_archive_write(path: Path, rows) -> None:
+            if path == self.archive:
+                raise OSError("synthetic archive failure")
+            original_write(path, rows)
+
+        with mock.patch.object(pipeline, "write_rows_atomic", side_effect=fail_archive_write):
+            rc, _, err = self._run(
+                "--active", str(self.active), "--archive", str(self.archive),
+                "move-to-archive", "texas-esbd-texas-facilities-commission-ifb-529-xyz",
+            )
+        self.assertEqual(rc, 1)
+        self.assertIn("synthetic archive failure", err)
         _, active_rows = _read_csv(self.active)
         _, archive_rows = _read_csv(self.archive)
         self.assertEqual(len(active_rows), 1)

@@ -307,17 +307,30 @@ class CliTests(unittest.TestCase):
                 rc = int(exc.code) if exc.code is not None else 0
         return rc, out.getvalue(), err.getvalue()
 
-    def test_fixture_writes_three_rows_with_warning_for_bad_dates(self) -> None:
+    def test_fixture_rejects_bad_dates_by_default(self) -> None:
         rc, out, err = self._run(
             str(ESBD_FIXTURE),
             "--mapping", str(ESBD_CONFIG),
             "--active", str(self.active),
             "--archive", str(self.archive),
         )
-        self.assertEqual(rc, 0, err)
+        self.assertEqual(rc, 1)
         self.assertIn("Texas ESBD fetched: 3", out)
         self.assertIn("new:    3", out)
         self.assertIn("dupes:  0 (0 active, 0 archive)", out)
+        self.assertIn("unparseable date", err)
+        self.assertIn("--allow-bad-dates", err)
+        self.assertEqual(_read_csv(self.active), [])
+
+    def test_fixture_writes_three_rows_with_allow_bad_dates(self) -> None:
+        rc, out, err = self._run(
+            str(ESBD_FIXTURE),
+            "--mapping", str(ESBD_CONFIG),
+            "--active", str(self.active),
+            "--archive", str(self.archive),
+            "--allow-bad-dates",
+        )
+        self.assertEqual(rc, 0, err)
         self.assertIn("wrote 3 new row(s)", out)
 
         # Warning on stderr for the row with both dates unparseable.
@@ -354,6 +367,7 @@ class CliTests(unittest.TestCase):
             "--active", str(self.active),
             "--archive", str(self.archive),
             "--dry-run",
+            "--allow-bad-dates",
         )
         self.assertEqual(rc, 0, err)
         self.assertIn("--dry-run", out)
@@ -365,6 +379,7 @@ class CliTests(unittest.TestCase):
             "--mapping", str(ESBD_CONFIG),
             "--active", str(self.active),
             "--archive", str(self.archive),
+            "--allow-bad-dates",
         )
         self.assertEqual(rc1, 0, err1)
         rc2, out2, err2 = self._run(
@@ -372,6 +387,7 @@ class CliTests(unittest.TestCase):
             "--mapping", str(ESBD_CONFIG),
             "--active", str(self.active),
             "--archive", str(self.archive),
+            "--allow-bad-dates",
         )
         self.assertEqual(rc2, 0, err2)
         self.assertIn("new:    0", out2)
@@ -400,6 +416,7 @@ class CliTests(unittest.TestCase):
             "--mapping", str(ESBD_CONFIG),
             "--active", str(self.active),
             "--archive", str(self.archive),
+            "--allow-bad-dates",
         )
         self.assertEqual(rc, 0, err)
         self.assertIn("new:    2", out)
@@ -445,6 +462,7 @@ class CliTests(unittest.TestCase):
             "--source", "Texas Comptroller",
             "--active", str(self.active),
             "--archive", str(self.archive),
+            "--allow-bad-dates",
         )
         self.assertEqual(rc, 0, err)
         self.assertIn("Texas Comptroller fetched: 3", out)
@@ -509,6 +527,7 @@ class CliTests(unittest.TestCase):
             "--mapping", str(ESBD_CONFIG),
             "--active", str(self.active),
             "--archive", str(missing),
+            "--allow-bad-dates",
         )
         self.assertEqual(rc, 0, err)
         self.assertIn("dupes:  0 (0 active, 0 archive)", out)

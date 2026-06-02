@@ -32,12 +32,24 @@ Examples:
 
 import argparse
 import glob
+import html as html_lib
 import json
 import os
 import re
 import sys
 
 import openpyxl
+
+
+def js_value(value):
+    """Return a JavaScript string literal for spreadsheet-originated text."""
+    encoded = json.dumps("" if value is None else str(value))
+    return (
+        encoded
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("&", "\\u0026")
+    )
 
 
 # ── Image conversion ──────────────────────────────────────────────────────
@@ -344,18 +356,16 @@ def format_mattress_js(mattress):
     features_str = json.dumps(mattress["features"])
     reasons_parts = []
     for k, v in mattress["reasons"].items():
-        # Escape single quotes in value
-        v_escaped = v.replace("'", "\\'")
-        reasons_parts.append(f"'{k}':'{v_escaped}'")
+        reasons_parts.append(f"{js_value(k)}:{js_value(v)}")
     reasons_str = "{ " + ", ".join(reasons_parts) + " }"
 
     return (
-        f"        {{ id: '{mattress['id']}', name: '{mattress['name']}', "
-        f"brand: '{mattress['brand']}', subBrand: '{mattress['subBrand']}', "
+        f"        {{ id: {js_value(mattress['id'])}, name: {js_value(mattress['name'])}, "
+        f"brand: {js_value(mattress['brand'])}, subBrand: {js_value(mattress['subBrand'])}, "
         f"firmness: {mattress['firmness']}, "
         f"tags: {tags_str}, "
         f"features: {features_str}, "
-        f"imageUrl: '{mattress['imageUrl']}', "
+        f"imageUrl: {js_value(mattress['imageUrl'])}, "
         f"reasons: {reasons_str} }}"
     )
 
@@ -363,13 +373,12 @@ def format_mattress_js(mattress):
 def format_accessory_js(acc):
     """Format a single accessory as a JS object literal string."""
     lines = []
-    lines.append(f"      {{ id: '{acc['id']}', name: '{acc['name']}', "
-                  f"category: '{acc['category']}', price: {acc['price']},")
-    lines.append(f"        image: '{acc['image']}',")
-    desc_escaped = acc['description'].replace("'", "\\'")
-    lines.append(f"        description: '{desc_escaped}',")
+    lines.append(f"      {{ id: {js_value(acc['id'])}, name: {js_value(acc['name'])}, "
+                  f"category: {js_value(acc['category'])}, price: {acc['price']},")
+    lines.append(f"        image: {js_value(acc['image'])},")
+    lines.append(f"        description: {js_value(acc['description'])},")
     if acc.get("subType"):
-        lines.append(f"        subType: '{acc['subType']}',")
+        lines.append(f"        subType: {js_value(acc['subType'])},")
     lines.append(f"        matchTags: {json.dumps(acc['matchTags'])}, "
                   f"matchScores: {json.dumps(acc['matchScores'])} }}")
     return "\n".join(lines)
@@ -415,20 +424,22 @@ def generate_accessories_js(accessories):
 
 def generate_footer_html(info, brands, image_base_url):
     """Generate the footer HTML with store name and brand logos."""
-    footer_text = info.get("footer_text", f"Powered by DreamFinder")
-    store = info.get("store_name", "")
+    footer_text = html_lib.escape(info.get("footer_text", f"Powered by DreamFinder"))
 
     brand_tags = []
     for b in brands:
         logo_html = ""
         if b.get("logoUrl"):
-            logo_html = f'<img src="{b["logoUrl"]}" alt="{b["name"]}" class="brand-logo" />'
+            logo_html = (
+                f'<img src="{html_lib.escape(b["logoUrl"], quote=True)}" '
+                f'alt="{html_lib.escape(b["name"], quote=True)}" class="brand-logo" />'
+            )
         else:
             logo_html = f'<span class="brand-logo-placeholder"></span>'
         brand_tags.append(
             f'          <div class="brand-tag">\n'
             f'            {logo_html}\n'
-            f'            <span class="brand-name">{b["name"]}</span>\n'
+            f'            <span class="brand-name">{html_lib.escape(b["name"])}</span>\n'
             f'          </div>'
         )
 
@@ -599,22 +610,22 @@ def main():
         html = re.sub(acc_pattern, accessories_js + "\n", html, flags=re.DOTALL)
 
         # Replace store name references
-        html = html.replace("Bel Furniture", store_info.get("store_name", ""))
+        html = html.replace("Bel Furniture", html_lib.escape(store_info.get("store_name", "")))
         html = html.replace(
             '<span class="logo-main">bel</span>',
-            f'<span class="logo-main">{store_info.get("logo_line1", "")}</span>'
+            f'<span class="logo-main">{html_lib.escape(store_info.get("logo_line1", ""))}</span>'
         )
         html = html.replace(
             '<span class="logo-sub">furniture</span>',
-            f'<span class="logo-sub">{store_info.get("logo_line2", "")}</span>'
+            f'<span class="logo-sub">{html_lib.escape(store_info.get("logo_line2", ""))}</span>'
         )
 
         # Replace trust signal and badge
         html = html.replace(
             "Proudly serving Texas families for over 25 years",
-            store_info.get("trust_signal", "")
+            html_lib.escape(store_info.get("trust_signal", ""))
         )
-        html = html.replace("Made in Texas", store_info.get("badge_text", ""))
+        html = html.replace("Made in Texas", html_lib.escape(store_info.get("badge_text", "")))
 
         # Replace footer
         footer_pattern = r"    <!-- Footer -->.*?    </footer>"

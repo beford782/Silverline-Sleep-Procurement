@@ -64,6 +64,7 @@ CANONICAL_HEADER = [
 DATE_FIELDS = ("posted_date", "question_deadline", "due_date", "created_date", "last_reviewed")
 
 STATUS_VALUES = ("watching", "drafting", "submitted", "awarded", "lost", "no-bid", "cancelled")
+RISK_LEVEL_VALUES = ("low", "medium", "high")
 
 # Keyword vocabularies used by the `score` subcommand. Kept transparent
 # and tunable here — no ML.
@@ -149,6 +150,14 @@ def _validate_date(value: str, field: str) -> None:
         raise ValueError(f"{field}: expected YYYY-MM-DD, got {value!r} ({exc})") from exc
 
 
+def _validate_fit_score(value: int | None) -> None:
+    """Raise ValueError if fit_score is present and outside 0..100."""
+    if value is None:
+        return
+    if value < 0 or value > 100:
+        raise ValueError(f"fit_score: expected integer 0..100, got {value!r}")
+
+
 def read_rows(path: Path) -> tuple[list[str], list[dict]]:
     """Return (header, rows) for a pipeline CSV. Header must match CANONICAL_HEADER."""
     if not path.exists():
@@ -228,6 +237,17 @@ def cmd_add(args: argparse.Namespace) -> int:
             f"error: status {args.status!r} not in {list(STATUS_VALUES)}",
             file=sys.stderr,
         )
+        return 1
+    if args.risk_level and args.risk_level not in RISK_LEVEL_VALUES:
+        print(
+            f"error: risk_level {args.risk_level!r} not in {list(RISK_LEVEL_VALUES)}",
+            file=sys.stderr,
+        )
+        return 1
+    try:
+        _validate_fit_score(args.fit_score)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
         return 1
 
     if not args.source:
@@ -439,8 +459,18 @@ def cmd_move_to_archive(args: argparse.Namespace) -> int:
     else:
         archive_rows.append(moved_row)
 
-    write_rows_atomic(active, rows)
+    # Write and verify the archive before removing the row from active.
+    # If the second write fails, the row may be duplicated, but it is not
+    # lost; the archived copy remains the recovery point.
     write_rows_atomic(archive, archive_rows)
+    _, verified_archive_rows = read_rows(archive)
+    if not any(r.get("opportunity_id") == args.opportunity_id for r in verified_archive_rows):
+        print(
+            f"error: archive write did not persist {args.opportunity_id!r}; active left unchanged",
+            file=sys.stderr,
+        )
+        return 1
+    write_rows_atomic(active, rows)
     print(f"moved {args.opportunity_id} from {active} to {archive}")
     return 0
 
@@ -519,6 +549,9 @@ def main(argv: list[str] | None = None) -> int:
     try:
         return args.func(args)
     except FileNotFoundError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    except OSError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     except ValueError as exc:

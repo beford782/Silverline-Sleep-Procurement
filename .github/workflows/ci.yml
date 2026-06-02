@@ -59,6 +59,17 @@ jobs:
             --generated-date 2026-05-14 \
             --force
 
+      - name: Smoke - workflow drift check
+        run: python tools/workflow_check.py
+
+      - name: Smoke - operator dashboard
+        run: python tools/dashboard.py --show summary
+
+      - name: Smoke - portal CSV mapping helper
+        run: |
+          python tools/portal_csv_mapping.py tests/fixtures/esbd_export_sample.csv \
+            --source "Texas ESBD"
+
       - name: Machine-path leak check
         run: |
           if grep -rn \

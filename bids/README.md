@@ -32,8 +32,15 @@ The CSV is for tracking; the markdown is for thinking. They share an
 
 `tools/draft_bid_response.py` writes a starter response markdown to
 `build/drafts/<opportunity-id>_draft.md` (gitignored) by combining a
-pipeline row with a vendor profile JSON. Copy the draft into
-`bids/active/<opportunity-id>.md` once it's worth committing; the draft
+pipeline row with a vendor profile JSON.
+
+Promote the draft once it is worth committing:
+
+```sh
+python tools/promote_draft.py <opportunity-id>
+```
+
+The promoted file lands at `bids/active/<opportunity-id>.md`. The draft
 is regenerable and is intentionally kept out of git.
 
 ## File naming
@@ -65,12 +72,18 @@ python tools/pipeline.py add \
 # See what's open, sorted by due_date (blanks last)
 python tools/pipeline.py list
 
+# Review active-work priorities
+python tools/dashboard.py
+
 # Counts by status, source, risk_level
 python tools/pipeline.py summary
 
 # Recompute fit_score and risk_level from text columns
 python tools/pipeline.py score --dry-run
 python tools/pipeline.py score   # apply
+
+# Check for CSV/markdown/status drift
+python tools/workflow_check.py
 
 # Close out: move the CSV row to the archive
 python tools/pipeline.py move-to-archive <opportunity-id>

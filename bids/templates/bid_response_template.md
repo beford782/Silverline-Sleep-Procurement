@@ -12,7 +12,8 @@
 | Award expected | YYYY-MM-DD |
 | Vendor | {{vendor-profiles/<vendor>.md}} |
 | Owner | {{name}} |
-| Fit score | low / medium / high |
+| Fit score | 0-100 |
+| Risk level | low / medium / high |
 | Estimated value | ${{amount}} |
 
 ## 1. Scope summary

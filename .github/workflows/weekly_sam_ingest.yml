@@ -58,6 +58,25 @@ jobs:
       - name: Re-score active pipeline
         run: python tools/pipeline.py score
 
+      - name: Run repository checks before PR creation
+        run: |
+          python -m compileall -q tools tests
+          python -m unittest discover -s tests
+          python tools/validate_vendor_profile.py vendor-profiles/continental_silverline.profile.json
+          python tools/generate_procurement_packet.py \
+            vendor-profiles/continental_silverline_questionnaire.csv \
+            --vendor "Continental Silverline" \
+            --output-dir build/generated \
+            --generated-date 2026-05-13
+          python tools/draft_bid_response.py city-of-austin-ifb-8300-dcg1033 \
+            --vendor vendor-profiles/continental_silverline.profile.json \
+            --generated-date 2026-05-14 \
+            --force
+          python tools/workflow_check.py
+          python tools/dashboard.py --show summary
+          python tools/portal_csv_mapping.py tests/fixtures/esbd_export_sample.csv \
+            --source "Texas ESBD"
+
       - name: Detect whether active pipeline changed
         id: diff
         run: |

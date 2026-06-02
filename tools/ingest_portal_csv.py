@@ -16,7 +16,7 @@ Usage:
         [--source "Texas ESBD"] \\
         [--<field>-column "Real Header Name" ...] \\
         [--encoding utf-8-sig] \\
-        [--dry-run] \\
+        [--dry-run] [--allow-bad-dates] \\
         [--active PATH] [--archive PATH]
 
 Mapping config shape:
@@ -334,7 +334,25 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument("--dry-run", action="store_true", help="Show what would be added; do not write.")
+    parser.add_argument(
+        "--allow-bad-dates",
+        action="store_true",
+        help=(
+            "Proceed when a mapped date value cannot be parsed. The bad date "
+            "field is left blank and a warning is printed."
+        ),
+    )
     return parser
+
+
+def _format_bad_date_sample(bad_dates: list[str]) -> str:
+    seen: list[str] = []
+    for v in bad_dates:
+        if v not in seen:
+            seen.append(v)
+        if len(seen) >= 3:
+            break
+    return ", ".join(f"'{s}'" for s in seen)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -410,6 +428,17 @@ def main(argv: list[str] | None = None) -> int:
     for r in new_rows:
         print(f"  + {r['opportunity_id']} :: {r['title']}")
 
+    if bad_dates and not args.allow_bad_dates:
+        sample_str = _format_bad_date_sample(bad_dates)
+        print(
+            f"error: {len(bad_dates)} unparseable date value(s); no files written. "
+            f"Add a format to date_formats in {mapping_path}, fix the CSV, or rerun "
+            f"with --allow-bad-dates to leave those fields blank. "
+            f"Sample values: {sample_str}",
+            file=sys.stderr,
+        )
+        return 1
+
     if args.dry_run:
         print("(--dry-run: no files written)")
     elif not new_rows:
@@ -421,13 +450,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"wrote {len(new_rows)} new row(s) to {active_path}")
 
     if bad_dates:
-        seen: list[str] = []
-        for v in bad_dates:
-            if v not in seen:
-                seen.append(v)
-            if len(seen) >= 3:
-                break
-        sample_str = ", ".join(f"'{s}'" for s in seen)
+        sample_str = _format_bad_date_sample(bad_dates)
         print(
             f"warning: {len(bad_dates)} unparseable date value(s); "
             f"fields left blank. Add a format to date_formats in {mapping_path}. "

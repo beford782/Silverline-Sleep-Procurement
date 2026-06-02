@@ -86,11 +86,17 @@ build/                   Default output of tools/ (gitignored, do not commit)
    products), compliance-availability lines, delivery-fit notes, the
    Required Documents checklist, and a decision suggestion derived
    from `risk_level`.
-3. When the draft is in shape, copy it into
-   `bids/active/<opportunity-id>.md` and edit the prose, open
-   questions, and final decision by hand. The draft is regenerable;
-   the committed markdown is the operator's source of truth.
-4. On award/decline, archive both:
+3. Promote the generated draft into active bid work:
+   ```sh
+   python tools/promote_draft.py <opportunity-id>
+   ```
+
+   This writes `bids/active/<opportunity-id>.md` and refuses to
+   overwrite an existing active bid file unless `--force` is passed.
+4. Edit the promoted markdown's prose, open questions, and final
+   decision by hand. The draft is regenerable; the committed markdown
+   is the operator's source of truth.
+5. On award/decline, archive both:
    ```sh
    python tools/pipeline.py move-to-archive <opportunity-id>
    git mv bids/active/<opportunity-id>.md bids/archive/<opportunity-id>.md
@@ -104,9 +110,11 @@ build/                   Default output of tools/ (gitignored, do not commit)
 
 ```sh
 python tools/pipeline.py list             # active rows, sorted by due_date
+python tools/dashboard.py                 # operator dashboard for active work
 python tools/pipeline.py summary          # counts by status, source, risk
 python tools/pipeline.py score --dry-run  # preview keyword-driven fit/risk
 python tools/pipeline.py score            # write the recomputed values
+python tools/workflow_check.py            # catch CSV/markdown/status drift
 ```
 
 The keyword vocabularies live at the top of `tools/pipeline.py` and
@@ -163,12 +171,13 @@ Behavior:
   services-only postings, refurbishment, out-of-geography work).
 
 `sources/procurement_sources.json` is the machine-readable list of
-where opportunities surface. State/local portal ingestion (ESBD,
-Beacon Bid, Bonfire, IonWave, cooperatives) is **not yet implemented**
-— rely on portal-side email notifications and add those rows
-manually via `tools/pipeline.py add`. See section 7 below for the
-operator-checklist tool that turns the registry into a ready-to-walk
-weekly worksheet.
+where opportunities surface. SAM.gov ingestion is automated by
+`tools/ingest_sam.py`. State/local portals still require operator
+review, but portal CSV exports can be imported when a mapping exists.
+ESBD is currently mapped via `configs/portal_csv/esbd.json` and
+`tools/ingest_portal_csv.py`; Beacon Bid, Bonfire, IonWave, and
+cooperatives still rely on portal-side notifications and manual
+`tools/pipeline.py add` rows until mappings are added.
 
 **Scheduled run.** `.github/workflows/weekly_sam_ingest.yml` runs the
 ingest every Monday at 13:00 UTC (08:00 Houston CDT) and on manual
@@ -186,7 +195,7 @@ Commodity-code groups live alongside each vendor's
 list there so all portals (CMBL, Bonfire, IonWave, Beacon Bid, etc.)
 get the same vocabulary.
 
-### 7. Weekly state/local portal review
+### 7. Weekly state/local portal review and CSV import
 
 `tools/source_review.py` turns `sources/procurement_sources.json` into
 a dated Markdown checklist of the non-API portals an operator needs to
@@ -198,9 +207,10 @@ future `has_api: true` source is always excluded; it's handled by
 The generated worksheet lands at
 `build/portal_reviews/<date>_<cadence>.md` (gitignored, regenerable).
 Walk each portal's UI / saved searches, record anything worth
-pursuing via `python tools/pipeline.py add ...`, then discard the
-worksheet. The registry and pipeline CSVs are the committed source of
-truth.
+pursuing via `python tools/pipeline.py add ...` or, for portals with
+CSV export mappings, `python tools/ingest_portal_csv.py ...`. Then
+discard the worksheet. The registry and pipeline CSVs are the
+committed source of truth.
 
 ```sh
 # Default: weekly cadence (Texas ESBD, Beacon Bid, Bonfire, IonWave).
@@ -222,6 +232,30 @@ python tools/source_review.py --date 2026-05-18
 python tools/source_review.py --list-cadences
 ```
 
+ESBD CSV import:
+
+```sh
+python tools/portal_csv_mapping.py path/to/portal-export.csv \
+    --source "Portal Name"
+
+python tools/ingest_portal_csv.py path/to/esbd-export.csv \
+    --mapping configs/portal_csv/esbd.json \
+    --dry-run
+
+python tools/ingest_portal_csv.py path/to/esbd-export.csv \
+    --mapping configs/portal_csv/esbd.json
+```
+
+The importer fails by default if a mapped date cannot be parsed, so a
+bad deadline cannot quietly enter the pipeline as blank. Fix the CSV,
+add the date format to the mapping, or pass `--allow-bad-dates` only
+when you have manually confirmed the affected rows.
+
+For a new portal export, use `tools/portal_csv_mapping.py --write` to
+create a starter config under `configs/portal_csv/`, review the
+suggested fields, then run `tools/ingest_portal_csv.py --dry-run`
+against that mapping.
+
 ## Tools
 
 Lightweight Python utilities, all stdlib-only where possible:
@@ -229,11 +263,16 @@ Lightweight Python utilities, all stdlib-only where possible:
 | Script | Purpose |
 | --- | --- |
 | `tools/pipeline.py` | Manage `bids/active/_pipeline.csv`: add, list, summary, score, move-to-archive |
+| `tools/dashboard.py` | Print a read-only operator dashboard for active deadlines, ownership gaps, scoring gaps, risk, and drafts ready to promote. |
 | `tools/draft_bid_response.py` | Combine an opportunity row with a vendor profile to render a starter response markdown under `build/drafts/` |
+| `tools/promote_draft.py` | Promote a generated draft into `bids/active/<opportunity-id>.md` with overwrite and archive-collision checks. |
 | `tools/ingest_sam.py` | Pull federal opportunities from the SAM.gov public API (stdlib `urllib`) into the pipeline. Requires `SAM_API_KEY`. |
+| `tools/ingest_portal_csv.py` | Import operator-downloaded portal CSV exports using JSON column mappings, currently including ESBD. |
+| `tools/portal_csv_mapping.py` | Inspect a portal CSV export and write a starter mapping JSON for `ingest_portal_csv.py`. |
 | `tools/source_review.py` | Generate an operator portal-review checklist from the source registry. Writes to `build/portal_reviews/` (gitignored). |
 | `tools/generate_procurement_packet.py` | CSV questionnaire → markdown + printable HTML packet |
 | `tools/validate_vendor_profile.py` | Validate `vendor-profiles/*.profile.json` against the schema |
+| `tools/workflow_check.py` | Check pipeline rows against bid markdown files for status drift, missing active drafts, stale reviews, and archive mismatches. |
 
 Run the test suite with:
 

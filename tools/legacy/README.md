@@ -9,7 +9,10 @@ They are **not part of the procurement toolkit**:
 
 - `convert_store_data.py` reads a DreamFinder retailer onboarding
   `.xlsx` and emits CSS / JS / accessory data for the consumer app.
-  Depends on `openpyxl` and (optionally) `Pillow`.
+  Depends on `openpyxl` and (optionally) `Pillow`. Spreadsheet-originated
+  values are JSON/HTML escaped before being emitted, but the script still
+  assumes DreamFinder templates and should not be used for procurement
+  output.
 - `create_template.py` generates the DreamFinder retailer onboarding
   `.xlsx` template. Writes to `../onboarding/`, a layout that does
   not exist in this repo. Depends on `openpyxl`.

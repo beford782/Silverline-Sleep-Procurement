@@ -199,10 +199,13 @@ get the same vocabulary.
 
 `tools/source_review.py` turns `sources/procurement_sources.json` into
 a dated Markdown checklist of the non-API portals an operator needs to
-walk manually each week (Texas ESBD, Beacon Bid, Bonfire, IonWave —
-plus the monthly universities and cooperatives). SAM.gov and any
-future `has_api: true` source is always excluded; it's handled by
-`tools/ingest_sam.py` and the scheduled GitHub Action.
+walk manually each week (the state opportunity boards — Texas ESBD,
+Oklahoma OMES, Louisiana LaPAC, Mississippi MAGIC, Arkansas ARBuy, New
+Mexico SPD — plus City of Houston Beacon Bid, Harris County Bonfire,
+and Houston ISD IonWave, with the universities and cooperatives on the
+monthly cadence). SAM.gov and any future `has_api: true` source is
+always excluded; it's handled by `tools/ingest_sam.py` and the
+scheduled GitHub Action.
 
 The generated worksheet lands at
 `build/portal_reviews/<date>_<cadence>.md` (gitignored, regenerable).
@@ -213,7 +216,8 @@ discard the worksheet. The registry and pipeline CSVs are the
 committed source of truth.
 
 ```sh
-# Default: weekly cadence (Texas ESBD, Beacon Bid, Bonfire, IonWave).
+# Default: weekly cadence (state boards TX/OK/LA/MS/AR/NM + Houston
+# Beacon Bid, Harris County Bonfire, Houston ISD IonWave).
 python tools/source_review.py
 
 # Monthly cadence (3 Texas university systems + 6 cooperatives).

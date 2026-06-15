@@ -78,6 +78,146 @@
     "notes": "Vendor profile and NIGP commodity codes feed downstream Texas agency notifications. Maintain commodity selections and contact email here."
   },
   {
+    "name": "Oklahoma OMES Central Purchasing",
+    "source_type": "state_portal",
+    "official_url": "https://oklahoma.gov/omes/divisions/central-purchasing/solicitations.html",
+    "has_api": false,
+    "requires_login": false,
+    "intake_method": "saved_search",
+    "geography": ["OK"],
+    "buyer_level": "state",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "box spring",
+      "bed frame",
+      "dormitory",
+      "correctional mattress",
+      "jail mattress",
+      "shelter bedding"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "institutional furniture"
+    ],
+    "cadence": "weekly",
+    "notes": "Oklahoma Office of Management and Enterprise Services (OMES) Central Purchasing. Open solicitations are posted publicly on the OMES solicitations page (public search utility); register in the Oklahoma Supplier Portal to receive commodity-based notifications and to respond. Bid submission remains manual."
+  },
+  {
+    "name": "Louisiana LaPAC",
+    "source_type": "state_portal",
+    "official_url": "https://wwwcfprd.doa.louisiana.gov/osp/lapac/pubmain.cfm",
+    "has_api": false,
+    "requires_login": false,
+    "intake_method": "saved_search",
+    "geography": ["LA"],
+    "buyer_level": "state",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "box spring",
+      "bed frame",
+      "dormitory",
+      "correctional mattress",
+      "jail mattress",
+      "shelter bedding"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "institutional furniture"
+    ],
+    "cadence": "weekly",
+    "notes": "LaPAC (Louisiana Procurement and Contract Network), the Office of State Procurement bid board (Division of Administration). Open bids are searchable publicly; email notifications require LaGov supplier self-registration (subscription). Bid submission remains manual."
+  },
+  {
+    "name": "Mississippi MAGIC Supplier Portal",
+    "source_type": "state_portal",
+    "official_url": "https://www.dfa.ms.gov/mississippi-suppliersvendors",
+    "has_api": false,
+    "requires_login": false,
+    "intake_method": "saved_search",
+    "geography": ["MS"],
+    "buyer_level": "state",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "box spring",
+      "bed frame",
+      "dormitory",
+      "correctional mattress",
+      "jail mattress",
+      "shelter bedding"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "institutional furniture"
+    ],
+    "cadence": "weekly",
+    "notes": "Mississippi Department of Finance and Administration (DFA). Procurement runs through MAGIC (Mississippi Accountability System for Government Information and Collaboration); the public bid search is at ms.gov/dfa/contract_bid_search. Register in MAGIC Supplier Self-Service (SUS) for RFx notifications by product category. Bid submission remains manual."
+  },
+  {
+    "name": "Arkansas ARBuy",
+    "source_type": "state_portal",
+    "official_url": "https://arbuy.arkansas.gov/",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "geography": ["AR"],
+    "buyer_level": "state",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "box spring",
+      "bed frame",
+      "dormitory",
+      "correctional mattress",
+      "jail mattress",
+      "shelter bedding"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "institutional furniture"
+    ],
+    "cadence": "weekly",
+    "notes": "Arkansas Office of State Procurement (Department of Shared Administrative Services) eProcurement system, ARBuy. Free vendor registration; suppliers receive solicitation notifications and respond through the system. Bid submission remains manual."
+  },
+  {
+    "name": "New Mexico State Purchasing Division",
+    "source_type": "state_portal",
+    "official_url": "https://generalservices.state.nm.us/state-purchasing/",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "geography": ["NM"],
+    "buyer_level": "state",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "box spring",
+      "bed frame",
+      "dormitory",
+      "correctional mattress",
+      "jail mattress",
+      "shelter bedding"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "institutional furniture"
+    ],
+    "cadence": "weekly",
+    "notes": "New Mexico General Services Department (GSD), State Purchasing Division (SPD). NOTE: outside Continental's currently documented five-state service geography (TX/OK/LA/MS/AR); added per operator request. As of 2026-06-29 new solicitations post exclusively in the Euna/Bonfire NM-SPD Procurement Portal (generalservices-state-nm-us.bonfirehub.com); the prior eProNM portal runs through 2026-06-22. Register in the new portal for notifications. Bid submission remains manual."
+  },
+  {
     "name": "City of Houston Beacon Bid",
     "source_type": "city_portal",
     "official_url": "https://www.beaconbid.com/solicitations/city-of-houston/open",

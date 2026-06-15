@@ -127,6 +127,30 @@ class PureFunctionTests(unittest.TestCase):
         result_blank = dbr.compute_delivery_fit(VALID_PROFILE, opp_blank)
         self.assertIn("not stated", result_blank["coverage"])
 
+    def test_delivery_fit_matches_state_abbreviation_against_full_name(self) -> None:
+        # Profile uses full state names; SAM.gov locations use codes.
+        profile = {"company": {"service_geography": ["Oklahoma", "Louisiana", "New Mexico"]}}
+        for location in ("S Coffeyville, OK", "Saint Francisville, LA", "Albuquerque, NM"):
+            result = dbr.compute_delivery_fit(profile, _opportunity(delivery_location=location))
+            self.assertIn("inside listed service geography", result["coverage"], location)
+
+    def test_delivery_fit_matches_full_name_against_abbreviation_profile(self) -> None:
+        # Profile uses codes; opportunity spells the state out.
+        profile = {"company": {"service_geography": ["TX"]}}
+        result = dbr.compute_delivery_fit(profile, _opportunity(delivery_location="Austin, Texas"))
+        self.assertIn("inside listed service geography", result["coverage"])
+
+    def test_delivery_fit_abbreviation_not_matched_mid_word(self) -> None:
+        # "LA" (Louisiana) must not match Los Angeles, and "Kansas" must
+        # not match "Arkansas".
+        la_profile = {"company": {"service_geography": ["Louisiana"]}}
+        result = dbr.compute_delivery_fit(la_profile, _opportunity(delivery_location="Los Angeles, CA"))
+        self.assertIn("outside the vendor's listed service geography", result["coverage"])
+
+        ks_profile = {"company": {"service_geography": ["Kansas"]}}
+        result_ks = dbr.compute_delivery_fit(ks_profile, _opportunity(delivery_location="Little Rock, Arkansas"))
+        self.assertIn("outside the vendor's listed service geography", result_ks["coverage"])
+
     def test_decision_suggestion(self) -> None:
         self.assertEqual(dbr.decision_suggestion(_opportunity(risk_level="low")), "bid")
         self.assertEqual(dbr.decision_suggestion(_opportunity(risk_level="medium")), "evaluate")

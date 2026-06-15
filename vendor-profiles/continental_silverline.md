@@ -9,7 +9,7 @@ This working profile summarizes the completed mattress procurement questionnaire
 | Legal name | Continental Silverline |
 | DBA / brands | Restonic / Spring Air / Silverline Sleep |
 | Manufacturing location | Houston, Texas |
-| Service geography | Texas, Oklahoma, Louisiana, Mississippi, and Arkansas |
+| Service geography | Texas, Oklahoma, Louisiana, Mississippi, Arkansas, and New Mexico |
 | Delivery method | Own fleet |
 | Current delivery scope | Dock delivery |
 | Typical bulk lead time | Usually sooner than 3-4 weeks; 3-4 weeks maximum stated |

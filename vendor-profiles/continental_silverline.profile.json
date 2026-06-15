@@ -3,11 +3,11 @@
     "legal_name": "Continental Silverline",
     "dba": "Restonic / Spring Air / Silverline Sleep",
     "primary_location": "Houston, Texas",
-    "profile_updated": "2026-05-13"
+    "profile_updated": "2026-06-15"
   },
   "company": {
     "manufacturing_location": "Houston, Texas",
-    "service_geography": ["Texas", "Oklahoma", "Louisiana", "Mississippi", "Arkansas"],
+    "service_geography": ["Texas", "Oklahoma", "Louisiana", "Mississippi", "Arkansas", "New Mexico"],
     "delivery_method": "own_fleet",
     "delivery_services": ["dock_delivery"],
     "lead_time_bulk": "Usually under 3-4 weeks; 3-4 weeks maximum stated"

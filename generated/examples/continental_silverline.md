@@ -27,7 +27,7 @@ _Generated 2026-05-13 · 78 of 83 fields answered._
 | Bid contact email | private | Email to use in bid materials. |
 | Bid contact phone | private | Phone to use in bid materials. |
 | Manufacturing location | Houston, Texas | Houston, elsewhere in Texas, out of state, or multiple locations. |
-| Service geography | Texas, Oklahoma, Louisiana, Mississippi, Arkansas | Houston metro, Texas statewide, Texas + surrounding states, national. |
+| Service geography | Texas, Oklahoma, Louisiana, Mississippi, Arkansas, New Mexico | Houston metro, Texas statewide, Texas + surrounding states, national. |
 | Delivery method | Own fleet | Own fleet, third-party freight, both, or pickup only. |
 | Delivery services offered | Dock delivery | Dock delivery, inside delivery, room-by-room, installation, prison/jail delivery, removal/disposal. |
 | Typical lead time for bulk orders | Usually under 3-4 weeks; 3-4 weeks maximum | In stock, 1-2 weeks, 3-4 weeks, 6-8 weeks, depends on quantity. |

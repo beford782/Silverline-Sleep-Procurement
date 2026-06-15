@@ -11,7 +11,7 @@ Company Profile,Main contact person for bids,private,Name and title.
 Company Profile,Bid contact email,private,Email to use in bid materials.
 Company Profile,Bid contact phone,private,Phone to use in bid materials.
 Company Profile,Manufacturing location,"Houston, Texas","Houston, elsewhere in Texas, out of state, or multiple locations."
-Company Profile,Service geography,"Texas, Oklahoma, Louisiana, Mississippi, Arkansas","Houston metro, Texas statewide, Texas + surrounding states, national."
+Company Profile,Service geography,"Texas, Oklahoma, Louisiana, Mississippi, Arkansas, New Mexico","Houston metro, Texas statewide, Texas + surrounding states, national."
 Company Profile,Delivery method,Own fleet,"Own fleet, third-party freight, both, or pickup only."
 Company Profile,Delivery services offered,Dock delivery,"Dock delivery, inside delivery, room-by-room, installation, prison/jail delivery, removal/disposal."
 Company Profile,Typical lead time for bulk orders,Usually under 3-4 weeks; 3-4 weeks maximum,"In stock, 1-2 weeks, 3-4 weeks, 6-8 weeks, depends on quantity."

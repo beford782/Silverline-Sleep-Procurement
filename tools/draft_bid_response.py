@@ -161,15 +161,83 @@ def compute_compliance_status(profile: dict) -> dict[str, str]:
     return {k: ("available" if _present(compliance.get(k)) else "TBD") for k in keys}
 
 
+# Full state name -> USPS two-letter code. Lets us match a profile's
+# service_geography (often full names, e.g. "Oklahoma") against the
+# abbreviations SAM.gov and other boards use in delivery locations
+# (e.g. "S Coffeyville, OK"), and vice-versa.
+US_STATE_ABBREV = {
+    "alabama": "al", "alaska": "ak", "arizona": "az", "arkansas": "ar",
+    "california": "ca", "colorado": "co", "connecticut": "ct", "delaware": "de",
+    "florida": "fl", "georgia": "ga", "hawaii": "hi", "idaho": "id",
+    "illinois": "il", "indiana": "in", "iowa": "ia", "kansas": "ks",
+    "kentucky": "ky", "louisiana": "la", "maine": "me", "maryland": "md",
+    "massachusetts": "ma", "michigan": "mi", "minnesota": "mn", "mississippi": "ms",
+    "missouri": "mo", "montana": "mt", "nebraska": "ne", "nevada": "nv",
+    "new hampshire": "nh", "new jersey": "nj", "new mexico": "nm", "new york": "ny",
+    "north carolina": "nc", "north dakota": "nd", "ohio": "oh", "oklahoma": "ok",
+    "oregon": "or", "pennsylvania": "pa", "rhode island": "ri",
+    "south carolina": "sc", "south dakota": "sd", "tennessee": "tn", "texas": "tx",
+    "utah": "ut", "vermont": "vt", "virginia": "va", "washington": "wa",
+    "west virginia": "wv", "wisconsin": "wi", "wyoming": "wy",
+    "district of columbia": "dc",
+}
+_ABBREV_TO_STATE = {abbr: name for name, abbr in US_STATE_ABBREV.items()}
+
+
+def _geo_match_terms(geo: str) -> tuple[set[str], set[str]]:
+    """Split one service_geography entry into (full_terms, abbrev_terms).
+
+    A US state contributes both its full name and its two-letter code so
+    "Oklahoma" matches "..., OK" and "TX" matches "Austin, Texas". Anything
+    else (a city or region) is treated as a literal full term.
+    """
+    g = geo.strip().lower()
+    full: set[str] = set()
+    abbr: set[str] = set()
+    if not g:
+        return full, abbr
+    if g in US_STATE_ABBREV:
+        full.add(g)
+        abbr.add(US_STATE_ABBREV[g])
+    elif g in _ABBREV_TO_STATE:
+        full.add(_ABBREV_TO_STATE[g])
+        abbr.add(g)
+    else:
+        full.add(g)
+    return full, abbr
+
+
+def _location_covered(location: str, service_geography: list[str]) -> bool:
+    """True if the delivery location falls in the vendor's service geography.
+
+    Full-name/city terms match on word boundaries (so "Kansas" does not
+    match "Arkansas"). Two-letter state codes are matched only in state
+    position -- right after a comma or as the trailing token -- so a bare
+    "LA" inside "Los Angeles" or "La Porte" is not mistaken for Louisiana.
+    """
+    loc = location.lower()
+    tokens = re.findall(r"[a-z]+", loc)
+    last = tokens[-1] if tokens else ""
+    for geo in service_geography:
+        full_terms, abbr_terms = _geo_match_terms(geo)
+        for term in full_terms:
+            if re.search(r"\b" + re.escape(term) + r"\b", loc):
+                return True
+        for code in abbr_terms:
+            if last == code or re.search(r",\s*" + re.escape(code) + r"\b", loc):
+                return True
+    return False
+
+
 def compute_delivery_fit(profile: dict, opportunity: dict) -> dict[str, str]:
     company = profile.get("company") or {}
     method = company.get("delivery_method") or "unknown"
     services = company.get("delivery_services") or []
-    service_geography = [g.lower() for g in (company.get("service_geography") or [])]
+    service_geography = company.get("service_geography") or []
     location = (opportunity.get("delivery_location") or "").strip()
     if not location:
         coverage = "delivery location not stated"
-    elif any(geo in location.lower() for geo in service_geography):
+    elif _location_covered(location, service_geography):
         coverage = f"{location} is inside listed service geography"
     else:
         coverage = (

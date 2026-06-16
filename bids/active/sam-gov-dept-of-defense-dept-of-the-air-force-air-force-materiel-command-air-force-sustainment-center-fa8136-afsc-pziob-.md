@@ -12,7 +12,7 @@ _Promoted 2026-06-15 from a `draft_bid_response.py` draft (vendor profile `conti
 
 | Field | Value |
 | --- | --- |
-| Status | watching |
+| Status | drafting |
 | Buyer | DEPT OF DEFENSE DEPT OF THE AIR FORCE AIR FORCE MATERIEL COMMAND AIR FORCE SUSTAINMENT CENTER FA8136  AFSC PZIOB |
 | Solicitation # | FA8136260002 |
 | Portal | SAM.gov |
@@ -20,7 +20,7 @@ _Promoted 2026-06-15 from a `draft_bid_response.py` draft (vendor profile `conti
 | Q&A deadline | — |
 | Response due | 2026-06-17 |
 | Vendor | [Continental Silverline](../../vendor-profiles/continental_silverline.md) |
-| Owner | — |
+| Owner | Operator |
 | Fit score | 75 (low) |
 | Estimated value | — |
 
@@ -88,10 +88,18 @@ A capability statement only — **no pricing.** Typical contents:
 
 (Pulled from the vendor profile's `setup_gaps`; the SS-blocking items first.)
 
-1. **Active SAM.gov registration + UEI/CAGE** — prerequisite for any federal response.
-2. Confirm small-business / set-aside self-certification under NAICS 337910.
+1. ~~**Active SAM.gov registration + UEI/CAGE**~~ — **confirmed active by
+   the operator on 2026-06-16.** Decision is therefore to respond. The
+   actual UEI/CAGE values are filled on the off-repo copy at send time
+   (not stored in this repository).
+2. Confirm small-business / set-aside self-certification under NAICS 337910
+   (fill on the capability statement only what is accurately self-certified).
 3. List exact fire-safety standards and test docs per institutional product line.
 4. Confirm warranty terms by product category.
+
+The capability statement itself is drafted at
+[`<oid>_capability_statement.md`](./sam-gov-dept-of-defense-dept-of-the-air-force-air-force-materiel-command-air-force-sustainment-center-fa8136-afsc-pziob-_capability_statement.md),
+with bracketed placeholders for the operator-supplied identifiers above.
 
 ## 6. Pricing approach
 
@@ -100,6 +108,8 @@ work begins only if and when a formal solicitation is issued.
 
 ## 7. Decision
 
-- **Suggested:** respond to the Sources Sought (capability statement, no pricing) — contingent on active SAM.gov registration.
-- **Reason:** strong product/geography fit (dormitory + fire-retardant, in-state OK); low-cost market-research response that positions Continental for the eventual solicitation. If SAM registration is not active by 2026-06-17, archive as no-bid and use it to drive federal registration.
-- **Next action:** _Operator — confirm SAM.gov UEI is active, then send capability statement — due 2026-06-17._
+- **Decision:** respond to the Sources Sought (capability statement, no
+  pricing). The gating prerequisite — active SAM.gov registration — was
+  **confirmed by the operator on 2026-06-16.**
+- **Reason:** strong product/geography fit (dormitory + fire-retardant, in-state OK); low-cost market-research response that positions Continental for the eventual solicitation.
+- **Next action:** _Operator — open the drafted capability statement, fill the bracketed identifiers (UEI/CAGE/contact/business size/fire-safety standards), then sign and send by 2026-06-17._ Final submission is manual/human.

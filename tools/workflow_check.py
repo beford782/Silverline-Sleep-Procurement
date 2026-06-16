@@ -186,6 +186,8 @@ def check_workflow(
             findings.append(Finding("WARN", "missing-no-bid-memo", f"no-bid row has no archive markdown or no-bid memo: {label}"))
 
     for stem, path in active_md.items():
+        if stem.endswith("_capability_statement"):
+            stem = stem[: -len("_capability_statement")]
         if stem not in active_by_id:
             findings.append(Finding("ERROR", "orphan-active-md", f"{path}: no matching active pipeline row"))
     for stem, path in archive_md.items():

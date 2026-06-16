@@ -159,6 +159,17 @@ class WorkflowCheckTests(unittest.TestCase):
         findings = self._findings()
         self.assertIn("orphan-active-md", {f.code for f in findings})
 
+    def test_capability_statement_companion_is_not_orphan(self) -> None:
+        _write_pipeline(self.active_csv, [_row("active-one", "drafting")])
+        _write_pipeline(self.archive_csv, [])
+        (self.active_dir / "active-one.md").write_text("| Status | drafting |\n", encoding="utf-8")
+        (self.active_dir / "active-one_capability_statement.md").write_text(
+            "# Capability Statement\n", encoding="utf-8"
+        )
+
+        findings = self._findings()
+        self.assertNotIn("orphan-active-md", {f.code for f in findings})
+
     def test_cli_success(self) -> None:
         _write_pipeline(self.active_csv, [_row("active-one", "drafting")])
         _write_pipeline(self.archive_csv, [])

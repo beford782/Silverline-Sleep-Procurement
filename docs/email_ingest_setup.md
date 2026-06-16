@@ -104,10 +104,18 @@ error if any are missing.
 # Offline / test (no creds, no network): parse a fixture
 python tools/ingest_email.py --fixture tests/fixtures/email_alerts_sample.json --dry-run
 
-# Live Outlook/M365 (Graph creds in env): preview, then write
+# Verify the Azure app + secrets work (stepwise diagnostics, writes nothing)
+GRAPH_TENANT_ID=... GRAPH_CLIENT_ID=... GRAPH_CLIENT_SECRET=... GRAPH_MAILBOX=beford@silverlinesleep.com \
+  python tools/ingest_email.py --check --graph-folder "Procurement Alerts" --since-days 8
+
+# Live Outlook/M365: preview, then write
 GRAPH_TENANT_ID=... GRAPH_CLIENT_ID=... GRAPH_CLIENT_SECRET=... GRAPH_MAILBOX=beford@silverlinesleep.com \
   python tools/ingest_email.py --graph-folder "Procurement Alerts" --since-days 8 --dry-run
 ```
+
+Run `--check` first: it acquires a token, reads the mailbox folder, and
+prints a parse preview, with actionable hints on the common 401/403/404
+failures (bad secret, missing admin consent, wrong mailbox/folder).
 
 Scheduled automatically by
 `.github/workflows/weekly_email_ingest.yml` (Mondays 13:30 UTC + manual

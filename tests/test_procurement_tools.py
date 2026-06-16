@@ -210,6 +210,30 @@ class ValidatorTests(unittest.TestCase):
         with open(vvp.SCHEMA_PATH_DEFAULT, "r", encoding="utf-8") as fh:
             cls.schema = json.load(fh)
 
+    SCHEMA = str(ROOT / "vendor-profiles" / "vendor_profile.schema.json")
+    PROFILE = str(ROOT / "vendor-profiles" / "continental_silverline.profile.json")
+
+    def _run_cli(self, *argv: str) -> tuple[int, str]:
+        out = io.StringIO()
+        with redirect_stdout(out):
+            rc = vvp.main(list(argv))
+        return rc, out.getvalue()
+
+    def test_cli_default_schema(self) -> None:
+        rc, out = self._run_cli(self.PROFILE)
+        self.assertEqual(rc, 0)
+        self.assertIn("OK", out)
+
+    def test_cli_schema_before_path(self) -> None:
+        rc, _ = self._run_cli("--schema", self.SCHEMA, self.PROFILE)
+        self.assertEqual(rc, 0)
+
+    def test_cli_schema_after_path(self) -> None:
+        # The old hand-rolled parser only honored --schema as the FIRST arg;
+        # this asserts the fix accepts it anywhere.
+        rc, _ = self._run_cli(self.PROFILE, "--schema", self.SCHEMA)
+        self.assertEqual(rc, 0)
+
     def test_committed_profile_validates(self) -> None:
         profile_path = ROOT / "vendor-profiles" / "continental_silverline.profile.json"
         with open(profile_path, "r", encoding="utf-8") as fh:

@@ -9,6 +9,7 @@ import tempfile
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -184,6 +185,19 @@ class CliTests(unittest.TestCase):
             ids = {r["opportunity_id"] for r in rows}
             self.assertNotIn(ds["opportunity_id"], ids)  # deduped via archive
             self.assertEqual(len(rows), 2)  # bonfire + region4 only
+
+
+class CheckModeTests(unittest.TestCase):
+    def test_check_missing_graph_creds_errors_cleanly(self) -> None:
+        # With no GRAPH_* env, --check must fail fast (SystemExit) rather
+        # than attempting a network call.
+        with mock.patch.dict("os.environ", {}, clear=True):
+            with self.assertRaises(SystemExit):
+                ingest_email.main(["--check", "--provider", "graph"])
+
+    def test_http_hints_cover_common_failures(self) -> None:
+        for code in (400, 401, 403, 404):
+            self.assertIn(code, ingest_email._HTTP_HINTS)
 
 
 if __name__ == "__main__":

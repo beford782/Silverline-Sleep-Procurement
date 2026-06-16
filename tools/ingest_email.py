@@ -514,6 +514,80 @@ def _load_messages(args, today: str) -> list[dict]:
     return fetch_messages(access_token, args.query, args.max_messages)
 
 
+_HTTP_HINTS = {
+    400: "bad request — check GRAPH_TENANT_ID / client id / secret (invalid_client?).",
+    401: "token rejected — check GRAPH_CLIENT_SECRET (or GMAIL_REFRESH_TOKEN).",
+    403: "access denied — grant the Mail.Read application permission and admin-consent it "
+         "(and ensure the app-access policy allows this mailbox).",
+    404: "not found — check GRAPH_MAILBOX (UPN) and the --graph-folder display name.",
+}
+
+
+def _print_http_hint(exc: urllib.error.HTTPError) -> None:
+    body = ""
+    try:
+        body = exc.read().decode("utf-8", errors="replace")[:300]
+    except Exception:
+        pass
+    print(f"  HTTP {exc.code}: {body}")
+    if exc.code in _HTTP_HINTS:
+        print(f"  hint: {_HTTP_HINTS[exc.code]}")
+
+
+def _run_check(args, today: str) -> int:
+    """Stepwise connectivity diagnostics for first-time credential setup."""
+    print(f"Connectivity check - provider: {args.provider}")
+    try:
+        if args.provider == "graph":
+            tenant, client_id, client_secret, mailbox = _require_env(
+                ["GRAPH_TENANT_ID", "GRAPH_CLIENT_ID", "GRAPH_CLIENT_SECRET", "GRAPH_MAILBOX"]
+            )
+            print(f"  mailbox: {mailbox}  folder: {args.graph_folder or '(all mail)'}  "
+                  f"window: {args.since_days}d")
+            print("  [1/3] acquiring Microsoft Graph token ...", end=" ")
+            token = get_graph_token(tenant, client_id, client_secret)
+            print("OK")
+            since_iso = (datetime.fromisoformat(today) - timedelta(days=args.since_days)).strftime(
+                "%Y-%m-%dT00:00:00Z"
+            )
+            print("  [2/3] reading mailbox ...", end=" ")
+            messages = fetch_graph_messages(
+                token, mailbox, folder=args.graph_folder, since_iso=since_iso,
+                max_messages=args.max_messages,
+            )
+            print("OK")
+        else:
+            client_id, client_secret, refresh_token = _require_env(
+                ["GMAIL_CLIENT_ID", "GMAIL_CLIENT_SECRET", "GMAIL_REFRESH_TOKEN"]
+            )
+            print(f"  query: {args.query!r}")
+            print("  [1/3] acquiring Gmail token ...", end=" ")
+            token = get_access_token(client_id, client_secret, refresh_token)
+            print("OK")
+            print("  [2/3] reading mailbox ...", end=" ")
+            messages = fetch_messages(token, args.query, args.max_messages)
+            print("OK")
+    except urllib.error.HTTPError as exc:
+        print("FAILED")
+        _print_http_hint(exc)
+        return 1
+    except urllib.error.URLError as exc:
+        print(f"FAILED\n  network error: {exc}")
+        return 1
+    except RuntimeError as exc:
+        print(f"FAILED\n  {exc}")
+        return 1
+
+    new_rows, _, skipped = ingest(messages, [], today)
+    print(f"  [3/3] parsed {len(messages)} message(s); {len(new_rows)} would become rows:")
+    for r in new_rows[:5]:
+        print(f"    + [{r['source']}] {r['title']}  due={r['due_date'] or '?'}  url={r['portal_url'] or '?'}")
+    if skipped:
+        print(f"    ({len(skipped)} message(s) had no usable title)")
+    print("connectivity check OK (no rows written)")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--provider", choices=("graph", "gmail"), default="graph",
@@ -532,12 +606,19 @@ def main(argv: list[str] | None = None) -> int:
                         help=f"Pipeline CSV write target (default: {DEFAULT_ACTIVE.relative_to(REPO_ROOT)})")
     parser.add_argument("--archive", default=str(DEFAULT_ARCHIVE),
                         help=f"Archive CSV consulted for dedup only; never written. Default: {DEFAULT_ARCHIVE.relative_to(REPO_ROOT)}")
+    parser.add_argument("--check", action="store_true",
+                        help="Connectivity check: verify credentials + mailbox access with "
+                             "stepwise diagnostics, print a parse preview, write nothing.")
     parser.add_argument("--dry-run", action="store_true", help="Show what would be added; do not write.")
     parser.add_argument("--fixture", default=None,
                         help="Read a JSON list of normalized messages instead of calling Gmail (testing).")
     args = parser.parse_args(argv)
 
     today = datetime.now().date().isoformat()
+
+    if args.check:
+        return _run_check(args, today)
+
     active_path = Path(args.active)
     archive_path = Path(args.archive)
     existing_active = _read_existing_or_empty(active_path)

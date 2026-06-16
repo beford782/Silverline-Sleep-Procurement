@@ -260,6 +260,46 @@ create a starter config under `configs/portal_csv/`, review the
 suggested fields, then run `tools/ingest_portal_csv.py --dry-run`
 against that mapping.
 
+### 8. State/local email-alert ingestion
+
+The state/local and cooperative portals have **no public RSS feed or
+opportunity API** (verified June 2026), so they can't be polled like
+SAM.gov and must never be scraped. The compliant, automatable channel is
+the **commodity/NIGP email alert** each portal sends to a registered
+supplier. `tools/ingest_email.py` reads those alerts from a Gmail mailbox
+via the documented Gmail REST API (stdlib `urllib`) and turns them into
+`watching` pipeline rows — automating the manual portal walk for the
+email-notification sources.
+
+```sh
+# Offline / test (no creds, no network)
+python tools/ingest_email.py --fixture tests/fixtures/email_alerts_sample.json --dry-run
+
+# Live (OAuth creds in env)
+GMAIL_CLIENT_ID=... GMAIL_CLIENT_SECRET=... GMAIL_REFRESH_TOKEN=... \
+  python tools/ingest_email.py --query 'label:Procurement/Alerts newer_than:8d' --dry-run
+```
+
+Behavior:
+
+- Maps each alert email onto the pipeline schema; dedupes against active
+  **and** archive by `opportunity_id` (a stable slug of source + title +
+  a short hash of the portal link), so re-running over an overlapping
+  window is safe.
+- The parser is **generic and best-effort**: title (subject, prefixes
+  stripped), portal link, and due date; `buyer`/`location` may be blank.
+  Always verify ingested rows against the portal. Add per-sender adapters
+  as real samples are captured.
+- One-time setup (portal alert subscriptions + Gmail OAuth token) is in
+  [`docs/email_ingest_setup.md`](docs/email_ingest_setup.md).
+
+**Scheduled run.** `.github/workflows/weekly_email_ingest.yml` runs every
+Monday at 13:30 UTC and on manual `workflow_dispatch`, ingests, re-scores,
+runs the repo checks, and opens a PR for human triage if the active
+pipeline changed. It never auto-archives, auto-submits, or pushes to
+`main`. Requires the `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, and
+`GMAIL_REFRESH_TOKEN` repo secrets; it fails fast if any are missing.
+
 ## Tools
 
 Lightweight Python utilities, all stdlib-only where possible:
@@ -272,6 +312,7 @@ Lightweight Python utilities, all stdlib-only where possible:
 | `tools/promote_draft.py` | Promote a generated draft into `bids/active/<opportunity-id>.md` with overwrite and archive-collision checks. |
 | `tools/ingest_sam.py` | Pull federal opportunities from the SAM.gov public API (stdlib `urllib`) into the pipeline. Requires `SAM_API_KEY`. |
 | `tools/ingest_portal_csv.py` | Import operator-downloaded portal CSV exports using JSON column mappings, currently including ESBD. |
+| `tools/ingest_email.py` | Ingest portal commodity/NIGP email alerts from a Gmail mailbox (stdlib `urllib` + Gmail API) into the pipeline. Requires `GMAIL_*` OAuth secrets; see `docs/email_ingest_setup.md`. |
 | `tools/portal_csv_mapping.py` | Inspect a portal CSV export and write a starter mapping JSON for `ingest_portal_csv.py`. |
 | `tools/source_review.py` | Generate an operator portal-review checklist from the source registry. Writes to `build/portal_reviews/` (gitignored). |
 | `tools/generate_procurement_packet.py` | CSV questionnaire → markdown + printable HTML packet |

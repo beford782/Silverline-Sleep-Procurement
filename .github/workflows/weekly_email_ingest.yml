@@ -1,0 +1,144 @@
+name: Weekly portal email-alert ingest
+
+# Reads commodity/NIGP email alerts from the procurement alert inbox via the
+# Gmail API and turns them into pipeline rows (state/local + cooperative
+# funnel). No scraping: portals have no public feed/API, so the compliant
+# channel is the email alert each portal sends to a registered supplier.
+#
+# Requires three repo secrets (one-time OAuth provisioning, see
+# docs/email_ingest_setup.md): GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET,
+# GMAIL_REFRESH_TOKEN. Never commit these.
+
+on:
+  schedule:
+    # Mondays 13:30 UTC = 08:30 Houston CDT (30 min after the SAM ingest).
+    - cron: '30 13 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  ingest:
+    name: Ingest alerts, score, open PR if active changed
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Verify Gmail OAuth secrets are present
+        env:
+          GMAIL_CLIENT_ID: ${{ secrets.GMAIL_CLIENT_ID }}
+          GMAIL_CLIENT_SECRET: ${{ secrets.GMAIL_CLIENT_SECRET }}
+          GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
+        run: |
+          missing=""
+          [ -z "$GMAIL_CLIENT_ID" ] && missing="$missing GMAIL_CLIENT_ID"
+          [ -z "$GMAIL_CLIENT_SECRET" ] && missing="$missing GMAIL_CLIENT_SECRET"
+          [ -z "$GMAIL_REFRESH_TOKEN" ] && missing="$missing GMAIL_REFRESH_TOKEN"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repo secret(s):$missing. Add them at Settings -> Secrets and variables -> Actions (see docs/email_ingest_setup.md), then re-run."
+            exit 1
+          fi
+          echo "Gmail OAuth secrets present."
+
+      - name: Run email-alert ingest (live Gmail API)
+        env:
+          GMAIL_CLIENT_ID: ${{ secrets.GMAIL_CLIENT_ID }}
+          GMAIL_CLIENT_SECRET: ${{ secrets.GMAIL_CLIENT_SECRET }}
+          GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
+        run: |
+          python tools/ingest_email.py --query 'label:Procurement/Alerts newer_than:8d -in:trash -in:spam'
+
+      - name: Re-score active pipeline
+        run: python tools/pipeline.py score
+
+      - name: Run repository checks before PR creation
+        run: |
+          python -m compileall -q tools tests
+          python -m unittest discover -s tests
+          python tools/validate_vendor_profile.py vendor-profiles/continental_silverline.profile.json
+          python tools/workflow_check.py
+          python tools/dashboard.py --show summary
+
+      - name: Detect whether active pipeline changed
+        id: diff
+        run: |
+          if git diff --quiet -- bids/active/_pipeline.csv; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Active pipeline unchanged - no PR will be opened."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Active pipeline has changes - will open PR."
+            git --no-pager diff --stat -- bids/active/_pipeline.csv
+          fi
+
+      - name: Open PR with new rows
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_NUMBER: ${{ github.run_number }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          TODAY=$(date -u +%F)
+          BRANCH="auto/email-ingest-${TODAY}-${RUN_NUMBER}"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git checkout -b "$BRANCH"
+          git add bids/active/_pipeline.csv
+          git commit -m "Weekly portal email-alert ingest: ${TODAY}"
+          git push -u origin "$BRANCH"
+
+          cat > /tmp/pr_body.md <<'EOF'
+          Automated weekly portal email-alert ingest (state/local + cooperative funnel). **Human triage required before merge.**
+
+          Source: commodity/NIGP email alerts from the procurement alert inbox (Bonfire, IonWave, DemandStar, BidNet, BuyBoard, cooperatives, Texas ESBD). No scraping.
+
+          ## Reviewer checklist
+
+          1. Open `bids/active/_pipeline.csv` and review each new row. Email parsing is best-effort: **verify title, due date, and link against the portal.**
+          2. For rows that are out-of-scope, past-due, or false-positive, archive with:
+
+             ```
+             python tools/pipeline.py move-to-archive <opportunity-id> \
+               --status no-bid --next-action "No-bid archived" --note "<reason>"
+             ```
+
+             then amend this PR.
+          3. For rows worth pursuing: refine `next_action`, assign an `owner`, and merge.
+          4. If everything is out of scope, archive all new rows and close this PR without merging.
+
+          ## CI note
+
+          Commits authored by `GITHUB_TOKEN` do not trigger PR-event workflows.
+          Push a follow-up commit or use "Re-run all checks" to run CI on this PR.
+
+          ---
+
+          Triggered by: `__EVENT_NAME__` (run #__RUN_NUMBER__).
+          EOF
+
+          sed -i "s|__EVENT_NAME__|${EVENT_NAME}|g" /tmp/pr_body.md
+          sed -i "s|__RUN_NUMBER__|${RUN_NUMBER}|g" /tmp/pr_body.md
+
+          gh pr create \
+            --title "Weekly portal email-alert ingest: ${TODAY}" \
+            --body-file /tmp/pr_body.md \
+            --base main \
+            --head "$BRANCH"
+
+      - name: Summary
+        run: |
+          if [ "${{ steps.diff.outputs.changed }}" = "true" ]; then
+            echo "Email ingest opened a PR for human triage."
+          else
+            echo "Email ingest ran clean - no new rows, no PR."
+          fi

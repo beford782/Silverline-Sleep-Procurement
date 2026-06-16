@@ -21,17 +21,25 @@ Bid submission stays manual. The tool only adds 'watching' rows for a
 human to triage (read, score, decide bid/no-bid).
 
 AUTHENTICATION (production / GitHub Action):
-  Reads a Gmail mailbox using an OAuth2 refresh token, supplied via env:
+  --provider graph (DEFAULT) — read an Outlook / Microsoft 365 mailbox via
+  the documented Microsoft Graph API, app-only (client-credentials) OAuth:
+    GRAPH_TENANT_ID, GRAPH_CLIENT_ID, GRAPH_CLIENT_SECRET, GRAPH_MAILBOX
+  GRAPH_MAILBOX is the target UPN (e.g. beford@silverlinesleep.com); the
+  app needs the application permission Mail.Read (admin-consented).
+
+  --provider gmail — read a Gmail mailbox via the Gmail REST API using an
+  OAuth2 refresh token:
     GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN
-  These are secrets — NEVER commit them. The mailbox identity is whatever
-  account the refresh token was minted for, so this works against the
-  business alert inbox without that account being "connected" anywhere
-  else. See docs/email_ingest_setup.md for one-time provisioning.
+
+  All of these are secrets — NEVER commit them. The mailbox identity comes
+  from the credentials, so this works against the business alert inbox
+  without that account being "connected" anywhere else. See
+  docs/email_ingest_setup.md for one-time provisioning.
 
 TESTING / OFFLINE:
   --fixture FILE reads a JSON list of normalized messages instead of
-  calling Gmail, so parsing/dedup/write are testable without credentials
-  or network. Each message: {"id","sender","subject","date","body"}.
+  calling any mail API, so parsing/dedup/write are testable without
+  credentials or network. Each message: {"id","sender","subject","date","body"}.
 
 PARSER SCOPE:
   Alert-email layouts are vendor-specific and change over time. The
@@ -43,8 +51,10 @@ PARSER SCOPE:
 Usage:
     # offline / test
     python tools/ingest_email.py --fixture tests/fixtures/email_alerts_sample.json --dry-run
-    # live (creds in env)
-    python tools/ingest_email.py --query 'label:Procurement/Alerts newer_than:8d'
+    # live Outlook/Graph (default provider; creds in env)
+    python tools/ingest_email.py --graph-folder "Procurement Alerts" --since-days 8
+    # live Gmail
+    python tools/ingest_email.py --provider gmail --query 'label:Procurement/Alerts newer_than:8d'
 """
 
 from __future__ import annotations
@@ -60,7 +70,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Iterable
 
@@ -81,7 +91,9 @@ from pipeline import (  # noqa: E402
 
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GMAIL_API_BASE = "https://gmail.googleapis.com/gmail/v1/users/me"
+GRAPH_BASE = "https://graph.microsoft.com/v1.0"
 DEFAULT_QUERY = "label:Procurement/Alerts newer_than:8d -in:trash -in:spam"
+DEFAULT_SINCE_DAYS = 8
 DEFAULT_MAX_MESSAGES = 200
 DEFAULT_TIMEOUT_S = 30
 
@@ -319,6 +331,9 @@ def _decode_b64url(data: str) -> str:
 
 def _strip_html(html: str) -> str:
     text = re.sub(r"(?is)<(script|style).*?</\1>", " ", html)
+    # Surface <a href="..."> targets so opportunity links survive tag
+    # removal (HTML alerts put the URL in the attribute, not the text).
+    text = re.sub(r'(?i)<a\b[^>]*?href=["\']([^"\']+)["\'][^>]*>', r" \1 ", text)
     text = re.sub(r"(?s)<[^>]+>", " ", text)
     text = (text.replace("&amp;", "&").replace("&nbsp;", " ")
                 .replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"'))
@@ -388,6 +403,69 @@ def fetch_messages(access_token: str, query: str, max_messages: int) -> list[dic
     return normalized
 
 
+# --------------------------------------------------------------------------
+# Microsoft Graph REST client (stdlib urllib; app-only client-credentials)
+# --------------------------------------------------------------------------
+def get_graph_token(tenant_id: str, client_id: str, client_secret: str) -> str:
+    """Client-credentials (app-only) token for Microsoft Graph."""
+    url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
+    data = urllib.parse.urlencode({
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "scope": "https://graph.microsoft.com/.default",
+        "grant_type": "client_credentials",
+    }).encode("utf-8")
+    payload = _http_json(url, data=data, headers={"Content-Type": "application/x-www-form-urlencoded"})
+    token = payload.get("access_token")
+    if not token:
+        raise RuntimeError("Graph token endpoint returned no access_token")
+    return token
+
+
+def normalize_graph_message(msg: dict) -> dict:
+    """Map a Graph message resource onto the tool's normalized message dict."""
+    body = msg.get("body") or {}
+    content = body.get("content") or msg.get("bodyPreview") or ""
+    if (body.get("contentType") or "").lower() == "html":
+        content = _strip_html(content)
+    sender = (((msg.get("from") or {}).get("emailAddress")) or {}).get("address") or ""
+    return {
+        "id": msg.get("id") or "",
+        "sender": sender,
+        "subject": msg.get("subject") or "",
+        "date": msg.get("receivedDateTime") or "",
+        "body": content,
+    }
+
+
+def fetch_graph_messages(access_token: str, mailbox: str, *, folder: str | None,
+                         since_iso: str, max_messages: int) -> list[dict]:
+    """Fetch messages from an Outlook/M365 mailbox via Microsoft Graph."""
+    base = f"{GRAPH_BASE}/users/{urllib.parse.quote(mailbox)}"
+    path = f"/mailFolders/{urllib.parse.quote(folder)}/messages" if folder else "/messages"
+    params = {
+        "$filter": f"receivedDateTime ge {since_iso}",
+        "$select": "id,subject,from,receivedDateTime,body,bodyPreview",
+        "$orderby": "receivedDateTime desc",
+        "$top": str(min(50, max_messages)),
+    }
+    url = base + path + "?" + urllib.parse.urlencode(params, safe="$ ,:")
+    # Prefer plain-text bodies so we avoid lossy HTML stripping where possible.
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Prefer": 'outlook.body-content-type="text"',
+    }
+    out: list[dict] = []
+    while url and len(out) < max_messages:
+        payload = _http_json(url, headers=headers)
+        for msg in payload.get("value") or []:
+            out.append(normalize_graph_message(msg))
+            if len(out) >= max_messages:
+                break
+        url = payload.get("@odata.nextLink")
+    return out
+
+
 def _read_existing_or_empty(path: Path) -> list[dict]:
     if not path.exists():
         return []
@@ -395,30 +473,59 @@ def _read_existing_or_empty(path: Path) -> list[dict]:
     return rows
 
 
-def _load_messages(args) -> list[dict]:
+def _require_env(names: list[str]) -> list[str]:
+    vals = [os.environ.get(n) for n in names]
+    missing = [n for n, v in zip(names, vals) if not v]
+    if missing:
+        raise SystemExit(
+            f"error: missing env var(s): {', '.join(missing)}. Required for live "
+            "ingest (or pass --fixture). See docs/email_ingest_setup.md. "
+            "Never commit these secrets."
+        )
+    return vals  # type: ignore[return-value]
+
+
+def _load_messages(args, today: str) -> list[dict]:
     if args.fixture:
         with open(args.fixture, "r", encoding="utf-8") as fh:
             data = json.load(fh)
         if not isinstance(data, list):
             raise ValueError("fixture must be a JSON list of message objects")
         return data
-    client_id = os.environ.get("GMAIL_CLIENT_ID")
-    client_secret = os.environ.get("GMAIL_CLIENT_SECRET")
-    refresh_token = os.environ.get("GMAIL_REFRESH_TOKEN")
-    if not (client_id and client_secret and refresh_token):
-        raise SystemExit(
-            "error: GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET and GMAIL_REFRESH_TOKEN "
-            "env vars are required for live ingest (or pass --fixture). "
-            "See docs/email_ingest_setup.md. Never commit these secrets."
+
+    if args.provider == "graph":
+        tenant, client_id, client_secret, mailbox = _require_env(
+            ["GRAPH_TENANT_ID", "GRAPH_CLIENT_ID", "GRAPH_CLIENT_SECRET", "GRAPH_MAILBOX"]
         )
+        since_iso = (datetime.fromisoformat(today) - timedelta(days=args.since_days)).strftime(
+            "%Y-%m-%dT00:00:00Z"
+        )
+        token = get_graph_token(tenant, client_id, client_secret)
+        return fetch_graph_messages(
+            token, mailbox, folder=args.graph_folder, since_iso=since_iso,
+            max_messages=args.max_messages,
+        )
+
+    # provider == "gmail"
+    client_id, client_secret, refresh_token = _require_env(
+        ["GMAIL_CLIENT_ID", "GMAIL_CLIENT_SECRET", "GMAIL_REFRESH_TOKEN"]
+    )
     access_token = get_access_token(client_id, client_secret, refresh_token)
     return fetch_messages(access_token, args.query, args.max_messages)
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--provider", choices=("graph", "gmail"), default="graph",
+                        help="Mailbox backend: 'graph' (Outlook/M365, default) or 'gmail'. "
+                             "Ignored when --fixture is given.")
+    parser.add_argument("--since-days", type=int, default=DEFAULT_SINCE_DAYS,
+                        help=f"[graph] Look back this many days (default {DEFAULT_SINCE_DAYS}).")
+    parser.add_argument("--graph-folder", default=None,
+                        help="[graph] Restrict to a mail folder by display name (e.g. "
+                             "'Procurement Alerts'). Default: search the whole mailbox.")
     parser.add_argument("--query", default=DEFAULT_QUERY,
-                        help=f"Gmail search query for alert emails (default: {DEFAULT_QUERY!r})")
+                        help=f"[gmail] Gmail search query for alert emails (default: {DEFAULT_QUERY!r})")
     parser.add_argument("--max-messages", type=int, default=DEFAULT_MAX_MESSAGES,
                         help=f"Safety cap on messages fetched (default {DEFAULT_MAX_MESSAGES}).")
     parser.add_argument("--active", default=str(DEFAULT_ACTIVE),
@@ -437,7 +544,7 @@ def main(argv: list[str] | None = None) -> int:
     existing_archive = _read_existing_or_empty(archive_path)
     existing_rows = existing_active + existing_archive
 
-    messages = _load_messages(args)
+    messages = _load_messages(args, today)
     new_rows, dupes, skipped = ingest(messages, existing_rows, today)
 
     print(f"email alerts fetched: {len(messages)} message(s)")

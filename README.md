@@ -266,18 +266,24 @@ The state/local and cooperative portals have **no public RSS feed or
 opportunity API** (verified June 2026), so they can't be polled like
 SAM.gov and must never be scraped. The compliant, automatable channel is
 the **commodity/NIGP email alert** each portal sends to a registered
-supplier. `tools/ingest_email.py` reads those alerts from a Gmail mailbox
-via the documented Gmail REST API (stdlib `urllib`) and turns them into
-`watching` pipeline rows — automating the manual portal walk for the
-email-notification sources.
+supplier. `tools/ingest_email.py` reads those alerts from the alert
+mailbox and turns them into `watching` pipeline rows — automating the
+manual portal walk for the email-notification sources. Two backends, both
+stdlib `urllib`: **Outlook / Microsoft 365 via the Microsoft Graph API**
+(`--provider graph`, the default) and **Gmail via the Gmail REST API**
+(`--provider gmail`).
 
 ```sh
 # Offline / test (no creds, no network)
 python tools/ingest_email.py --fixture tests/fixtures/email_alerts_sample.json --dry-run
 
-# Live (OAuth creds in env)
+# Live Outlook/M365 (Graph app-only creds in env)
+GRAPH_TENANT_ID=... GRAPH_CLIENT_ID=... GRAPH_CLIENT_SECRET=... GRAPH_MAILBOX=beford@silverlinesleep.com \
+  python tools/ingest_email.py --graph-folder "Procurement Alerts" --since-days 8 --dry-run
+
+# Live Gmail (OAuth refresh-token creds in env)
 GMAIL_CLIENT_ID=... GMAIL_CLIENT_SECRET=... GMAIL_REFRESH_TOKEN=... \
-  python tools/ingest_email.py --query 'label:Procurement/Alerts newer_than:8d' --dry-run
+  python tools/ingest_email.py --provider gmail --query 'label:Procurement/Alerts newer_than:8d' --dry-run
 ```
 
 Behavior:
@@ -290,15 +296,17 @@ Behavior:
   stripped), portal link, and due date; `buyer`/`location` may be blank.
   Always verify ingested rows against the portal. Add per-sender adapters
   as real samples are captured.
-- One-time setup (portal alert subscriptions + Gmail OAuth token) is in
+- One-time setup (portal alert subscriptions + an Azure app registration
+  for Graph, or a Gmail OAuth token) is in
   [`docs/email_ingest_setup.md`](docs/email_ingest_setup.md).
 
 **Scheduled run.** `.github/workflows/weekly_email_ingest.yml` runs every
-Monday at 13:30 UTC and on manual `workflow_dispatch`, ingests, re-scores,
-runs the repo checks, and opens a PR for human triage if the active
-pipeline changed. It never auto-archives, auto-submits, or pushes to
-`main`. Requires the `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, and
-`GMAIL_REFRESH_TOKEN` repo secrets; it fails fast if any are missing.
+Monday at 13:30 UTC and on manual `workflow_dispatch`, ingests (Graph),
+re-scores, runs the repo checks, and opens a PR for human triage if the
+active pipeline changed. It never auto-archives, auto-submits, or pushes
+to `main`. Requires the `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`,
+`GRAPH_CLIENT_SECRET`, and `GRAPH_MAILBOX` repo secrets; it fails fast if
+any are missing.
 
 ## Tools
 
@@ -312,7 +320,7 @@ Lightweight Python utilities, all stdlib-only where possible:
 | `tools/promote_draft.py` | Promote a generated draft into `bids/active/<opportunity-id>.md` with overwrite and archive-collision checks. |
 | `tools/ingest_sam.py` | Pull federal opportunities from the SAM.gov public API (stdlib `urllib`) into the pipeline. Requires `SAM_API_KEY`. |
 | `tools/ingest_portal_csv.py` | Import operator-downloaded portal CSV exports using JSON column mappings, currently including ESBD. |
-| `tools/ingest_email.py` | Ingest portal commodity/NIGP email alerts from a Gmail mailbox (stdlib `urllib` + Gmail API) into the pipeline. Requires `GMAIL_*` OAuth secrets; see `docs/email_ingest_setup.md`. |
+| `tools/ingest_email.py` | Ingest portal commodity/NIGP email alerts into the pipeline (stdlib `urllib`). Default backend Outlook/M365 via Microsoft Graph (`GRAPH_*` secrets); Gmail backend optional (`GMAIL_*`). See `docs/email_ingest_setup.md`. |
 | `tools/portal_csv_mapping.py` | Inspect a portal CSV export and write a starter mapping JSON for `ingest_portal_csv.py`. |
 | `tools/source_review.py` | Generate an operator portal-review checklist from the source registry. Writes to `build/portal_reviews/` (gitignored). |
 | `tools/generate_procurement_packet.py` | CSV questionnaire → markdown + printable HTML packet |

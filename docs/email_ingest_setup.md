@@ -6,18 +6,23 @@ IonWave, DemandStar, BidNet Direct, BuyBoard, Texas ESBD/SmartBuy, and
 the TIPS/Choice Partners/HGACBuy/Sourcewell/OMNIA cooperatives are all
 email-alert-or-login only). The one compliant, broadly-available channel
 is the **commodity/NIGP-code email alert** each portal sends to a
-registered supplier. `tools/ingest_email.py` reads those alerts from a
-Gmail mailbox via the documented Gmail REST API (stdlib `urllib`, no
-scraping, no browser automation) and turns them into pipeline rows.
+registered supplier. `tools/ingest_email.py` reads those alerts from the
+alert mailbox (stdlib `urllib`, no scraping, no browser automation) and
+turns them into pipeline rows.
+
+The alert inbox `beford@silverlinesleep.com` is on **Outlook / Microsoft
+365**, so the default backend is the **Microsoft Graph API**
+(`--provider graph`). (A Gmail backend, `--provider gmail`, also exists if
+alerts are ever routed to a Gmail mailbox.)
 
 This replaces the *manual* weekly portal walk for the email-notification
 sources. Submission stays manual; the tool only adds `watching` rows to
 triage.
 
 There are two one-time setup tasks: **(A) subscribe to the alerts** and
-route them to one Gmail label, and **(B) provision a Gmail OAuth token**
-for the scheduled run. Neither can be automated for you — they require
-portal logins and a Google consent screen.
+route them to one Outlook folder, and **(B) register an Azure app** so the
+scheduled run can read that mailbox. Neither can be automated for you —
+they require portal logins and an Azure admin consent.
 
 ---
 
@@ -40,49 +45,56 @@ classes; NAICS **337910**.
 | Texas ESBD / CMBL | comptroller.texas.gov CMBL (fee) | NIGP-code notices |
 | State boards (OMES, LaPAC, MAGIC, ARBuy, NM SPD) | each state supplier portal | email alerts where offered |
 
-**Routing:** Have every alert land in the **alert inbox**
-(`beford@silverlinesleep.com`) and create a Gmail **filter → label**
-named `Procurement/Alerts` that catches them (match the portal sender
-domains: `gobonfire.com`, `ionwave.net`, `demandstar.com`,
-`bidnetdirect.com`, `buyboard.com`, `txsmartbuy.gov`, etc.). The ingest
-default query is:
+**Routing (Outlook):** Use the contact address `beford@silverlinesleep.com`
+on every portal, then create an **Outlook rule** that files those alerts
+into a folder named **`Procurement Alerts`**. Match the portal sender
+domains (`gobonfire.com`, `ionwave.net`, `demandstar.com`,
+`bidnetdirect.com`, `buyboard.com`, `txsmartbuy.gov`, etc.). The
+scheduled run reads that folder:
 
 ```
-label:Procurement/Alerts newer_than:8d -in:trash -in:spam
+python tools/ingest_email.py --graph-folder "Procurement Alerts" --since-days 8
 ```
 
-> If you prefer to keep subscriptions on a different address, forward
-> them into the labeled inbox, or change `--query` / `DEFAULT_QUERY`.
+> Omit `--graph-folder` to scan the whole mailbox instead. If you ever
+> route alerts to Gmail, use `--provider gmail --query '...'`.
 
 ---
 
-## B. Provision a Gmail OAuth refresh token (read-only)
+## B. Register an Azure app (Microsoft Graph, read-only, app-only)
 
-The scheduled run authenticates as the alert mailbox using an OAuth2
-**refresh token**. This is independent of any "connected account" — the
-token *is* the credential.
+The scheduled run authenticates as an **application** (client-credentials
+flow) with read access to the alert mailbox. No interactive login at run
+time — the client secret *is* the credential.
 
-1. In Google Cloud Console, create (or reuse) a project and **enable the
-   Gmail API**.
-2. Configure the OAuth consent screen; add the alert mailbox account as a
-   test user (or publish). Scope needed: `gmail.readonly`.
-3. Create an **OAuth client ID** of type *Desktop app*. Note the
-   **client ID** and **client secret**.
-4. Do the one-time consent to mint a **refresh token** for the alert
-   mailbox with the `gmail.readonly` scope (e.g. via the OAuth 2.0
-   Playground using your own client ID/secret, or a small local script).
-   Keep the refresh token secret.
+1. In the **Entra admin center / Azure portal → App registrations**, create
+   a new registration (single tenant). Note the **Application (client) ID**
+   and **Directory (tenant) ID**.
+2. **Certificates & secrets →** create a **client secret**. Copy its value
+   now (shown once).
+3. **API permissions → Add → Microsoft Graph → Application permissions →**
+   add **`Mail.Read`**, then **Grant admin consent**.
+4. *(Recommended, least-privilege)* restrict the app to only the alert
+   mailbox with an **application access policy** (Exchange Online
+   PowerShell `New-ApplicationAccessPolicy`), so the app can read only
+   `beford@silverlinesleep.com`, not the whole tenant.
 
 ### Store as repo secrets
 
 *Settings → Secrets and variables → Actions →* add:
 
-- `GMAIL_CLIENT_ID`
-- `GMAIL_CLIENT_SECRET`
-- `GMAIL_REFRESH_TOKEN`
+- `GRAPH_TENANT_ID`  (Directory/tenant ID)
+- `GRAPH_CLIENT_ID`  (Application/client ID)
+- `GRAPH_CLIENT_SECRET`  (the secret value from step 2)
+- `GRAPH_MAILBOX`  (`beford@silverlinesleep.com`)
 
 **Never commit these.** The scheduled workflow fails fast with a clear
 error if any are missing.
+
+> *Gmail alternative:* if alerts are ever routed to a Gmail mailbox
+> instead, set `GMAIL_CLIENT_ID` / `GMAIL_CLIENT_SECRET` /
+> `GMAIL_REFRESH_TOKEN` (a `gmail.readonly` OAuth refresh token from
+> Google Cloud Console) and run with `--provider gmail`.
 
 ---
 
@@ -92,9 +104,9 @@ error if any are missing.
 # Offline / test (no creds, no network): parse a fixture
 python tools/ingest_email.py --fixture tests/fixtures/email_alerts_sample.json --dry-run
 
-# Live (creds in env): preview, then write
-GMAIL_CLIENT_ID=... GMAIL_CLIENT_SECRET=... GMAIL_REFRESH_TOKEN=... \
-  python tools/ingest_email.py --query 'label:Procurement/Alerts newer_than:8d' --dry-run
+# Live Outlook/M365 (Graph creds in env): preview, then write
+GRAPH_TENANT_ID=... GRAPH_CLIENT_ID=... GRAPH_CLIENT_SECRET=... GRAPH_MAILBOX=beford@silverlinesleep.com \
+  python tools/ingest_email.py --graph-folder "Procurement Alerts" --since-days 8 --dry-run
 ```
 
 Scheduled automatically by

@@ -106,6 +106,37 @@ class ParseMessageTests(unittest.TestCase):
         self.assertEqual(a["opportunity_id"], b["opportunity_id"])
 
 
+class GraphNormalizeTests(unittest.TestCase):
+    def test_normalize_html_body_and_sender(self) -> None:
+        graph_msg = {
+            "id": "AAMk-123",
+            "subject": "New Opportunity: Twin Mattresses",
+            "from": {"emailAddress": {"name": "Bonfire", "address": "no-reply@gobonfire.com"}},
+            "receivedDateTime": "2026-06-16T14:05:00Z",
+            "body": {"contentType": "html", "content": "<p>View: <a href='https://x.bonfirehub.com/o/9'>link</a></p>"},
+            "bodyPreview": "View: link",
+        }
+        norm = ingest_email.normalize_graph_message(graph_msg)
+        self.assertEqual(norm["sender"], "no-reply@gobonfire.com")
+        self.assertEqual(norm["subject"], "New Opportunity: Twin Mattresses")
+        self.assertEqual(norm["date"], "2026-06-16T14:05:00Z")
+        self.assertIn("bonfirehub.com/o/9", norm["body"])
+        self.assertNotIn("<a", norm["body"])  # HTML stripped
+
+    def test_normalize_feeds_parser(self) -> None:
+        graph_msg = {
+            "id": "AAMk-456",
+            "subject": "Bid Notification - Institutional Mattresses",
+            "from": {"emailAddress": {"address": "bids@demandstar.com"}},
+            "receivedDateTime": "2026-06-16T09:00:00Z",
+            "body": {"contentType": "text", "content": "Response due 6/25/2026.\nhttps://www.demandstar.com/app/bid/1"},
+        }
+        row = ingest_email.parse_message(ingest_email.normalize_graph_message(graph_msg), TODAY)
+        self.assertEqual(row["source"], "DemandStar")
+        self.assertEqual(row["due_date"], "2026-06-25")
+        self.assertEqual(row["portal_url"], "https://www.demandstar.com/app/bid/1")
+
+
 class IngestTests(unittest.TestCase):
     def test_partition_counts(self) -> None:
         new_rows, dupes, skipped = ingest_email.ingest(_load_fixture(), [], TODAY)

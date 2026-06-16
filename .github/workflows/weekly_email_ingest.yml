@@ -1,13 +1,14 @@
 name: Weekly portal email-alert ingest
 
-# Reads commodity/NIGP email alerts from the procurement alert inbox via the
-# Gmail API and turns them into pipeline rows (state/local + cooperative
-# funnel). No scraping: portals have no public feed/API, so the compliant
-# channel is the email alert each portal sends to a registered supplier.
+# Reads commodity/NIGP email alerts from the Outlook/M365 procurement alert
+# inbox via the Microsoft Graph API and turns them into pipeline rows
+# (state/local + cooperative funnel). No scraping: portals have no public
+# feed/API, so the compliant channel is the email alert each portal sends to
+# a registered supplier.
 #
-# Requires three repo secrets (one-time OAuth provisioning, see
-# docs/email_ingest_setup.md): GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET,
-# GMAIL_REFRESH_TOKEN. Never commit these.
+# Requires four repo secrets (one-time Azure app registration, see
+# docs/email_ingest_setup.md): GRAPH_TENANT_ID, GRAPH_CLIENT_ID,
+# GRAPH_CLIENT_SECRET, GRAPH_MAILBOX. Never commit these.
 
 on:
   schedule:
@@ -34,29 +35,32 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Verify Gmail OAuth secrets are present
+      - name: Verify Microsoft Graph secrets are present
         env:
-          GMAIL_CLIENT_ID: ${{ secrets.GMAIL_CLIENT_ID }}
-          GMAIL_CLIENT_SECRET: ${{ secrets.GMAIL_CLIENT_SECRET }}
-          GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
+          GRAPH_TENANT_ID: ${{ secrets.GRAPH_TENANT_ID }}
+          GRAPH_CLIENT_ID: ${{ secrets.GRAPH_CLIENT_ID }}
+          GRAPH_CLIENT_SECRET: ${{ secrets.GRAPH_CLIENT_SECRET }}
+          GRAPH_MAILBOX: ${{ secrets.GRAPH_MAILBOX }}
         run: |
           missing=""
-          [ -z "$GMAIL_CLIENT_ID" ] && missing="$missing GMAIL_CLIENT_ID"
-          [ -z "$GMAIL_CLIENT_SECRET" ] && missing="$missing GMAIL_CLIENT_SECRET"
-          [ -z "$GMAIL_REFRESH_TOKEN" ] && missing="$missing GMAIL_REFRESH_TOKEN"
+          [ -z "$GRAPH_TENANT_ID" ] && missing="$missing GRAPH_TENANT_ID"
+          [ -z "$GRAPH_CLIENT_ID" ] && missing="$missing GRAPH_CLIENT_ID"
+          [ -z "$GRAPH_CLIENT_SECRET" ] && missing="$missing GRAPH_CLIENT_SECRET"
+          [ -z "$GRAPH_MAILBOX" ] && missing="$missing GRAPH_MAILBOX"
           if [ -n "$missing" ]; then
             echo "::error::Missing repo secret(s):$missing. Add them at Settings -> Secrets and variables -> Actions (see docs/email_ingest_setup.md), then re-run."
             exit 1
           fi
-          echo "Gmail OAuth secrets present."
+          echo "Microsoft Graph secrets present."
 
-      - name: Run email-alert ingest (live Gmail API)
+      - name: Run email-alert ingest (live Microsoft Graph API)
         env:
-          GMAIL_CLIENT_ID: ${{ secrets.GMAIL_CLIENT_ID }}
-          GMAIL_CLIENT_SECRET: ${{ secrets.GMAIL_CLIENT_SECRET }}
-          GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
+          GRAPH_TENANT_ID: ${{ secrets.GRAPH_TENANT_ID }}
+          GRAPH_CLIENT_ID: ${{ secrets.GRAPH_CLIENT_ID }}
+          GRAPH_CLIENT_SECRET: ${{ secrets.GRAPH_CLIENT_SECRET }}
+          GRAPH_MAILBOX: ${{ secrets.GRAPH_MAILBOX }}
         run: |
-          python tools/ingest_email.py --query 'label:Procurement/Alerts newer_than:8d -in:trash -in:spam'
+          python tools/ingest_email.py --provider graph --graph-folder "Procurement Alerts" --since-days 8
 
       - name: Re-score active pipeline
         run: python tools/pipeline.py score

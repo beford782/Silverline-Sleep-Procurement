@@ -89,6 +89,18 @@ SOFT_EXCLUDE = [
     "overseas", "foreign",
 ]
 
+# Procurement cues — signals that an item is an actual solicitation/buy, not
+# news, a competitor catalog, or a forum post. Used by web/RSS channels via
+# require_procurement so "jail mattress" news/retail chatter doesn't ACCEPT.
+PROCUREMENT_CUES = [
+    "rfp", "rfq", "rfi", "ifb", "invitation for bid", "invitation for bids",
+    "invitation to bid", "request for proposal", "request for proposals",
+    "request for quotation", "request for quote", "request for information",
+    "solicitation", "sources sought", "procurement", "bid number", "bid no",
+    "competitive sealed", "purchase order", "notice of award", "bid opportunity",
+    "bid", "bids", "proposal", "quote",
+]
+
 # USPS code <-> handled via name list + ", ST" pattern (see detect_states).
 _STATE_NAMES = {
     "alabama": "AL", "alaska": "AK", "arizona": "AZ", "arkansas": "AR",
@@ -131,6 +143,7 @@ _WEAK = _compile(WEAK_INCLUDE)
 _CONTEXT = _compile(CONTEXT)
 _HARD = _compile(HARD_EXCLUDE)
 _SOFT = _compile(SOFT_EXCLUDE)
+_PROC = _compile(PROCUREMENT_CUES)
 _STATE_NAME_RE = re.compile(
     r"(?<![A-Za-z])(" + "|".join(re.escape(n) for n in _STATE_NAMES) + r")(?![A-Za-z])",
     re.IGNORECASE,
@@ -164,9 +177,20 @@ def _clamp(n: int, lo: int = 0, hi: int = 100) -> int:
     return max(lo, min(hi, n))
 
 
+def has_procurement_cue(text: str) -> bool:
+    """True if the text carries a solicitation/buy signal (RFP, bid, etc.)."""
+    return bool(_hits(text or "", _PROC))
+
+
 def classify(text: str, buyer: str = "", source: str = "",
-             home_states: frozenset[str] = HOME_STATES_DEFAULT) -> Verdict:
-    """Classify free text as ACCEPT / REVIEW / REJECT for mattress relevance."""
+             home_states: frozenset[str] = HOME_STATES_DEFAULT,
+             require_procurement: bool = False) -> Verdict:
+    """Classify free text as ACCEPT / REVIEW / REJECT for mattress relevance.
+
+    require_procurement: for web/RSS sources, an item with a mattress signal
+    but NO procurement cue (RFP/bid/solicitation/...) is demoted ACCEPT ->
+    REVIEW, so news stories and competitor catalogs don't auto-accept.
+    """
     blob = " ".join(p for p in (text or "", buyer or "", source or "") if p)
 
     hard = _hits(blob, _HARD)
@@ -205,6 +229,11 @@ def classify(text: str, buyer: str = "", source: str = "",
             decision = "REVIEW"
             conf = _clamp(min(conf, 55), 25, 60)
         reasons.append(f"out-of-region: {', '.join(sorted(out_region))}")
+
+    if require_procurement and decision == "ACCEPT" and not has_procurement_cue(blob):
+        decision = "REVIEW"
+        conf = _clamp(min(conf, 50), 25, 60)
+        reasons.append("no procurement cue (web source — could be news/catalog)")
 
     return Verdict(decision, conf, matched_include=strong + weak,
                    matched_exclude=soft, context=context,

@@ -75,6 +75,11 @@ jobs:
           python tools/ingest_email.py \
             --fixture tests/fixtures/email_alerts_sample.json --dry-run
 
+      - name: Smoke - RSS/feed ingest (fixture, dry-run)
+        run: |
+          python tools/ingest_rss.py \
+            --fixture tests/fixtures/rss_sample.xml --source "Smoke RSS" --dry-run
+
       - name: Machine-path leak check
         run: |
           if grep -rn \

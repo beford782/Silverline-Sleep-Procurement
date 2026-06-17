@@ -322,6 +322,28 @@ to `main`. Requires the `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`,
 `GRAPH_CLIENT_SECRET`, and `GRAPH_MAILBOX` repo secrets; it fails fast if
 any are missing.
 
+### 9. RSS/feed ingestion (Bonfire portals, etc.)
+
+`tools/ingest_rss.py` pulls open-opportunity RSS/Atom feeds through the
+relevance filter into the pipeline — the cleanest no-scraping web channel.
+The best feeds are **Bonfire per-portal** open-opportunity feeds
+(`https://{agency}.bonfirehub.com/opportunities/rss`), which are public,
+token-free, and contain *actual solicitations* (not news). Configure feeds
+in `configs/feeds.json` (see `configs/feeds.example.json`).
+
+```sh
+python tools/ingest_rss.py --feeds-config configs/feeds.json --dry-run
+python tools/ingest_rss.py --feed https://harriscountytx.bonfirehub.com/opportunities/rss --source "Bonfire: Harris County"
+```
+
+- Web/RSS items are held to a higher bar: they must carry a procurement
+  cue (RFP/bid/solicitation/…) to ACCEPT, and known non-procurement hosts
+  (Quora/Reddit/social/retail) are rejected — so news/catalog noise stays
+  out. Google Alerts feeds *can* be added but are low-signal (mostly news
+  even when scoped); prefer Bonfire/portal feeds.
+- Scheduled by `.github/workflows/weekly_rss_ingest.yml` (Mon 13:45 UTC +
+  manual). No secrets — the feeds are public. Opens a PR on change.
+
 ## Tools
 
 Lightweight Python utilities, all stdlib-only where possible:
@@ -335,6 +357,7 @@ Lightweight Python utilities, all stdlib-only where possible:
 | `tools/ingest_sam.py` | Pull federal opportunities from the SAM.gov public API (stdlib `urllib`) into the pipeline. Requires `SAM_API_KEY`. |
 | `tools/ingest_portal_csv.py` | Import operator-downloaded portal CSV exports using JSON column mappings, currently including ESBD. |
 | `tools/ingest_email.py` | Ingest portal commodity/NIGP email alerts into the pipeline (stdlib `urllib`). Default backend Outlook/M365 via Microsoft Graph (`GRAPH_*` secrets); Gmail backend optional (`GMAIL_*`). See `docs/email_ingest_setup.md`. |
+| `tools/ingest_rss.py` | Ingest RSS/Atom feeds (Google Alerts, Bonfire portal feeds, RFPMart) into the pipeline, gated by the relevance filter. Configure feeds via `configs/feeds.json` (see `configs/feeds.example.json`). |
 | `tools/portal_csv_mapping.py` | Inspect a portal CSV export and write a starter mapping JSON for `ingest_portal_csv.py`. |
 | `tools/source_review.py` | Generate an operator portal-review checklist from the source registry. Writes to `build/portal_reviews/` (gitignored). |
 | `tools/generate_procurement_packet.py` | CSV questionnaire → markdown + printable HTML packet |

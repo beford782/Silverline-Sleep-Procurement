@@ -1,0 +1,14 @@
+[
+  {
+    "source": "Bonfire: <Agency Name>",
+    "url": "https://<agency>.bonfirehub.com/opportunities/rss"
+  },
+  {
+    "source": "RFPMart: <category>",
+    "url": "https://www.rfpmart.com/<category>-rfp-bids.xml"
+  },
+  {
+    "source": "Google Alerts: mattress RFP (low signal — mostly news; site:.gov helps)",
+    "url": "https://www.google.com/alerts/feeds/<USER_ID>/<FEED_ID>"
+  }
+]

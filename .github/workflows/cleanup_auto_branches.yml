@@ -1,0 +1,30 @@
+name: Cleanup auto-ingest branches
+
+# Deletes the disposable `auto/*` branches created by the weekly ingest
+# workflows (SAM / email / RSS) once their PR is closed — merged or not —
+# so branch clutter doesn't accumulate. Only touches branches whose name
+# starts with `auto/`; human and claude/* branches are never affected.
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  delete-auto-branch:
+    if: startsWith(github.event.pull_request.head.ref, 'auto/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete the auto/* head branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          echo "PR #${PR} closed; deleting disposable branch '${HEAD_REF}'"
+          gh api -X DELETE "repos/${REPO}/git/refs/heads/${HEAD_REF}" \
+            && echo "deleted" \
+            || echo "branch already gone or protected — nothing to do"

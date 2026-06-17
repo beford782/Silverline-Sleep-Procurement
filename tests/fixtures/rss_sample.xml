@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Harris County Bonfire - Open Opportunities</title>
+    <link>https://harriscounty.bonfirehub.com/portal</link>
+    <description>Open public opportunities</description>
+    <item>
+      <title>Dormitory Mattresses and Bunk Beds</title>
+      <link>https://harriscounty.bonfirehub.com/opportunities/4471</link>
+      <pubDate>Mon, 15 Jun 2026 14:00:00 -0500</pubDate>
+      <description>The County seeks fire-retardant dormitory mattresses for a juvenile detention facility.</description>
+    </item>
+    <item>
+      <title>Office Furniture Catalog (IDIQ)</title>
+      <link>https://harriscounty.bonfirehub.com/opportunities/4472</link>
+      <pubDate>Tue, 16 Jun 2026 09:30:00 -0500</pubDate>
+      <description>Catalog contract for office furniture, desks, and filing cabinets.</description>
+    </item>
+    <item>
+      <title>Janitorial Services for County Buildings</title>
+      <link>https://harriscounty.bonfirehub.com/opportunities/4473</link>
+      <pubDate>Tue, 16 Jun 2026 10:00:00 -0500</pubDate>
+      <description>Daily janitorial and custodial services.</description>
+    </item>
+  </channel>
+</rss>

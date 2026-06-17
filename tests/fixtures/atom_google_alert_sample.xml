@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Google Alert - mattress RFP</title>
+  <updated>2026-06-17T12:00:00Z</updated>
+  <entry>
+    <title>State university issues RFP for fluid-resistant mattresses</title>
+    <link href="https://www.google.com/url?rct=j&amp;sa=t&amp;url=https://news.example.com/university-mattress-rfp&amp;ct=ga"/>
+    <published>2026-06-17T09:15:00Z</published>
+    <summary>The university is soliciting bids for institutional mattresses for residence halls.</summary>
+  </entry>
+  <entry>
+    <title>Corps of Engineers awards articulated concrete mattress contract</title>
+    <link href="https://www.google.com/url?rct=j&amp;sa=t&amp;url=https://news.example.com/concrete-mattress&amp;ct=ga"/>
+    <published>2026-06-16T18:00:00Z</published>
+    <summary>Erosion control project using articulated concrete mattress revetment.</summary>
+  </entry>
+</feed>

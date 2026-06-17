@@ -1,0 +1,317 @@
+#!/usr/bin/env python3
+"""
+ingest_rss.py — turn RSS/Atom feeds into filtered pipeline rows.
+
+A generic feed adapter: point it at any RSS 2.0 or Atom feed and each entry
+is mapped onto the pipeline schema, gated by the central mattress-relevance
+filter (tools/relevance.py), deduped, and written as a `watching` row. This
+is the compliant, no-scraping way to pull in:
+
+  - Google Alerts (private / open-web "mattress RFP" chatter) — Atom feeds
+    you create once in the Google Alerts UI ("Deliver to: RSS feed").
+  - Bonfire per-portal open-opportunity feeds: https://{agency}.bonfirehub.com/opportunities/rss
+  - RFPMart and any other portal/aggregator that publishes a real feed.
+
+Bid submission stays manual; this only adds rows for a human to triage.
+
+Feeds are supplied either with repeatable --feed/--source pairs or a JSON
+config (see configs/feeds.example.json). Stdlib only (urllib + xml.etree).
+
+Usage:
+    # offline / test
+    python tools/ingest_rss.py --fixture tests/fixtures/rss_sample.xml --source "Google Alerts" --dry-run
+    # live: one feed
+    python tools/ingest_rss.py --feed https://harriscounty.bonfirehub.com/opportunities/rss --source "Bonfire: Harris County"
+    # live: many feeds from a config
+    python tools/ingest_rss.py --feeds-config configs/feeds.json
+"""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import hashlib
+import json
+import re
+import ssl
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+import xml.etree.ElementTree as ET
+from datetime import datetime
+from email.utils import parsedate_to_datetime
+from pathlib import Path
+
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_ACTIVE = REPO_ROOT / "bids" / "active" / "_pipeline.csv"
+DEFAULT_ARCHIVE = REPO_ROOT / "bids" / "archive" / "_pipeline_archive.csv"
+DEFAULT_TIMEOUT_S = 30
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from pipeline import (  # noqa: E402
+    CANONICAL_HEADER,
+    read_rows,
+    write_rows_atomic,
+    slugify,
+)
+import relevance  # noqa: E402
+
+
+def _localname(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1].lower()
+
+
+def _find_child(elem: ET.Element, name: str) -> ET.Element | None:
+    for child in elem:
+        if _localname(child.tag) == name:
+            return child
+    return None
+
+
+def _child_text(elem: ET.Element, name: str) -> str:
+    c = _find_child(elem, name)
+    return (c.text or "").strip() if c is not None and c.text else ""
+
+
+def _extract_link(entry: ET.Element) -> str:
+    """RSS <link>text</link> or Atom <link href=.. rel=alternate>."""
+    alt = ""
+    first = ""
+    for child in entry:
+        if _localname(child.tag) != "link":
+            continue
+        href = child.get("href")
+        if href:  # Atom
+            rel = (child.get("rel") or "alternate").lower()
+            if rel == "alternate" and not alt:
+                alt = href
+            if not first:
+                first = href
+        elif child.text and child.text.strip():  # RSS
+            return child.text.strip()
+    return (alt or first).strip()
+
+
+def unwrap_google_redirect(url: str) -> str:
+    """Google Alerts wraps targets as google.com/url?...&url=REAL — unwrap it."""
+    if "google.com/url" not in url:
+        return url
+    try:
+        q = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)
+    except ValueError:
+        return url
+    return (q.get("url") or q.get("q") or [url])[0]
+
+
+def _normalize_date(value: str) -> str:
+    v = (value or "").strip()
+    if not v:
+        return ""
+    # Atom ISO-8601
+    try:
+        return datetime.fromisoformat(v.replace("Z", "+00:00")).date().isoformat()
+    except ValueError:
+        pass
+    # RSS RFC-822
+    try:
+        dt = parsedate_to_datetime(v)
+        if dt is not None:
+            return dt.date().isoformat()
+    except (TypeError, ValueError):
+        pass
+    return v[:10] if len(v) >= 10 else ""
+
+
+def parse_feed(xml_text: str) -> list[dict]:
+    """Parse RSS 2.0 or Atom into a list of {title,url,date,summary} dicts."""
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError as exc:
+        raise ValueError(f"not valid XML: {exc}") from exc
+
+    # RSS: rss/channel/item ; Atom: feed/entry
+    items: list[ET.Element] = []
+    channel = _find_child(root, "channel")
+    container = channel if channel is not None else root
+    for child in container:
+        if _localname(child.tag) in ("item", "entry"):
+            items.append(child)
+
+    out: list[dict] = []
+    for it in items:
+        title = _child_text(it, "title")
+        url = unwrap_google_redirect(_extract_link(it))
+        date = (_child_text(it, "pubdate") or _child_text(it, "published")
+                or _child_text(it, "updated") or _child_text(it, "date"))
+        summary = (_child_text(it, "description") or _child_text(it, "summary")
+                   or _child_text(it, "content"))
+        if not title and not summary:
+            continue
+        out.append({"title": title, "url": url,
+                    "date": _normalize_date(date), "summary": summary})
+    return out
+
+
+def entry_to_row(entry: dict, source: str, today: str) -> dict:
+    title = (entry.get("title") or "").strip()
+    url = (entry.get("url") or "").strip()
+    summary = entry.get("summary") or ""
+    basis = (url or title).encode("utf-8")
+    short = hashlib.sha1(basis).hexdigest()[:6]
+    oid = re.sub(r"-+", "-", "-".join(p for p in (slugify(source), slugify(title)) if p)).strip("-")[:110]
+    oid = f"{oid}-{short}"
+    row = {k: "" for k in CANONICAL_HEADER}
+    row.update({
+        "opportunity_id": oid,
+        "status": "watching",
+        "source": source,
+        "title": title,
+        "portal_url": url,
+        "posted_date": entry.get("date") or today,
+        "next_action": "Triage: open link, run pipeline.py score, decide bid/no-bid",
+        "created_date": today,
+        "last_reviewed": today,
+        "notes": f"Auto-ingested from {source} feed; verify details at the source",
+    })
+    return row
+
+
+def existing_ids(rows: list[dict]) -> set[str]:
+    return {(r.get("opportunity_id") or "").strip() for r in rows if r.get("opportunity_id")}
+
+
+def ingest(entries: list[tuple[dict, str]], existing_rows: list[dict], today: str,
+           home_states: frozenset[str] = relevance.HOME_STATES_DEFAULT
+           ) -> tuple[list[dict], list[dict], list[dict]]:
+    """Partition (entry, source) pairs into (new_rows, dupes, rejected)."""
+    ids = existing_ids(existing_rows)
+    seen: set[str] = set()
+    new_rows: list[dict] = []
+    dupes: list[dict] = []
+    rejected: list[dict] = []
+    for entry, source in entries:
+        row = entry_to_row(entry, source, today)
+        text = "\n".join(p for p in (row["title"], entry.get("summary", "")) if p)
+        verdict = relevance.classify(text, source=source, home_states=home_states)
+        row["fit_score"] = str(verdict.confidence)
+        row["notes"] = (f"{row['notes']}; relevance={verdict.decision}").strip("; ")
+        if verdict.decision == "REJECT":
+            row["next_action"] = "; ".join(verdict.reasons[:2])
+            rejected.append(row)
+            continue
+        if verdict.decision == "REVIEW":
+            row["next_action"] = "HUMAN: confirm mattress scope — " + "; ".join(verdict.reasons[:2])
+        oid = row["opportunity_id"]
+        if oid in ids or oid in seen:
+            dupes.append(row)
+            continue
+        seen.add(oid)
+        new_rows.append(row)
+    return new_rows, dupes, rejected
+
+
+def fetch_feed(url: str, timeout: float = DEFAULT_TIMEOUT_S) -> str:
+    ctx = ssl.create_default_context()
+    req = urllib.request.Request(url, headers={"User-Agent": "silverline-sleep-procurement/1.0"})
+    with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
+        return resp.read().decode("utf-8", errors="replace")
+
+
+def _load_feeds(args) -> list[tuple[str, str]]:
+    """Return list of (url, source). Fixture mode returns a sentinel."""
+    feeds: list[tuple[str, str]] = []
+    if args.feeds_config:
+        with open(args.feeds_config, "r", encoding="utf-8") as fh:
+            for f in json.load(fh):
+                feeds.append((f["url"], f.get("source") or f["url"]))
+    for url in args.feed or []:
+        feeds.append((url, args.source or url))
+    return feeds
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--feed", action="append", help="Feed URL (repeatable).")
+    parser.add_argument("--source", default=None, help="Source label for --feed URLs.")
+    parser.add_argument("--feeds-config", default=None, help="JSON list of {url, source} feeds.")
+    parser.add_argument("--fixture", default=None, help="Read one feed's XML from a file (testing).")
+    parser.add_argument("--active", default=str(DEFAULT_ACTIVE))
+    parser.add_argument("--archive", default=str(DEFAULT_ARCHIVE))
+    parser.add_argument("--reject-log", default=None, help="Optional CSV path to append rejected rows.")
+    parser.add_argument("--dry-run", action="store_true", help="Show what would be added; do not write.")
+    args = parser.parse_args(argv)
+
+    today = datetime.now().date().isoformat()
+    active_path = Path(args.active)
+    archive_path = Path(args.archive)
+    existing_active = _read_existing_or_empty(active_path)
+    existing_rows = existing_active + _read_existing_or_empty(archive_path)
+
+    entries: list[tuple[dict, str]] = []
+    if args.fixture:
+        with open(args.fixture, "r", encoding="utf-8") as fh:
+            for e in parse_feed(fh.read()):
+                entries.append((e, args.source or "RSS"))
+    else:
+        feeds = _load_feeds(args)
+        if not feeds:
+            print("error: provide --feed/--source, --feeds-config, or --fixture", file=sys.stderr)
+            return 2
+        for url, source in feeds:
+            try:
+                xml_text = fetch_feed(url)
+            except (urllib.error.URLError, urllib.error.HTTPError) as exc:
+                print(f"warn: skipping {source} ({url}): {exc}", file=sys.stderr)
+                continue
+            try:
+                for e in parse_feed(xml_text):
+                    entries.append((e, source))
+            except ValueError as exc:
+                print(f"warn: {source}: {exc}", file=sys.stderr)
+
+    new_rows, dupes, rejected = ingest(entries, existing_rows, today)
+    print(f"feed entries fetched: {len(entries)}")
+    print(f"  new:      {len(new_rows)}")
+    print(f"  dupes:    {len(dupes)}")
+    print(f"  rejected: {len(rejected)} (not mattress-relevant)")
+    for r in new_rows:
+        flag = " [REVIEW]" if r.get("next_action", "").startswith("HUMAN:") else ""
+        print(f"  + [{r['source']}] {r['title']}{flag}")
+
+    if args.reject_log and rejected:
+        _append_reject_log(Path(args.reject_log), rejected)
+        print(f"  logged {len(rejected)} rejected row(s) to {args.reject_log}")
+
+    if args.dry_run:
+        print("(--dry-run: no files written)")
+        return 0
+    if not new_rows:
+        print("(no new rows to write)")
+        return 0
+    write_rows_atomic(active_path, existing_active + new_rows)
+    print(f"wrote {len(new_rows)} new row(s) to {active_path}")
+    return 0
+
+
+def _read_existing_or_empty(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    _, rows = read_rows(path)
+    return rows
+
+
+def _append_reject_log(path: Path, rejected: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    exists = path.exists()
+    with path.open("a", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=CANONICAL_HEADER, lineterminator="\n", extrasaction="ignore")
+        if not exists:
+            writer.writeheader()
+        for row in rejected:
+            writer.writerow(row)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

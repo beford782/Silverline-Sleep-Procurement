@@ -335,6 +335,7 @@ Lightweight Python utilities, all stdlib-only where possible:
 | `tools/ingest_sam.py` | Pull federal opportunities from the SAM.gov public API (stdlib `urllib`) into the pipeline. Requires `SAM_API_KEY`. |
 | `tools/ingest_portal_csv.py` | Import operator-downloaded portal CSV exports using JSON column mappings, currently including ESBD. |
 | `tools/ingest_email.py` | Ingest portal commodity/NIGP email alerts into the pipeline (stdlib `urllib`). Default backend Outlook/M365 via Microsoft Graph (`GRAPH_*` secrets); Gmail backend optional (`GMAIL_*`). See `docs/email_ingest_setup.md`. |
+| `tools/ingest_rss.py` | Ingest RSS/Atom feeds (Google Alerts, Bonfire portal feeds, RFPMart) into the pipeline, gated by the relevance filter. Configure feeds via `configs/feeds.json` (see `configs/feeds.example.json`). |
 | `tools/portal_csv_mapping.py` | Inspect a portal CSV export and write a starter mapping JSON for `ingest_portal_csv.py`. |
 | `tools/source_review.py` | Generate an operator portal-review checklist from the source registry. Writes to `build/portal_reviews/` (gitignored). |
 | `tools/generate_procurement_packet.py` | CSV questionnaire → markdown + printable HTML packet |

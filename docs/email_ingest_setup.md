@@ -10,25 +10,37 @@ registered supplier. `tools/ingest_email.py` reads those alerts from the
 alert mailbox (stdlib `urllib`, no scraping, no browser automation) and
 turns them into pipeline rows.
 
-The alert inbox `beford@silverlinesleep.com` is on **Outlook / Microsoft
-365**, so the default backend is the **Microsoft Graph API**
-(`--provider graph`). (A Gmail backend, `--provider gmail`, also exists if
-alerts are ever routed to a Gmail mailbox.)
-
 This replaces the *manual* weekly portal walk for the email-notification
 sources. Submission stays manual; the tool only adds `watching` rows to
 triage.
 
-There are two one-time setup tasks: **(A) subscribe to the alerts** and
-route them to one Outlook folder, and **(B) register an Azure app** so the
-scheduled run can read that mailbox. Neither can be automated for you —
-they require portal logins and an Azure admin consent.
+## Recommended path — route alerts to Gmail (no Azure admin)
+
+The simplest, no-admin setup, and the current plan:
+
+1. **Subscribe to the portal alerts** (section A) using
+   **`blake.e.ford@gmail.com`** as the notification/contact address, so
+   alerts land directly in a Gmail that an operator/assistant can read.
+2. **Ingest, two flavors:**
+   - **On-demand sweep (zero config):** an assistant with Gmail access
+     reads the new alerts, runs them through the same tested parser
+     (`ingest_email.py`), and opens a triage PR. Nothing to provision.
+   - **Unattended (light, self-service):** mint a personal
+     `gmail.readonly` OAuth refresh token (Google Cloud Console, your own
+     Google account — no IT/admin), set `GMAIL_CLIENT_ID` /
+     `GMAIL_CLIENT_SECRET` / `GMAIL_REFRESH_TOKEN` repo secrets, and run
+     `ingest_email.py --provider gmail`.
+
+The Outlook / Microsoft Graph backend below is an **alternative** for
+running directly against the Outlook mailbox — it needs a tenant-admin
+**Mail.Read** consent, so use it only if/when that's available.
 
 ---
 
-## A. Subscribe to portal alerts and route them to one label
+## A. Subscribe to portal alerts and route them to one place
 
-For each portal, register as a supplier (free unless noted), select the
+For each portal, register as a supplier (free unless noted), use
+**`blake.e.ford@gmail.com`** as the notification address, select the
 mattress/bedding/institutional-furniture commodity codes, and turn on
 email notifications. Suggested commodity vocabulary (already tracked in
 the vendor's `portal-checklists/`): NIGP class **205** (bedding,
@@ -45,27 +57,29 @@ classes; NAICS **337910**.
 | Texas ESBD / CMBL | comptroller.texas.gov CMBL (fee) | NIGP-code notices |
 | State boards (OMES, LaPAC, MAGIC, ARBuy, NM SPD) | each state supplier portal | email alerts where offered |
 
-**Routing (Outlook):** Use the contact address `beford@silverlinesleep.com`
-on every portal, then create an **Outlook rule** that files those alerts
-into a folder named **`Procurement Alerts`**. Match the portal sender
-domains (`gobonfire.com`, `ionwave.net`, `demandstar.com`,
-`bidnetdirect.com`, `buyboard.com`, `txsmartbuy.gov`, etc.). The
-scheduled run reads that folder:
+**Routing (Gmail, recommended):** use `blake.e.ford@gmail.com` as the
+notification address on every portal — no rule needed; sweeps find alerts
+by sender domain. **Routing (Outlook alternative):** if alerts go to the
+Outlook mailbox instead, create an **Outlook rule** that files them into a
+folder named **`Procurement Alerts`** (match sender domains `gobonfire.com`,
+`ionwave.net`, `demandstar.com`, `bidnetdirect.com`, `buyboard.com`,
+`txsmartbuy.gov`, etc.), which the Graph backend reads:
 
 ```
 python tools/ingest_email.py --graph-folder "Procurement Alerts" --since-days 8
 ```
 
-> Omit `--graph-folder` to scan the whole mailbox instead. If you ever
-> route alerts to Gmail, use `--provider gmail --query '...'`.
+> Omit `--graph-folder` to scan the whole mailbox instead.
 
 ---
 
-## B. Register an Azure app (Microsoft Graph, read-only, app-only)
+## B. Alternative: native Outlook via Microsoft Graph (requires tenant admin)
 
-The scheduled run authenticates as an **application** (client-credentials
-flow) with read access to the alert mailbox. No interactive login at run
-time — the client secret *is* the credential.
+Use this only if you want the scheduled run to read the Outlook mailbox
+directly. It authenticates as an **application** (client-credentials flow)
+and needs a tenant-admin **Mail.Read** consent — which is why the
+Gmail-routed path above is the default. The client secret *is* the
+credential; no interactive login at run time.
 
 1. In the **Entra admin center / Azure portal → App registrations**, create
    a new registration (single tenant). Note the **Application (client) ID**

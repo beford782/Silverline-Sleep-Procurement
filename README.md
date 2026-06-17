@@ -270,8 +270,13 @@ supplier. `tools/ingest_email.py` reads those alerts from the alert
 mailbox and turns them into `watching` pipeline rows — automating the
 manual portal walk for the email-notification sources. Two backends, both
 stdlib `urllib`: **Outlook / Microsoft 365 via the Microsoft Graph API**
-(`--provider graph`, the default) and **Gmail via the Gmail REST API**
+(`--provider graph`, the tool default) and **Gmail via the Gmail REST API**
 (`--provider gmail`).
+
+> **Recommended operator path (no Azure admin):** route the portal alerts
+> to a Gmail address and ingest via `--provider gmail` (or an on-demand
+> assistant sweep). The Graph backend needs a tenant-admin Mail.Read
+> consent; see [`docs/email_ingest_setup.md`](docs/email_ingest_setup.md).
 
 ```sh
 # Offline / test (no creds, no network)

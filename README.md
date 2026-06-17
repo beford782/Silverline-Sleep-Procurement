@@ -160,6 +160,10 @@ Behavior:
   archive dupes instead of being re-ingested into active. Re-running
   with an overlapping date range is safe.
 - `--dry-run` previews what would be added without writing.
+- **Gated by `tools/relevance.py`**: each record is classified
+  ACCEPT / REVIEW / REJECT (NAICS 337910 / PSC 7210 count as strong
+  mattress signals). Rejects are not written; reviews are kept with a
+  human-confirm flag.
 - HTTP 404 from SAM.gov is treated as "no results" per the API's
   documented semantics — that's a normal exit-0 outcome when your
   filters match nothing in the date range.
@@ -297,6 +301,11 @@ Behavior:
   **and** archive by `opportunity_id` (a stable slug of source + title +
   a short hash of the portal link), so re-running over an overlapping
   window is safe.
+- **Gated by `tools/relevance.py`**: every parsed alert is classified
+  ACCEPT / REVIEW / REJECT. Non-mattress noise (broad furniture/office
+  digests, registration confirmations) is rejected and never written;
+  ambiguous items are kept with a `next_action` flag for human review.
+  `--reject-log PATH` optionally records rejects for tuning.
 - The parser is **generic and best-effort**: title (subject, prefixes
   stripped), portal link, and due date; `buyer`/`location` may be blank.
   Always verify ingested rows against the portal. Add per-sender adapters
@@ -331,6 +340,7 @@ Lightweight Python utilities, all stdlib-only where possible:
 | `tools/generate_procurement_packet.py` | CSV questionnaire → markdown + printable HTML packet |
 | `tools/validate_vendor_profile.py` | Validate `vendor-profiles/*.profile.json` against the schema |
 | `tools/workflow_check.py` | Check pipeline rows against bid markdown files for status drift, missing active drafts, stale reviews, and archive mismatches. |
+| `tools/relevance.py` | Central mattress-relevance filter (ACCEPT/REVIEW/REJECT) that every ingester gates on, so non-mattress noise (furniture/office digests, concrete/air mattresses, registration emails) never enters the pipeline. |
 
 Run the test suite with:
 

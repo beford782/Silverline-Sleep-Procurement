@@ -140,18 +140,31 @@ class GraphNormalizeTests(unittest.TestCase):
 
 class IngestTests(unittest.TestCase):
     def test_partition_counts(self) -> None:
-        new_rows, dupes, skipped = ingest_email.ingest(_load_fixture(), [], TODAY)
-        self.assertEqual(len(new_rows), 3)   # bonfire, region4, demandstar
+        new_rows, dupes, skipped, rejected = ingest_email.ingest(_load_fixture(), [], TODAY)
+        self.assertEqual(len(new_rows), 3)   # bonfire, region4, demandstar (all mattress)
         self.assertEqual(len(dupes), 1)      # bonfire duplicate
         self.assertEqual(len(skipped), 1)    # empty subject
+        self.assertEqual(len(rejected), 0)   # all fixture items are mattress-relevant
 
     def test_dedup_against_existing(self) -> None:
         msgs = _load_fixture()
         first = ingest_email.parse_message(msgs[0], TODAY)
         existing = [first]
-        new_rows, dupes, _ = ingest_email.ingest(msgs, existing, TODAY)
+        new_rows, dupes, _, _ = ingest_email.ingest(msgs, existing, TODAY)
         self.assertNotIn(first["opportunity_id"], {r["opportunity_id"] for r in new_rows})
         self.assertIn(first["opportunity_id"], {d["opportunity_id"] for d in dupes})
+
+    def test_non_mattress_email_is_rejected(self) -> None:
+        msgs = [{
+            "id": "reg-1",
+            "sender": "TIPS eBid <tips@customer.ionwave.net>",
+            "subject": "TIPS eBid System Registration Activation Notification",
+            "date": "Tue, 16 Jun 2026 08:00:00 -0500",
+            "body": "Dear Supplier, your registration has been activated.",
+        }]
+        new_rows, _, _, rejected = ingest_email.ingest(msgs, [], TODAY)
+        self.assertEqual(len(new_rows), 0)
+        self.assertEqual(len(rejected), 1)
 
 
 class CliTests(unittest.TestCase):

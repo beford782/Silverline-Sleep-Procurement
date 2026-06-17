@@ -87,6 +87,7 @@ from pipeline import (  # noqa: E402
     write_rows_atomic,
     slugify,
 )
+import relevance  # noqa: E402
 
 
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
@@ -264,9 +265,15 @@ def existing_ids(rows: list[dict]) -> set[str]:
     return {(r.get("opportunity_id") or "").strip() for r in rows if r.get("opportunity_id")}
 
 
-def ingest(messages: Iterable[dict], existing_rows: list[dict], today: str) -> tuple[list[dict], list[dict], list[dict]]:
-    """Partition messages into (new_rows, dupes, skipped).
+def ingest(messages: Iterable[dict], existing_rows: list[dict], today: str,
+           home_states: frozenset[str] = relevance.HOME_STATES_DEFAULT
+           ) -> tuple[list[dict], list[dict], list[dict], list[dict]]:
+    """Partition messages into (new_rows, dupes, skipped, rejected).
 
+    Each parsed row is gated by the central mattress-relevance classifier:
+      REJECT -> rejected (never written to the pipeline);
+      REVIEW -> kept, but next_action flags it for human confirmation;
+      ACCEPT -> kept as a normal watching row.
     dupes: rows whose opportunity_id is already tracked.
     skipped: messages that produced no usable row (no title).
     """
@@ -275,18 +282,32 @@ def ingest(messages: Iterable[dict], existing_rows: list[dict], today: str) -> t
     new_rows: list[dict] = []
     dupes: list[dict] = []
     skipped: list[dict] = []
+    rejected: list[dict] = []
     for msg in messages:
         row = parse_message(msg, today)
         if row is None:
             skipped.append(msg)
             continue
+        text = "\n".join(p for p in (row["title"], msg.get("body", ""),
+                                     row.get("commodity_terms", "")) if p)
+        verdict = relevance.classify(text, buyer=row.get("buyer", ""),
+                                     source=row.get("source", ""),
+                                     home_states=home_states)
+        row["fit_score"] = str(verdict.confidence)
+        row["notes"] = (f"{row.get('notes', '')}; relevance={verdict.decision}").strip("; ")
+        if verdict.decision == "REJECT":
+            row["next_action"] = "; ".join(verdict.reasons[:2])
+            rejected.append(row)
+            continue
+        if verdict.decision == "REVIEW":
+            row["next_action"] = "HUMAN: confirm mattress scope — " + "; ".join(verdict.reasons[:2])
         oid = row["opportunity_id"]
         if oid in ids or oid in seen:
             dupes.append(row)
             continue
         seen.add(oid)
         new_rows.append(row)
-    return new_rows, dupes, skipped
+    return new_rows, dupes, skipped, rejected
 
 
 # --------------------------------------------------------------------------
@@ -578,12 +599,11 @@ def _run_check(args, today: str) -> int:
         print(f"FAILED\n  {exc}")
         return 1
 
-    new_rows, _, skipped = ingest(messages, [], today)
-    print(f"  [3/3] parsed {len(messages)} message(s); {len(new_rows)} would become rows:")
+    new_rows, _, skipped, rejected = ingest(messages, [], today)
+    print(f"  [3/3] parsed {len(messages)} message(s); {len(new_rows)} relevant, "
+          f"{len(rejected)} filtered out, {len(skipped)} no-title:")
     for r in new_rows[:5]:
         print(f"    + [{r['source']}] {r['title']}  due={r['due_date'] or '?'}  url={r['portal_url'] or '?'}")
-    if skipped:
-        print(f"    ({len(skipped)} message(s) had no usable title)")
     print("connectivity check OK (no rows written)")
     return 0
 
@@ -610,6 +630,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="Connectivity check: verify credentials + mailbox access with "
                              "stepwise diagnostics, print a parse preview, write nothing.")
     parser.add_argument("--dry-run", action="store_true", help="Show what would be added; do not write.")
+    parser.add_argument("--reject-log", default=None,
+                        help="Optional CSV path to append relevance-rejected rows for audit/tuning.")
     parser.add_argument("--fixture", default=None,
                         help="Read a JSON list of normalized messages instead of calling Gmail (testing).")
     args = parser.parse_args(argv)
@@ -626,14 +648,20 @@ def main(argv: list[str] | None = None) -> int:
     existing_rows = existing_active + existing_archive
 
     messages = _load_messages(args, today)
-    new_rows, dupes, skipped = ingest(messages, existing_rows, today)
+    new_rows, dupes, skipped, rejected = ingest(messages, existing_rows, today)
 
     print(f"email alerts fetched: {len(messages)} message(s)")
     print(f"  new:     {len(new_rows)}")
     print(f"  dupes:   {len(dupes)}")
+    print(f"  rejected: {len(rejected)} (not mattress-relevant)")
     print(f"  skipped: {len(skipped)} (no usable title)")
     for r in new_rows:
-        print(f"  + [{r['source']}] {r['opportunity_id']} :: {r['title']}")
+        flag = " [REVIEW]" if r.get("next_action", "").startswith("HUMAN:") else ""
+        print(f"  + [{r['source']}] {r['opportunity_id']} :: {r['title']}{flag}")
+
+    if args.reject_log and rejected:
+        _append_reject_log(Path(args.reject_log), rejected)
+        print(f"  logged {len(rejected)} rejected row(s) to {args.reject_log}")
 
     if args.dry_run:
         print("(--dry-run: no files written)")
@@ -645,6 +673,20 @@ def main(argv: list[str] | None = None) -> int:
     write_rows_atomic(active_path, existing_active + new_rows)
     print(f"wrote {len(new_rows)} new row(s) to {active_path}")
     return 0
+
+
+def _append_reject_log(path: Path, rejected: list[dict]) -> None:
+    """Append rejected rows to a CSV (created with header if absent)."""
+    import csv
+    path.parent.mkdir(parents=True, exist_ok=True)
+    exists = path.exists()
+    with path.open("a", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=CANONICAL_HEADER, lineterminator="\n",
+                                extrasaction="ignore")
+        if not exists:
+            writer.writeheader()
+        for row in rejected:
+            writer.writerow(row)
 
 
 if __name__ == "__main__":

@@ -17,6 +17,7 @@ Lightweight Python utilities for the procurement toolkit.
 | `generate_procurement_packet.py` | yes | Reads a questionnaire CSV, writes a markdown packet and printable HTML. Default output dir is `build/generated/` (gitignored). |
 | `validate_vendor_profile.py` | yes | Validates `vendor-profiles/*.profile.json` against `vendor-profiles/vendor_profile.schema.json`. Walks the schema at runtime; no parallel hardcoded rules. |
 | `workflow_check.py` | yes | Check pipeline rows against bid markdown files for status drift, missing active drafts, stale reviews, and archive mismatches. |
+| `relevance.py` | yes | Central mattress-relevance classifier. `classify(text)` returns ACCEPT / REVIEW / REJECT with confidence, matched terms, and reasons (whole-word/phrase matching; NAICS 337910 / PSC 7210 aware; six-state geography demotion). Every ingester gates on it so non-mattress noise never reaches the pipeline. CLI: `python tools/relevance.py "text"`. |
 
 ### Work the opportunity pipeline
 

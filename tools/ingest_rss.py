@@ -178,6 +178,20 @@ def entry_to_row(entry: dict, source: str, today: str) -> dict:
     return row
 
 
+# Hosts that are never real solicitations — news Q&A, social, retail.
+NOISE_HOSTS = (
+    "quora.com", "reddit.com", "wikipedia.org", "pinterest.com",
+    "facebook.com", "twitter.com", "x.com", "instagram.com", "youtube.com",
+    "amazon.com", "ebay.com", "etsy.com", "walmart.com", "alibaba.com",
+)
+
+
+def _is_noise_host(url: str) -> bool:
+    host = urllib.parse.urlsplit(url).netloc.lower()
+    host = host[4:] if host.startswith("www.") else host
+    return any(host == h or host.endswith("." + h) for h in NOISE_HOSTS)
+
+
 def existing_ids(rows: list[dict]) -> set[str]:
     return {(r.get("opportunity_id") or "").strip() for r in rows if r.get("opportunity_id")}
 
@@ -194,15 +208,24 @@ def ingest(entries: list[tuple[dict, str]], existing_rows: list[dict], today: st
     for entry, source in entries:
         row = entry_to_row(entry, source, today)
         text = "\n".join(p for p in (row["title"], entry.get("summary", "")) if p)
-        verdict = relevance.classify(text, source=source, home_states=home_states)
+        # Web/RSS items must carry a procurement cue to ACCEPT (filters news,
+        # competitor catalogs); known junk hosts (Quora/Reddit/retail) are
+        # rejected outright.
+        verdict = relevance.classify(text, source=source, home_states=home_states,
+                                     require_procurement=True)
         row["fit_score"] = str(verdict.confidence)
-        row["notes"] = (f"{row['notes']}; relevance={verdict.decision}").strip("; ")
-        if verdict.decision == "REJECT":
-            row["next_action"] = "; ".join(verdict.reasons[:2])
+        decision = verdict.decision
+        reasons = verdict.reasons
+        if decision != "REJECT" and _is_noise_host(row["portal_url"]):
+            decision = "REJECT"
+            reasons = ["non-procurement source host"]
+        row["notes"] = (f"{row['notes']}; relevance={decision}").strip("; ")
+        if decision == "REJECT":
+            row["next_action"] = "; ".join(reasons[:2])
             rejected.append(row)
             continue
-        if verdict.decision == "REVIEW":
-            row["next_action"] = "HUMAN: confirm mattress scope — " + "; ".join(verdict.reasons[:2])
+        if decision == "REVIEW":
+            row["next_action"] = "HUMAN: confirm mattress scope — " + "; ".join(reasons[:2])
         oid = row["opportunity_id"]
         if oid in ids or oid in seen:
             dupes.append(row)

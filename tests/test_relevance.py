@@ -81,6 +81,28 @@ class WordBoundaryTests(unittest.TestCase):
         self.assertEqual(v.decision, "REJECT")
 
 
+class ProcurementCueTests(unittest.TestCase):
+    def test_mattress_news_without_cue_demoted(self) -> None:
+        # A news headline with a mattress term but no procurement cue.
+        v = relevance.classify("Woman arrested for ripping up jail mattress",
+                               require_procurement=True)
+        self.assertEqual(v.decision, "REVIEW")
+
+    def test_mattress_with_bid_cue_accepts(self) -> None:
+        v = relevance.classify("Invitation for bid: correctional mattresses",
+                               require_procurement=True)
+        self.assertEqual(v.decision, "ACCEPT")
+
+    def test_require_procurement_off_keeps_accept(self) -> None:
+        # Without the flag (e.g. SAM/email channels), no cue is needed.
+        v = relevance.classify("jail mattress", require_procurement=False)
+        self.assertEqual(v.decision, "ACCEPT")
+
+    def test_has_procurement_cue(self) -> None:
+        self.assertTrue(relevance.has_procurement_cue("Request for Proposal #12"))
+        self.assertFalse(relevance.has_procurement_cue("a comfy night of sleep"))
+
+
 class GeographyTests(unittest.TestCase):
     def test_detect_states_name_and_code(self) -> None:
         s = relevance.detect_states("Delivery to Dallas, TX and also Louisiana")

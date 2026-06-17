@@ -73,6 +73,30 @@ class IngestTests(unittest.TestCase):
         self.assertEqual(len(rejected), 1)   # articulated concrete mattress
         self.assertEqual(new_rows[0]["source"], "Google Alerts")
 
+    def test_noise_host_rejected(self) -> None:
+        # A Quora result that matched on "bid" must be rejected by host.
+        entries = [({
+            "title": "Do prisoners get a pillow on their bed in jail?",
+            "url": "https://www.quora.com/jail-mattress-question",
+            "date": "2026-06-17", "summary": "my pod boss had a comfy 8 year bid jail mattress",
+        }, "Google Alerts")]
+        new_rows, _, rejected = ingest_rss.ingest(entries, [], TODAY)
+        self.assertEqual(len(new_rows), 0)
+        self.assertEqual(len(rejected), 1)
+        self.assertIn("host", rejected[0]["next_action"])
+
+    def test_retail_catalog_without_cue_is_review(self) -> None:
+        # Competitor product page: mattress term, no procurement cue -> REVIEW.
+        entries = [({
+            "title": "Clear Advantage Jail Mattress",
+            "url": "https://hardtimeproducts.com/jail-mattress",
+            "date": "2026-06-17", "summary": "Cortech EZ Bunk Clear Advantage Jail Mattress $104.99",
+        }, "Google Alerts")]
+        new_rows, _, rejected = ingest_rss.ingest(entries, [], TODAY)
+        self.assertEqual(len(rejected), 0)
+        self.assertEqual(len(new_rows), 1)
+        self.assertTrue(new_rows[0]["next_action"].startswith("HUMAN:"))
+
     def test_dedup_against_existing(self) -> None:
         entries = self._entries(RSS, "Bonfire: Harris County")
         first = ingest_rss.entry_to_row(entries[0][0], "Bonfire: Harris County", TODAY)

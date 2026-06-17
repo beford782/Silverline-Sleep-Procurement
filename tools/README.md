@@ -12,10 +12,12 @@ Lightweight Python utilities for the procurement toolkit.
 | `promote_draft.py` | yes | Promote `build/drafts/<opportunity-id>_draft.md` into `bids/active/<opportunity-id>.md` with overwrite and archive-collision checks. |
 | `ingest_sam.py` | yes | Pull federal opportunities from SAM.gov's public API (`api.sam.gov/opportunities/v2/search`) into `bids/active/_pipeline.csv`. Stdlib HTTPS via `urllib.request`. Requires `SAM_API_KEY` env var. Dedupes by `solicitation_number` + `opportunity_id`. |
 | `ingest_portal_csv.py` | yes | Import an operator-downloaded portal CSV export into the active pipeline using a JSON column mapping such as `configs/portal_csv/esbd.json`. |
+| `ingest_email.py` | yes | Ingest portal commodity/NIGP email alerts from the alert mailbox into the active pipeline. Stdlib HTTPS via `urllib.request`. Two backends: `--provider graph` (Outlook/M365 via Microsoft Graph, app-only OAuth; `GRAPH_TENANT_ID`/`GRAPH_CLIENT_ID`/`GRAPH_CLIENT_SECRET`/`GRAPH_MAILBOX`) and `--provider gmail` (Gmail REST, refresh-token; `GMAIL_*`). `--fixture` for offline use. Generic title/link/due-date parser; dedupes by `opportunity_id`. See `docs/email_ingest_setup.md`. |
 | `portal_csv_mapping.py` | yes | Inspect a portal CSV export and write a starter mapping JSON for `ingest_portal_csv.py`. |
 | `generate_procurement_packet.py` | yes | Reads a questionnaire CSV, writes a markdown packet and printable HTML. Default output dir is `build/generated/` (gitignored). |
 | `validate_vendor_profile.py` | yes | Validates `vendor-profiles/*.profile.json` against `vendor-profiles/vendor_profile.schema.json`. Walks the schema at runtime; no parallel hardcoded rules. |
 | `workflow_check.py` | yes | Check pipeline rows against bid markdown files for status drift, missing active drafts, stale reviews, and archive mismatches. |
+| `relevance.py` | yes | Central mattress-relevance classifier. `classify(text)` returns ACCEPT / REVIEW / REJECT with confidence, matched terms, and reasons (whole-word/phrase matching; NAICS 337910 / PSC 7210 aware; six-state geography demotion). Every ingester gates on it so non-mattress noise never reaches the pipeline. CLI: `python tools/relevance.py "text"`. |
 
 ### Work the opportunity pipeline
 

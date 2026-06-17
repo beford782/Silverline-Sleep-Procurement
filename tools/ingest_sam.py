@@ -67,6 +67,7 @@ from pipeline import (  # noqa: E402
     write_rows_atomic,
     slugify,
 )
+import relevance  # noqa: E402
 
 
 SAM_SEARCH_URL = "https://api.sam.gov/opportunities/v2/search"
@@ -239,17 +240,33 @@ def ingest(
     records: Iterable[dict],
     existing_rows: list[dict],
     today: str,
+    home_states: frozenset[str] = relevance.HOME_STATES_DEFAULT,
 ) -> tuple[list[dict], list[dict], list[dict]]:
-    """Partition incoming records into (new_rows, dupes, all_new_rows).
+    """Partition incoming records into (new_rows, dupes, rejected).
 
-    `dupes` contains the records skipped because their opportunity_id or
-    solicitation_number is already in the pipeline.
+    Each record is gated by the central mattress-relevance classifier:
+    REJECT records go to `rejected` (never written); REVIEW records are
+    kept but flagged in next_action for human confirmation; ACCEPT records
+    are kept normally. `dupes` are rows already in the pipeline by
+    opportunity_id or solicitation_number.
     """
     ids, sols = existing_ids(existing_rows)
     new_rows: list[dict] = []
     dupes: list[dict] = []
+    rejected: list[dict] = []
     for record in records:
         row = record_to_row(record, today)
+        text = "\n".join(p for p in (row["title"], row["commodity_terms"],
+                                     row["delivery_location"]) if p)
+        verdict = relevance.classify(text, buyer=row["buyer"], source="SAM.gov",
+                                     home_states=home_states)
+        row["fit_score"] = str(verdict.confidence)
+        if verdict.decision == "REJECT":
+            row["next_action"] = "; ".join(verdict.reasons[:2])
+            rejected.append(row)
+            continue
+        if verdict.decision == "REVIEW":
+            row["next_action"] = "HUMAN: confirm mattress scope — " + "; ".join(verdict.reasons[:2])
         sol_no = row["solicitation_number"]
         if row["opportunity_id"] in ids or (sol_no and sol_no in sols):
             dupes.append(row)
@@ -258,7 +275,7 @@ def ingest(
         if sol_no:
             sols.add(sol_no)
         new_rows.append(row)
-    return new_rows, dupes, new_rows
+    return new_rows, dupes, rejected
 
 
 def _read_existing_or_empty(active_path: Path) -> list[dict]:
@@ -381,7 +398,7 @@ def main(argv: list[str] | None = None) -> int:
     for payload in payloads:
         records.extend(payload.get("opportunitiesData") or [])
 
-    new_rows, dupes, _ = ingest(records, existing_rows, today)
+    new_rows, dupes, rejected = ingest(records, existing_rows, today)
 
     # Attribute each dupe to active vs archive so the operator can tell
     # "already tracking it" from "previously closed, ignore."
@@ -397,6 +414,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"SAM.gov fetched: {len(records)} record(s)")
     print(f"  new:    {len(new_rows)}")
     print(f"  dupes:  {len(dupes)} ({n_active_dupes} active, {n_archive_dupes} archive)")
+    print(f"  rejected: {len(rejected)} (not mattress-relevant)")
     if new_rows:
         for r in new_rows:
             print(f"  + {r['opportunity_id']} :: {r['title']}")

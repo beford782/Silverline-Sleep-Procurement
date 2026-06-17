@@ -1,0 +1,37 @@
+[
+  {
+    "id": "msg-bonfire-1",
+    "sender": "City of Example Purchasing <notifications@gobonfire.com>",
+    "subject": "New Opportunity: Dormitory Mattresses and Bed Frames",
+    "date": "Mon, 15 Jun 2026 09:00:00 -0500",
+    "body": "A new opportunity matching your commodity codes has been posted.\nProject: Dormitory Mattresses and Bed Frames\nView the opportunity: https://city.bonfirehub.com/opportunities/12345\nSubmissions close June 30, 2026 at 2:00 PM CT.\nManage your notifications or unsubscribe: https://gobonfire.com/unsubscribe?x=1"
+  },
+  {
+    "id": "msg-region4-1",
+    "sender": "Region 4 ESC <noreply@region4esc.ionwave.net>",
+    "subject": "Bid Invitation: Mattresses and Bedding (Cooperative)",
+    "date": "Tue, 16 Jun 2026 08:30:00 -0500",
+    "body": "You are invited to respond to a cooperative solicitation.\nResponse due 07/10/2026.\nEvent details: https://region4esc.ionwave.net/CurrentSourcingEvents/123"
+  },
+  {
+    "id": "msg-demandstar-1",
+    "sender": "DemandStar <bids@demandstar.com>",
+    "subject": "Bid Notification - Institutional Mattresses (Twin XL)",
+    "date": "Wed, 17 Jun 2026 10:00:00 -0500",
+    "body": "Agency: Tarrant County\nResponse due 6/25/2026.\nhttps://www.demandstar.com/app/agencies/abc/bid/999"
+  },
+  {
+    "id": "msg-bonfire-1-dup",
+    "sender": "City of Example Purchasing <notifications@gobonfire.com>",
+    "subject": "Fwd: New Opportunity: Dormitory Mattresses and Bed Frames",
+    "date": "Mon, 15 Jun 2026 09:05:00 -0500",
+    "body": "A new opportunity matching your commodity codes has been posted.\nView the opportunity: https://city.bonfirehub.com/opportunities/12345\nSubmissions close June 30, 2026."
+  },
+  {
+    "id": "msg-no-title",
+    "sender": "alerts@example.gov",
+    "subject": "",
+    "date": "Wed, 17 Jun 2026 11:00:00 -0500",
+    "body": "This message has no usable subject line and should be skipped."
+  }
+]

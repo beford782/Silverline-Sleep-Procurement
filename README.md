@@ -160,6 +160,10 @@ Behavior:
   archive dupes instead of being re-ingested into active. Re-running
   with an overlapping date range is safe.
 - `--dry-run` previews what would be added without writing.
+- **Gated by `tools/relevance.py`**: each record is classified
+  ACCEPT / REVIEW / REJECT (NAICS 337910 / PSC 7210 count as strong
+  mattress signals). Rejects are not written; reviews are kept with a
+  human-confirm flag.
 - HTTP 404 from SAM.gov is treated as "no results" per the API's
   documented semantics — that's a normal exit-0 outcome when your
   filters match nothing in the date range.
@@ -260,6 +264,64 @@ create a starter config under `configs/portal_csv/`, review the
 suggested fields, then run `tools/ingest_portal_csv.py --dry-run`
 against that mapping.
 
+### 8. State/local email-alert ingestion
+
+The state/local and cooperative portals have **no public RSS feed or
+opportunity API** (verified June 2026), so they can't be polled like
+SAM.gov and must never be scraped. The compliant, automatable channel is
+the **commodity/NIGP email alert** each portal sends to a registered
+supplier. `tools/ingest_email.py` reads those alerts from the alert
+mailbox and turns them into `watching` pipeline rows — automating the
+manual portal walk for the email-notification sources. Two backends, both
+stdlib `urllib`: **Outlook / Microsoft 365 via the Microsoft Graph API**
+(`--provider graph`, the tool default) and **Gmail via the Gmail REST API**
+(`--provider gmail`).
+
+> **Recommended operator path (no Azure admin):** route the portal alerts
+> to a Gmail address and ingest via `--provider gmail` (or an on-demand
+> assistant sweep). The Graph backend needs a tenant-admin Mail.Read
+> consent; see [`docs/email_ingest_setup.md`](docs/email_ingest_setup.md).
+
+```sh
+# Offline / test (no creds, no network)
+python tools/ingest_email.py --fixture tests/fixtures/email_alerts_sample.json --dry-run
+
+# Live Outlook/M365 (Graph app-only creds in env)
+GRAPH_TENANT_ID=... GRAPH_CLIENT_ID=... GRAPH_CLIENT_SECRET=... GRAPH_MAILBOX=beford@silverlinesleep.com \
+  python tools/ingest_email.py --graph-folder "Procurement Alerts" --since-days 8 --dry-run
+
+# Live Gmail (OAuth refresh-token creds in env)
+GMAIL_CLIENT_ID=... GMAIL_CLIENT_SECRET=... GMAIL_REFRESH_TOKEN=... \
+  python tools/ingest_email.py --provider gmail --query 'label:Procurement/Alerts newer_than:8d' --dry-run
+```
+
+Behavior:
+
+- Maps each alert email onto the pipeline schema; dedupes against active
+  **and** archive by `opportunity_id` (a stable slug of source + title +
+  a short hash of the portal link), so re-running over an overlapping
+  window is safe.
+- **Gated by `tools/relevance.py`**: every parsed alert is classified
+  ACCEPT / REVIEW / REJECT. Non-mattress noise (broad furniture/office
+  digests, registration confirmations) is rejected and never written;
+  ambiguous items are kept with a `next_action` flag for human review.
+  `--reject-log PATH` optionally records rejects for tuning.
+- The parser is **generic and best-effort**: title (subject, prefixes
+  stripped), portal link, and due date; `buyer`/`location` may be blank.
+  Always verify ingested rows against the portal. Add per-sender adapters
+  as real samples are captured.
+- One-time setup (portal alert subscriptions + an Azure app registration
+  for Graph, or a Gmail OAuth token) is in
+  [`docs/email_ingest_setup.md`](docs/email_ingest_setup.md).
+
+**Scheduled run.** `.github/workflows/weekly_email_ingest.yml` runs every
+Monday at 13:30 UTC and on manual `workflow_dispatch`, ingests (Graph),
+re-scores, runs the repo checks, and opens a PR for human triage if the
+active pipeline changed. It never auto-archives, auto-submits, or pushes
+to `main`. Requires the `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`,
+`GRAPH_CLIENT_SECRET`, and `GRAPH_MAILBOX` repo secrets; it fails fast if
+any are missing.
+
 ## Tools
 
 Lightweight Python utilities, all stdlib-only where possible:
@@ -272,11 +334,13 @@ Lightweight Python utilities, all stdlib-only where possible:
 | `tools/promote_draft.py` | Promote a generated draft into `bids/active/<opportunity-id>.md` with overwrite and archive-collision checks. |
 | `tools/ingest_sam.py` | Pull federal opportunities from the SAM.gov public API (stdlib `urllib`) into the pipeline. Requires `SAM_API_KEY`. |
 | `tools/ingest_portal_csv.py` | Import operator-downloaded portal CSV exports using JSON column mappings, currently including ESBD. |
+| `tools/ingest_email.py` | Ingest portal commodity/NIGP email alerts into the pipeline (stdlib `urllib`). Default backend Outlook/M365 via Microsoft Graph (`GRAPH_*` secrets); Gmail backend optional (`GMAIL_*`). See `docs/email_ingest_setup.md`. |
 | `tools/portal_csv_mapping.py` | Inspect a portal CSV export and write a starter mapping JSON for `ingest_portal_csv.py`. |
 | `tools/source_review.py` | Generate an operator portal-review checklist from the source registry. Writes to `build/portal_reviews/` (gitignored). |
 | `tools/generate_procurement_packet.py` | CSV questionnaire → markdown + printable HTML packet |
 | `tools/validate_vendor_profile.py` | Validate `vendor-profiles/*.profile.json` against the schema |
 | `tools/workflow_check.py` | Check pipeline rows against bid markdown files for status drift, missing active drafts, stale reviews, and archive mismatches. |
+| `tools/relevance.py` | Central mattress-relevance filter (ACCEPT/REVIEW/REJECT) that every ingester gates on, so non-mattress noise (furniture/office digests, concrete/air mattresses, registration emails) never enters the pipeline. |
 
 Run the test suite with:
 

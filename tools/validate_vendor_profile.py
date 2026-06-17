@@ -15,6 +15,7 @@ Usage:
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import sys
@@ -95,28 +96,24 @@ def validate(value: Any, schema: dict, path: str = "$") -> list[str]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = list(argv or sys.argv[1:])
-    if not args:
-        print("usage: validate_vendor_profile.py PATH [PATH ...]", file=sys.stderr)
-        return 2
-
-    schema_path = SCHEMA_PATH_DEFAULT
-    if args and args[0] == "--schema":
-        args.pop(0)
-        if not args:
-            print("--schema requires a path", file=sys.stderr)
-            return 2
-        schema_path = args.pop(0)
-
-    if not args:
-        print("no profile paths provided", file=sys.stderr)
-        return 2
+    parser = argparse.ArgumentParser(
+        description="Validate vendor-profile JSON against the vendor profile schema.",
+    )
+    parser.add_argument(
+        "--schema",
+        default=SCHEMA_PATH_DEFAULT,
+        help="Schema JSON path (default: vendor-profiles/vendor_profile.schema.json). "
+             "May appear anywhere on the command line.",
+    )
+    parser.add_argument("paths", nargs="+", metavar="PATH", help="Profile JSON path(s) to validate.")
+    args = parser.parse_args(argv)
+    schema_path = args.schema
 
     with open(schema_path, "r", encoding="utf-8") as fh:
         schema = json.load(fh)
 
     failures = 0
-    for path in args:
+    for path in args.paths:
         if not os.path.isfile(path):
             print(f"FAIL {path}: file not found")
             failures += 1

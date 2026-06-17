@@ -1,0 +1,104 @@
+name: Weekly RSS/feed ingest
+
+# Pulls open-opportunity RSS/Atom feeds (configs/feeds.json — e.g. Bonfire
+# per-portal /opportunities/rss feeds) through the central mattress-relevance
+# filter and into the pipeline. No scraping, no secrets: these are public
+# agency feeds. Human triage required before any bid.
+
+on:
+  schedule:
+    # Mondays 13:45 UTC (after the SAM 13:00 and email 13:30 runs).
+    - cron: '45 13 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  ingest:
+    name: Ingest feeds, score, open PR if active changed
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Run RSS/feed ingest (configs/feeds.json)
+        run: python tools/ingest_rss.py --feeds-config configs/feeds.json
+
+      - name: Re-score active pipeline
+        run: python tools/pipeline.py score
+
+      - name: Run repository checks before PR creation
+        run: |
+          python -m compileall -q tools tests
+          python -m unittest discover -s tests
+          python tools/validate_vendor_profile.py vendor-profiles/continental_silverline.profile.json
+          python tools/workflow_check.py
+          python tools/dashboard.py --show summary
+
+      - name: Detect whether active pipeline changed
+        id: diff
+        run: |
+          if git diff --quiet -- bids/active/_pipeline.csv; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Active pipeline unchanged - no PR will be opened."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Active pipeline has changes - will open PR."
+            git --no-pager diff --stat -- bids/active/_pipeline.csv
+          fi
+
+      - name: Open PR with new rows
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_NUMBER: ${{ github.run_number }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          TODAY=$(date -u +%F)
+          BRANCH="auto/rss-ingest-${TODAY}-${RUN_NUMBER}"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git checkout -b "$BRANCH"
+          git add bids/active/_pipeline.csv
+          git commit -m "Weekly RSS/feed ingest: ${TODAY}"
+          git push -u origin "$BRANCH"
+
+          cat > /tmp/pr_body.md <<'EOF'
+          Automated weekly RSS/feed ingest (Bonfire portal feeds, etc.), filtered by tools/relevance.py. **Human triage required before merge.**
+
+          ## Reviewer checklist
+          1. Open `bids/active/_pipeline.csv`; review each new row. Items flagged `HUMAN: confirm mattress scope` need a look on the portal.
+          2. Archive out-of-scope rows with `python tools/pipeline.py move-to-archive <id> --status no-bid --next-action "No-bid archived" --note "<reason>"`, then amend this PR.
+          3. Refine/assign owners on the keepers and merge.
+
+          ## CI note
+          Commits authored by `GITHUB_TOKEN` do not trigger PR-event workflows. Push a follow-up commit or use "Re-run all checks".
+
+          ---
+          Triggered by: `__EVENT_NAME__` (run #__RUN_NUMBER__).
+          EOF
+          sed -i "s|__EVENT_NAME__|${EVENT_NAME}|g" /tmp/pr_body.md
+          sed -i "s|__RUN_NUMBER__|${RUN_NUMBER}|g" /tmp/pr_body.md
+
+          gh pr create \
+            --title "Weekly RSS/feed ingest: ${TODAY}" \
+            --body-file /tmp/pr_body.md \
+            --base main \
+            --head "$BRANCH"
+
+      - name: Summary
+        run: |
+          if [ "${{ steps.diff.outputs.changed }}" = "true" ]; then
+            echo "RSS ingest opened a PR for human triage."
+          else
+            echo "RSS ingest ran clean - no new rows, no PR."
+          fi

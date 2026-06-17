@@ -33,7 +33,3 @@ build/
 # Local-only environment overrides
 .env
 .env.local
-
-# Live RSS feeds config (Google Alerts URLs carry a personal token).
-# Commit configs/feeds.example.json instead.
-configs/feeds.json

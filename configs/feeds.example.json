@@ -1,14 +1,14 @@
 [
   {
-    "source": "Google Alerts: mattress RFP",
-    "url": "https://www.google.com/alerts/feeds/REPLACE_USER_ID/REPLACE_FEED_ID"
+    "source": "Bonfire: <Agency Name>",
+    "url": "https://<agency>.bonfirehub.com/opportunities/rss"
   },
   {
-    "source": "Bonfire: Harris County",
-    "url": "https://harriscounty.bonfirehub.com/opportunities/rss"
+    "source": "RFPMart: <category>",
+    "url": "https://www.rfpmart.com/<category>-rfp-bids.xml"
   },
   {
-    "source": "RFPMart: bedding/furniture",
-    "url": "https://www.rfpmart.com/REPLACE-category-rfp-bids.xml"
+    "source": "Google Alerts: mattress RFP (low signal — mostly news; site:.gov helps)",
+    "url": "https://www.google.com/alerts/feeds/<USER_ID>/<FEED_ID>"
   }
 ]

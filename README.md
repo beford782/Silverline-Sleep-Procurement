@@ -322,6 +322,28 @@ to `main`. Requires the `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`,
 `GRAPH_CLIENT_SECRET`, and `GRAPH_MAILBOX` repo secrets; it fails fast if
 any are missing.
 
+### 9. RSS/feed ingestion (Bonfire portals, etc.)
+
+`tools/ingest_rss.py` pulls open-opportunity RSS/Atom feeds through the
+relevance filter into the pipeline — the cleanest no-scraping web channel.
+The best feeds are **Bonfire per-portal** open-opportunity feeds
+(`https://{agency}.bonfirehub.com/opportunities/rss`), which are public,
+token-free, and contain *actual solicitations* (not news). Configure feeds
+in `configs/feeds.json` (see `configs/feeds.example.json`).
+
+```sh
+python tools/ingest_rss.py --feeds-config configs/feeds.json --dry-run
+python tools/ingest_rss.py --feed https://harriscountytx.bonfirehub.com/opportunities/rss --source "Bonfire: Harris County"
+```
+
+- Web/RSS items are held to a higher bar: they must carry a procurement
+  cue (RFP/bid/solicitation/…) to ACCEPT, and known non-procurement hosts
+  (Quora/Reddit/social/retail) are rejected — so news/catalog noise stays
+  out. Google Alerts feeds *can* be added but are low-signal (mostly news
+  even when scoped); prefer Bonfire/portal feeds.
+- Scheduled by `.github/workflows/weekly_rss_ingest.yml` (Mon 13:45 UTC +
+  manual). No secrets — the feeds are public. Opens a PR on change.
+
 ## Tools
 
 Lightweight Python utilities, all stdlib-only where possible:

@@ -40,6 +40,9 @@ lead time under 3–4 weeks.
 (twin mattresses, box springs, frames). Awarded May 2026, approx. $58,000.
 Reference available on request.
 
+**Hospitality** — multiple high-end hospitality projects, including the
+**Ritz-Carlton New Orleans**. References available on request.
+
 ## Business information
 - Legal entity: Continental Silverline Products LLC · Manufacturing: Houston, Texas
 - Texas CMBL / Vendor ID: [on file] · NAICS 337910

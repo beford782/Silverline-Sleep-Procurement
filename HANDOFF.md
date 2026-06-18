@@ -1,68 +1,89 @@
-# Claude Code handoff prompt
+# Resume prompt — Silverline-Sleep-Procurement
 
-Copy the prompt below into a new Claude Code session when you want it
-to catch up on this repository and continue work from the current
-branch.
+Copy the block below into a new Claude Code session to pick up work. Keep it
+current as the project evolves (it replaced an older, stale handoff).
 
 ```text
-You are working in the `Silverline-Sleep-Procurement` repository. Please first orient yourself to the current branch before making changes.
+You are resuming work on the Silverline-Sleep-Procurement repository — a static,
+stdlib-Python procurement toolkit that surfaces contract MATTRESS opportunities
+(federal/state/local/private) into one human-reviewed pipeline. Vendor: Continental
+Silverline (Houston TX; brands Restonic/Spring Air/Silverline Sleep; institutional/
+dormitory/correctional/medical/fire-retardant mattresses; service geography
+TX/OK/LA/MS/AR/NM). Final bid submission is always manual/human.
 
-Context:
-- This repo is a static procurement toolkit for institutional mattress bidding and vendor onboarding.
-- It intentionally favors Markdown, CSV, JSON, HTML examples, and Python standard-library utilities over frameworks or external dependencies.
-- The current work added a procurement toolkit with:
-  - `tools/pipeline.py` for CSV opportunity pipeline management (`add`, `list`, `summary`, `score`, `move-to-archive`).
-  - `tools/generate_procurement_packet.py` for Markdown and printable HTML packet generation from questionnaire CSVs.
-  - `tools/validate_vendor_profile.py` for validating structured vendor profile JSON files.
-  - `vendor-profiles/` data, schema, questionnaire examples, and generated reviewer-safe examples under `generated/examples/`.
-  - workflow docs in `README.md`, `CONTRIBUTING.md`, `bids/README.md`, `procurement/README.md`, `onboarding/README.md`, `portal-checklists/`, `sources/`, `templates/`, and `tools/README.md`.
-  - unit tests under `tests/test_pipeline.py` and `tests/test_procurement_tools.py`.
+Work branch: claude/serene-darwin-v8xfbq. Trunk: main.
+GitHub: beford782/silverline-sleep-procurement (use mcp__github__* tools; no gh CLI).
 
-Start by running:
+## Hard constraints
+- Standard-library Python only (third-party needs approval).
+- No portal scraping / no browser automation. Public/documented APIs, RSS, or email only.
+- No automatic bid submission. No committed secrets/credentials/private contacts/machine paths.
+- Markdown/CSV/JSON/HTML over binary. Preserve procurement terminology.
+- Branch + PR for non-trivial work; DO NOT open a PR unless asked.
+- Audit gate before every commit:
+    python -m unittest discover -s tests
+    python -m compileall -q tools tests
+    python -m json.tool on every committed JSON
+    python tools/validate_vendor_profile.py vendor-profiles/continental_silverline.profile.json
+    python tools/workflow_check.py
+    machine-path / personal-name leak grep over committed py/md/json/csv
+      (exact regex lives in .github/workflows/ci.yml — do not paste it into a
+      committed .md file or it self-matches the grep)
 
-```bash
-git status --short
-git log --oneline -5
-find .. -name AGENTS.md -print
-sed -n '1,220p' README.md
-sed -n '1,220p' tools/README.md
-sed -n '1,220p' bids/README.md
-sed -n '1,220p' procurement/README.md
-```
+## Architecture (the core idea)
+Every channel feeds raw items into ONE central mattress-relevance filter
+(tools/relevance.py) that gates the pipeline: ACCEPT (write), REVIEW (write +
+"HUMAN: confirm scope" flag), REJECT (drop). Channels are pluggable adapters.
 
-Then inspect the key tools and tests:
+## Merged to main (PRs #19, #20)
+- tools/relevance.py — classifier: whole-word/phrase matching; NAICS 337910 / PSC 7210 =
+  strong; six-state geography demotion; require_procurement guard + noise-host filter for
+  web sources. Tests: tests/test_relevance.py.
+- tools/ingest_sam.py — SAM.gov federal API, relevance-gated. Workflow weekly_sam_ingest.yml
+  (needs SAM_API_KEY secret).
+- tools/ingest_email.py — portal commodity-alert emails; backends --provider graph (Outlook/
+  M365, GRAPH_* secrets) and gmail (GMAIL_*); --check, --fixture. Workflow weekly_email_ingest.yml.
+  Setup: docs/email_ingest_setup.md.
+- tools/ingest_rss.py — RSS/Atom (Bonfire /opportunities/rss, Google Alerts w/ redirect-unwrap),
+  relevance-gated. configs/feeds.json (public Bonfire feeds: Harris County, UT Austin, UT Health
+  San Antonio). Workflow weekly_rss_ingest.yml (no secrets). Smoke-tested live 2026-06-17:
+  53 open bids -> 0 mattress -> no PR (correct).
+- validate_vendor_profile.py --schema works in any arg position.
+- Tinker AFB Sources Sought triaged to no-bid (specified Purple brand; Continental doesn't make it).
 
-```bash
-sed -n '1,260p' tools/pipeline.py
-sed -n '1,260p' tools/generate_procurement_packet.py
-sed -n '1,220p' tools/validate_vendor_profile.py
-sed -n '1,280p' tests/test_pipeline.py
-sed -n '1,240p' tests/test_procurement_tools.py
-```
+## On branch claude/serene-darwin-v8xfbq, NOT yet merged
+- .github/workflows/cleanup_auto_branches.yml — auto-deletes disposable auto/* ingest branches
+  when their PR closes.
+- Removed tools/legacy/ (non-procurement DreamFinder leftovers) + its test; refreshed this HANDOFF.
 
-Important repository conventions:
-- Keep source materials diffable and cross-platform: prefer Markdown, CSV, JSON, and standard-library Python.
-- Do not commit private portal credentials, tax IDs, private contact details, insurance certificates, sealed pricing, or unsigned legal documents.
-- Keep private/generated working output in `build/generated/`; only commit `generated/examples/` files when sanitized and intentionally reviewer-safe.
-- Maintain live bid work in `bids/active/` and closed work in `bids/archive/`.
-- Reusable vendor facts belong in `vendor-profiles/` and structured JSON profiles should pass validation.
-- Avoid adding dependencies unless clearly justified and documented.
-- Preserve procurement terms like `solicitation`, `bid package`, `commodity code`, `portal registration`, `responsive`, and `responsible vendor`.
+## Pipeline state
+0 active rows. Federal (SAM) + state/local-web (RSS/Bonfire) funnels are LIVE, run Mondays, and
+stay silent unless a real mattress bid appears (then a triage PR). ~243 tests pass.
 
-Useful validation commands:
+## Open decisions / next steps (priority order)
+1. EMAIL ROUTING (highest mattress hit-rate; unresolved). Alerts live in Outlook
+   (beford@silverlinesleep.com); Azure/Graph admin consent off the table (owner has no privileged
+   tenant role). Options: (a) forward Outlook->Gmail then ingest via --provider gmail or on-demand
+   "pull my alerts" sweeps through the connected Gmail (works now, no OAuth); (b) change the
+   notification email to blake.e.ford@gmail.com on the top ~5 portals.
+2. Add more Bonfire/portal feeds to configs/feeds.json for breadth (need the operator's registered
+   subdomains, e.g. University of Houston, City of Houston).
+3. Open the cleanup PR for the branch items above when asked.
+4. Optional later adapters (all gated by relevance.py): USASpending awards API (free, no key —
+   lead-gen: who already buys mattresses, best path into private); Oklahoma data.ok.gov CKAN
+   "Statewide Contracts & Solicitations" dataset (only in-region state with a real machine feed);
+   Socrata Discovery (big-city open-bid datasets); paid GovSpend API ($8.5k+/yr, SLED, no private);
+   IonWave per-sender email parser (lower priority now the central filter exists).
 
-```bash
-python3 tools/generate_procurement_packet.py vendor-profiles/continental_silverline_questionnaire.csv --vendor "Continental Silverline" --output-dir build/generated --generated-date 2026-05-13
-python3 tools/validate_vendor_profile.py vendor-profiles/continental_silverline.profile.json
-python3 -m compileall tools
-python3 -m unittest discover tests
-git diff --check
-```
+## Research already done (don't redo)
+No nationwide API for state/local/private open solicitations. SAM=federal API; USASpending=federal
+awards (free). State/local mostly email-only (OK CKAN is the lone in-region machine feed; TX ESBD/
+LA/MS/AR/NM none). Aggregators: only GovSpend self-serve API (paid, no private); DemandStar/BidNet/
+BidPrime/Periscope/Euna = email-only. Bonfire = only e-proc platform with public per-portal RSS.
+Private sector has no central feed (GPO/approved-supplier rosters like Avendra/BirchStreet are how
+it's won). Codes: NAICS 337910 (mattress mfg), PSC 7210 (household furnishings=mattresses/bedding),
+PSC 7105 (furniture/beds).
 
-If you are asked to make changes:
-1. Read any applicable `AGENTS.md` files before editing. (None are committed at the moment; the `find` above will surface any that have been added.)
-2. Inspect existing docs/tests before adding new patterns.
-3. Keep the change focused and avoid rewriting generated examples unless necessary.
-4. Run the relevant validation commands above.
-5. Summarize changed files, tests run, and any limitations clearly.
+Start by: git log --oneline -8; git status; python tools/dashboard.py; python -m unittest discover -s tests.
+Then confirm the email-routing decision (#1) with the operator before building further.
 ```

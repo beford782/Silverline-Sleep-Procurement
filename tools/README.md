@@ -259,8 +259,3 @@ python -m unittest discover -s tests
 | File | Purpose |
 | --- | --- |
 | `hooks/pre-push` | Refuses non-fast-forward pushes to `main`. Enable with `git config core.hooksPath tools/hooks`. |
-
-## Legacy
-
-Pre-split DreamFinder helpers live under `tools/legacy/` and are not
-part of the procurement toolkit. See `tools/legacy/README.md`.

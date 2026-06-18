@@ -61,7 +61,18 @@ reversible, and it keeps the business identity on the portals intact.
 landing in the connected Gmail, an assistant runs the same tested flow we
 validated end-to-end on 2026-06-18:
 
-1. Search the Gmail funnel by the portal sender domains above.
+1. Search the Gmail funnel for forwarded Outlook alerts. Because the
+   Outlook rule uses **Forward** (not Redirect), Gmail sees the sender as
+   `beford@silverlinesleep.com`; the original portal sender/domain is in
+   the forwarded body. Use a query shaped like:
+
+   ```text
+   newer_than:8d from:beford@silverlinesleep.com (ionwave.net OR gobonfire.com OR bonfirehub.com OR demandstar.com OR bidnetdirect.com OR buyboard.com OR txsmartbuy.gov OR bidsync.com OR publicpurchase.com OR "Matching Bid Opportunities") -in:trash -in:spam
+   ```
+
+   If alerts are ever sent directly to Gmail, or if Outlook is changed to
+   Redirect instead of Forward, then a `from:<portal-domain>` search is
+   appropriate.
 2. Map each alert to the `ingest_email.py` fixture shape
    (`id`, `sender`, `subject`, `date`, `body`).
 3. `python tools/ingest_email.py --fixture <built>.json --dry-run` to

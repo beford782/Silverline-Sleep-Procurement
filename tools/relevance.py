@@ -47,6 +47,7 @@ STRONG_INCLUDE = [
     "box spring", "box springs", "boxspring", "boxsprings",
     "mattress foundation", "bed foundation",
     "bunk mattress", "cot mattress", "crib mattress",
+    "dormitory mattress",
     "jail mattress", "correctional mattress", "detention mattress",
     "inmate mattress",
     # Commodity codes that unambiguously mean mattresses/bedding.
@@ -59,6 +60,7 @@ WEAK_INCLUDE = [
     "bunk", "bunks", "cot", "cots", "linens", "pillow", "pillows",
     "furniture", "furnishings", "ff&e", "ffe",
     "dormitory furniture", "residence hall furniture",
+    "twin xl",  # student-housing mattress size; matches "twin-xl" too (phrase compiler)
     "psc 7105",  # Household Furniture (beds/frames; routes finished mattresses to 7210)
 ]
 

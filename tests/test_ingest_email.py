@@ -243,6 +243,27 @@ class IonWaveDigestTests(unittest.TestCase):
         self.assertEqual(subs[0]["subject"], "School Furniture & Related Services")
         self.assertEqual(subs[0]["solicitation_number"], "RFP 16.26")
 
+    def test_digest_and_question_alert_dedupe_by_solicitation_number(self) -> None:
+        # A later "question answered" alert for the same bid has different
+        # body/url text, but should not create a second active pipeline row.
+        qa = {
+            "id": "qa-1",
+            "sender": "esc6emkt@customer.ionwave.net",
+            "subject": "ESC 6 eMarketplace Bid Question Answered: RFP 16.26",
+            "date": "Tue, 26 May 2026 14:44:00 -0500",
+            "body": (
+                "Bid Number:\nRFP 16.26\n"
+                "Bid Title:\nSchool Furniture & Related Services\n"
+                "Issue Date:\n5/1/2026 08:00:01 AM (CT)\n"
+                "Close Date:\n6/5/2026 03:00:00 PM (CT)\n"
+                "https://esc6emkt.ionwave.net/VendorLanding.aspx?e=question"
+            ),
+        }
+        new_rows, dupes, _, _ = ingest_email.ingest([self.DIGEST, qa], [], TODAY)
+        self.assertEqual(len(new_rows), 2)
+        self.assertEqual(len(dupes), 1)
+        self.assertEqual(dupes[0]["solicitation_number"], "RFP 16.26")
+
     def test_close_date_label_now_extracts(self) -> None:
         # Regression for the DUE_DATE_RE "Close Date:" fix.
         self.assertEqual(

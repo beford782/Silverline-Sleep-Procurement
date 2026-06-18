@@ -340,8 +340,24 @@ def parse_message(msg: dict, today: str) -> dict | None:
 # --------------------------------------------------------------------------
 # Dedup + ingest (mirrors ingest_sam.py)
 # --------------------------------------------------------------------------
+def row_dedupe_keys(row: dict) -> set[str]:
+    """Stable keys for recognizing the same opportunity across alert types."""
+    keys = set()
+    oid = (row.get("opportunity_id") or "").strip()
+    if oid:
+        keys.add(f"id:{oid}")
+    source = (row.get("source") or "").strip().lower()
+    soln = (row.get("solicitation_number") or "").strip().lower()
+    if source and soln:
+        keys.add(f"sol:{source}:{soln}")
+    return keys
+
+
 def existing_ids(rows: list[dict]) -> set[str]:
-    return {(r.get("opportunity_id") or "").strip() for r in rows if r.get("opportunity_id")}
+    keys: set[str] = set()
+    for row in rows:
+        keys.update(row_dedupe_keys(row))
+    return keys
 
 
 def ingest(messages: Iterable[dict], existing_rows: list[dict], today: str,
@@ -385,11 +401,11 @@ def ingest(messages: Iterable[dict], existing_rows: list[dict], today: str,
             continue
         if verdict.decision == "REVIEW":
             row["next_action"] = "HUMAN: confirm mattress scope — " + "; ".join(verdict.reasons[:2])
-        oid = row["opportunity_id"]
-        if oid in ids or oid in seen:
+        keys = row_dedupe_keys(row)
+        if keys & ids or keys & seen:
             dupes.append(row)
             continue
-        seen.add(oid)
+        seen.update(keys)
         new_rows.append(row)
     return new_rows, dupes, skipped, rejected
 

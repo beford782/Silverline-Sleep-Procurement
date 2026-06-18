@@ -46,6 +46,5 @@ Reference available on request.
 ## Business information
 - Legal entity: Continental Silverline Products LLC · Manufacturing: Houston, Texas
 - Texas CMBL / Vendor ID: [on file] · NAICS 337910
-- [Company website / catalog link]
 
 _Capability overview for vendor introduction / market research; no pricing or bid commitment._

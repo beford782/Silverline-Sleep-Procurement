@@ -48,6 +48,12 @@ PARSER SCOPE:
   should be added as real sample emails are captured (see SENDER_SOURCES
   and parse_message). It never invents data it cannot find.
 
+  One per-sender adapter ships: split_ionwave_digest() handles IonWave
+  "Matching Bid Opportunities" alerts, which list several solicitations in
+  one email. It splits them into one row per bid (real per-bid title +
+  Bid Number -> solicitation_number + close date) instead of collapsing
+  the digest to a single row titled with the generic email subject.
+
 Usage:
     # offline / test
     python tools/ingest_email.py --fixture tests/fixtures/email_alerts_sample.json --dry-run
@@ -133,9 +139,12 @@ SUBJECT_PREFIXES = re.compile(
 
 URL_RE = re.compile(r"https?://[^\s<>\"')]+", re.IGNORECASE)
 
-# "due", "closes", "response due", "closing date" ... <date>
+# "due", "closes", "response due", "closing date" ... <date>. The optional
+# " date" lets "Close Date: 6/5/2026" match (the literal word "Date" otherwise
+# sits between the keyword and the value and breaks the gap match).
 DUE_DATE_RE = re.compile(
     r"(?:due|clos(?:e|es|ing)|response\s+due|deadline|submit\s+by)"
+    r"(?:\s+date)?"
     r"[^0-9A-Za-z]{0,20}"
     r"([A-Za-z]{3,9}\.?\s+\d{1,2},?\s+\d{4}"
     r"|\d{1,2}/\d{1,2}/\d{2,4}"
@@ -215,6 +224,72 @@ def extract_url(text: str, source_hint: str = "") -> str:
     return (non_admin or urls)[0]
 
 
+# --------------------------------------------------------------------------
+# IonWave structured-digest adapter
+# --------------------------------------------------------------------------
+# IonWave portals (ESC eMarketplace, Region ESCs, TIPS, Choice Partners, ...)
+# send "Matching Bid Opportunities" alerts that list 1+ solicitations as
+# labeled blocks. A generic one-row-per-email parse collapses a multi-bid
+# digest to a single row titled with the email subject ("Matching Bid
+# Opportunities"), losing the real per-bid title, number, and close date.
+# This adapter splits such an email into one normalized sub-message per bid,
+# tolerating both the "Title:/Open Date:" (new-opportunity) and "Bid Title:/
+# Issue Date:" (question-answered) label variants, and label-then-value laid
+# out on one line or two (plain text vs. HTML-stripped tables).
+_IONWAVE_LABELS = (
+    r"(?:Bid\s+Number|Bid\s+Title|Title|Description|Open\s+Date|Issue\s+Date"
+    r"|Clos(?:e|ing)\s+Date|Question\s+Cut\s*Off(?:\s+Date)?|Bid\s+Notes"
+    r"|Bid\s+Contact)"
+)
+_IONWAVE_BIDNO_RE = re.compile(r"Bid\s+Number\s*:\s*", re.IGNORECASE)
+_IONWAVE_TITLE_RE = re.compile(r"(?:Bid\s+)?Title\s*:", re.IGNORECASE)
+
+
+def _ionwave_field(block: str, label: str) -> str:
+    """Value after 'Label:' up to the next known IonWave label (or block end)."""
+    m = re.search(
+        rf"{label}\s*:\s*(.*?)\s*(?=(?:{_IONWAVE_LABELS})\s*:|$)",
+        block, re.IGNORECASE | re.DOTALL,
+    )
+    return re.sub(r"\s+", " ", m.group(1)).strip() if m else ""
+
+
+def split_ionwave_digest(msg: dict) -> list[dict] | None:
+    """Split an IonWave structured alert into one sub-message per bid.
+
+    Returns a list of normalized sub-messages (subject = the real bid title,
+    body = that bid's block, with the bid number carried as
+    `solicitation_number`), or None when the message is not an IonWave-style
+    structured digest — so the caller falls back to the generic single-message
+    parse.
+    """
+    sender = (msg.get("sender") or "").lower()
+    body = msg.get("body") or ""
+    if "ionwave" not in sender:
+        return None
+    starts = [m.start() for m in _IONWAVE_BIDNO_RE.finditer(body)]
+    if not starts or not _IONWAVE_TITLE_RE.search(body):
+        return None
+
+    bounds = starts + [len(body)]
+    subs: list[dict] = []
+    for i, start in enumerate(starts):
+        block = body[start:bounds[i + 1]]
+        title = _ionwave_field(block, r"(?:Bid\s+)?Title")
+        if not title:
+            continue
+        bid_no = _ionwave_field(block, r"Bid\s+Number")
+        subs.append({
+            "id": f"{msg.get('id', '')}#{slugify(bid_no) or i + 1}",
+            "sender": msg.get("sender") or "",
+            "subject": title,
+            "date": msg.get("date", ""),
+            "body": block,
+            "solicitation_number": bid_no,
+        })
+    return subs or None
+
+
 def parse_message(msg: dict, today: str) -> dict | None:
     """Map one normalized email message to a pipeline row dict (or None).
 
@@ -255,6 +330,10 @@ def parse_message(msg: dict, today: str) -> dict | None:
         "last_reviewed": today,
         "notes": f"Auto-ingested from {source} email alert; verify details on the portal",
     })
+    # Honor a pre-extracted solicitation number (e.g. IonWave "Bid Number").
+    soln = (msg.get("solicitation_number") or "").strip()
+    if soln:
+        row["solicitation_number"] = soln
     return row
 
 
@@ -283,7 +362,12 @@ def ingest(messages: Iterable[dict], existing_rows: list[dict], today: str,
     dupes: list[dict] = []
     skipped: list[dict] = []
     rejected: list[dict] = []
+    # Expand IonWave multi-bid digests into one unit per bid; other messages
+    # pass through unchanged (one unit each).
+    units: list[dict] = []
     for msg in messages:
+        units.extend(split_ionwave_digest(msg) or [msg])
+    for msg in units:
         row = parse_message(msg, today)
         if row is None:
             skipped.append(msg)

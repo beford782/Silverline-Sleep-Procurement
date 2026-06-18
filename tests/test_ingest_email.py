@@ -167,6 +167,90 @@ class IngestTests(unittest.TestCase):
         self.assertEqual(len(rejected), 1)
 
 
+class IonWaveDigestTests(unittest.TestCase):
+    # A real-shape ESC eMarketplace "Matching Bid Opportunities" alert that
+    # bundles two solicitations as labeled blocks (label-then-value on its own
+    # line, as Gmail plaintext renders it).
+    DIGEST = {
+        "id": "gmail-ionwave-1",
+        "sender": "ESC 6 eMarketplace <esc6emkt@customer.ionwave.net>",
+        "subject": "ESC 6 eMarketplace Matching Bid Opportunities",
+        "date": "Wed, 13 May 2026 09:50:00 -0500",
+        "body": (
+            "Dear Supplier,\n"
+            "Bid Number:\nRFP 15.26\n"
+            "Title:\nOffice - Supplies, Equipment, Furniture & Services\n"
+            "Description:\nEPIC6 seeks proposals for office supplies.\n"
+            "Open Date:\n5/1/2026 08:00:02 AM (CT)\n"
+            "Close Date:\n6/5/2026 03:00:00 PM (CT)\n"
+            "Question Cut Off Date:\n5/28/2026 03:00:00 PM (CT)\n"
+            "Bid Number:\nRFP 16.26\n"
+            "Title:\nSchool Furniture & Related Services\n"
+            "Description:\nEPIC6 seeks proposals for school furniture.\n"
+            "Open Date:\n5/1/2026 08:00:01 AM (CT)\n"
+            "Close Date:\n6/5/2026 03:00:00 PM (CT)\n"
+            "The agency can be accessed at: https://esc6emkt.ionwave.net/\n"
+        ),
+    }
+
+    def test_split_yields_one_submessage_per_bid(self) -> None:
+        subs = ingest_email.split_ionwave_digest(self.DIGEST)
+        self.assertIsNotNone(subs)
+        self.assertEqual(len(subs), 2)
+        self.assertEqual(subs[0]["subject"], "Office - Supplies, Equipment, Furniture & Services")
+        self.assertEqual(subs[0]["solicitation_number"], "RFP 15.26")
+        self.assertEqual(subs[1]["subject"], "School Furniture & Related Services")
+        self.assertEqual(subs[1]["solicitation_number"], "RFP 16.26")
+
+    def test_non_ionwave_sender_not_split(self) -> None:
+        msg = dict(self.DIGEST, sender="notifications@gobonfire.com")
+        self.assertIsNone(ingest_email.split_ionwave_digest(msg))
+
+    def test_ionwave_without_bid_blocks_not_split(self) -> None:
+        # The Region 4 (ionwave.net) sample has no "Bid Number:/Title:" blocks.
+        msg = {
+            "id": "x", "sender": "noreply@region4esc.ionwave.net",
+            "subject": "Bid Invitation: Mattresses", "date": "",
+            "body": "Response due 07/10/2026. https://region4esc.ionwave.net/x",
+        }
+        self.assertIsNone(ingest_email.split_ionwave_digest(msg))
+
+    def test_digest_ingests_as_two_rows_with_fields(self) -> None:
+        new_rows, _, _, _ = ingest_email.ingest([self.DIGEST], [], TODAY)
+        self.assertEqual(len(new_rows), 2)
+        by_soln = {r["solicitation_number"]: r for r in new_rows}
+        self.assertEqual(by_soln["RFP 16.26"]["title"], "School Furniture & Related Services")
+        # Close-date extraction (the "Close Date:" label fix) populates due_date.
+        self.assertEqual(by_soln["RFP 16.26"]["due_date"], "2026-06-05")
+        self.assertEqual(by_soln["RFP 16.26"]["source"], "IonWave")
+
+    def test_bid_title_issue_date_variant(self) -> None:
+        # The "question answered" variant uses "Bid Title:" / "Issue Date:".
+        msg = {
+            "id": "qa-1",
+            "sender": "esc6emkt@customer.ionwave.net",
+            "subject": "ESC 6 eMarketplace Bid Question Answered: RFP 16.26",
+            "date": "Tue, 26 May 2026 14:44:00 -0500",
+            "body": (
+                "Bid Number:\nRFP 16.26\n"
+                "Bid Title:\nSchool Furniture & Related Services\n"
+                "Issue Date:\n5/1/2026 08:00:01 AM (CT)\n"
+                "Close Date:\n6/5/2026 03:00:00 PM (CT)\n"
+            ),
+        }
+        subs = ingest_email.split_ionwave_digest(msg)
+        self.assertEqual(len(subs), 1)
+        self.assertEqual(subs[0]["subject"], "School Furniture & Related Services")
+        self.assertEqual(subs[0]["solicitation_number"], "RFP 16.26")
+
+    def test_close_date_label_now_extracts(self) -> None:
+        # Regression for the DUE_DATE_RE "Close Date:" fix.
+        self.assertEqual(
+            ingest_email.extract_due_date("Close Date: 6/5/2026 03:00:00 PM (CT)"),
+            "2026-06-05",
+        )
+
+
 class CliTests(unittest.TestCase):
     def _run(self, *argv: str) -> tuple[int, str]:
         out = io.StringIO()

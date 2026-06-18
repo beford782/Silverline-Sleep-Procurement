@@ -25,6 +25,11 @@ class AcceptTests(unittest.TestCase):
     def test_box_spring_accepts(self) -> None:
         self.assertEqual(relevance.classify("Box Springs and foundations").decision, "ACCEPT")
 
+    def test_dormitory_mattress_accepts(self) -> None:
+        v = relevance.classify("Dormitory mattress replacement program")
+        self.assertEqual(v.decision, "ACCEPT")
+        self.assertIn("dormitory mattress", v.matched_include)
+
     def test_in_region_stays_accept(self) -> None:
         v = relevance.classify("Fire-retardant jail mattresses, S Coffeyville, OK")
         self.assertEqual(v.decision, "ACCEPT")
@@ -39,6 +44,13 @@ class ReviewTests(unittest.TestCase):
 
     def test_school_furniture_is_review(self) -> None:
         self.assertEqual(relevance.classify("School Furniture & Related Services").decision, "REVIEW")
+
+    def test_twin_xl_dorm_is_review(self) -> None:
+        # "Twin XL" is a student-housing size signal but not an explicit
+        # mattress term, so it surfaces for human triage rather than rejecting.
+        v = relevance.classify("University residence hall Twin XL replacement RFP")
+        self.assertEqual(v.decision, "REVIEW")
+        self.assertIn("twin xl", v.matched_include)
 
     def test_out_of_region_mattress_demoted_to_review(self) -> None:
         v = relevance.classify("Hospital mattresses and box springs, Sacramento, CA")

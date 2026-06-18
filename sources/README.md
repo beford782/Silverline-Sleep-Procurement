@@ -52,6 +52,14 @@ confirmed (ideally cross-referenced against an in-repo doc like
 verification. This rule exists because hallucinated URLs in operational
 data are hard to spot once they're checked in.
 
+## Contract research trackers
+
+`txsmartbuy_contract_research.csv` stores contract-catalog intelligence
+from operator-downloaded TxSmartBuy exports. These rows are useful for
+NIGP code selection, saved-search setup, incumbent/category research, and
+renewal monitoring. They are **not open solicitations** and should not be
+imported into `bids/active/_pipeline.csv`.
+
 ## What this registry does NOT do
 
 - It does not directly fetch opportunities. The first ingestion

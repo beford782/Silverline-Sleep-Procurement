@@ -35,7 +35,7 @@ the conventions below.
 | Active solicitation tracking | `bids/active/<solicitation-id>.md` |
 | Closed / awarded / no-bid | `bids/archive/<solicitation-id>.md` |
 | Reusable bid response shell | `bids/templates/` |
-| Python utility | `tools/` (legacy DreamFinder helpers go in `tools/legacy/`) |
+| Python utility | `tools/` |
 | Tests | `tests/` (stdlib `unittest` — `python -m unittest discover -s tests`) |
 | Committed example output | `generated/examples/` (regenerated with `--generated-date`) |
 | Ad-hoc generated output | `build/` (gitignored, not committed) |

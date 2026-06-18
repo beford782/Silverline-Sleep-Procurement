@@ -29,7 +29,6 @@ procurement/             Domain overview and entry-point docs
 tests/                   Stdlib unittest coverage for tools/
 tools/                   Python utilities (stdlib-only where possible)
   hooks/                 Git hooks (e.g., pre-push fast-forward guard)
-  legacy/                Pre-split DreamFinder helpers — not procurement tooling
 build/                   Default output of tools/ (gitignored, do not commit)
 ```
 
@@ -371,8 +370,7 @@ Run the test suite with:
 python -m unittest discover -s tests
 ```
 
-See `tools/README.md` for the full tool inventory and
-`tools/legacy/README.md` for the pre-split DreamFinder helpers.
+See `tools/README.md` for the full tool inventory.
 
 ## Contributing
 

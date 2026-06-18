@@ -35,6 +35,43 @@ The Outlook / Microsoft Graph backend below is an **alternative** for
 running directly against the Outlook mailbox — it needs a tenant-admin
 **Mail.Read** consent, so use it only if/when that's available.
 
+### Operator decision (2026-06-18): forward Outlook → Gmail
+
+Portal alerts currently arrive at the registered supplier mailbox
+**`beford@silverlinesleep.com`** (Outlook), which the Gmail sweep cannot
+see. Rather than re-pointing each portal's notification address to Gmail
+(N portal logins; some portals only mail the registered account and a
+free-mail contact can look unprofessional or need re-verification), the
+chosen approach is a **single Outlook forwarding rule** — one action,
+reversible, and it keeps the business identity on the portals intact.
+
+**Outlook rule** (Settings → Rules → Add new rule):
+
+- **Name:** `Procurement alerts → Gmail`
+- **Condition:** *Sender address includes* any of —
+  `ionwave.net`, `gobonfire.com`, `bonfirehub.com`, `demandstar.com`,
+  `bidnetdirect.com`, `buyboard.com`, `txsmartbuy.gov`, `bidsync.com`,
+  `publicpurchase.com`
+- **Action:** *Forward to* `blake.e.ford@gmail.com` (use **Forward**, not
+  Redirect, so original headers/links survive). Do **not** add a delete
+  action — keep the originals of record in the business inbox.
+- Check *Stop processing more rules*.
+
+**On-demand sweep (no OAuth, works once forwarding is on).** With alerts
+landing in the connected Gmail, an assistant runs the same tested flow we
+validated end-to-end on 2026-06-18:
+
+1. Search the Gmail funnel by the portal sender domains above.
+2. Map each alert to the `ingest_email.py` fixture shape
+   (`id`, `sender`, `subject`, `date`, `body`).
+3. `python tools/ingest_email.py --fixture <built>.json --dry-run` to
+   preview, then drop `--dry-run` against `bids/active/_pipeline.csv`.
+4. Triage the new `watching` rows and open a PR.
+
+This needs no Gmail OAuth token or repo secrets — it relies on the
+assistant's existing Gmail access. Mint the `GMAIL_*` secrets (above) only
+when promoting this to the **unattended** weekly Action.
+
 ---
 
 ## A. Subscribe to portal alerts and route them to one place

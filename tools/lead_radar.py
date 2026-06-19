@@ -111,16 +111,16 @@ def _lead_term_re(term: str) -> "re.Pattern[str]":
 
 # Lead-type families in priority order: the first family whose term appears in
 # the text wins, so classification is deterministic and conservative (no match
-# -> "other"). Order mirrors the documented taxonomy.
+# -> "other").
+#
+# Specific institutional buyer/use contexts (dorm, correctional, shelter,
+# public-health) come FIRST so they outrank a generic vehicle label — a
+# "County Jail Furniture Vendor Pool" is more actionable as a correctional
+# cluster than as a vendor pool. But the co-op/IDIQ/vendor-pool vehicle family
+# still outranks generic furniture/FF&E, so a broad buying vehicle like an
+# "Office Furniture Catalog (IDIQ)" keeps its vehicle-watch signal instead of
+# collapsing to plain furniture.
 _LEAD_TYPE_TERMS: list[tuple[str, list[str]]] = [
-    ("co-op_contract_vehicle", [
-        "buyboard", "tips", "choice partners", "sourcewell", "hgacbuy",
-        "omnia", "vendor pool", "idiq", "cooperative", "co-op", "coop",
-        "purchasing cooperative", "interlocal",
-    ]),
-    ("broad_furniture_ffe", [
-        "furniture", "ff&e", "ffe", "furnishings", "casegoods", "case goods",
-    ]),
     ("dorm_student_housing", [
         "dorm", "dormitory", "residence hall", "student housing", "twin xl",
     ]),
@@ -134,6 +134,14 @@ _LEAD_TYPE_TERMS: list[tuple[str, list[str]]] = [
     ("public_health_residential", [
         "public health", "residential care", "behavioral health",
         "nursing home", "long-term care", "long term care",
+    ]),
+    ("co-op_contract_vehicle", [
+        "buyboard", "tips", "choice partners", "sourcewell", "hgacbuy",
+        "omnia", "vendor pool", "idiq", "cooperative", "co-op", "coop",
+        "purchasing cooperative", "interlocal",
+    ]),
+    ("broad_furniture_ffe", [
+        "furniture", "ff&e", "ffe", "furnishings", "casegoods", "case goods",
     ]),
 ]
 _LEAD_TYPE_COMPILED = [

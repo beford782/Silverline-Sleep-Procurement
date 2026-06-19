@@ -52,6 +52,27 @@ class ClassifyLeadTypeTests(unittest.TestCase):
         self.assertEqual(lead_radar.classify_lead_type("Institutional FF&E package"),
                          "broad_furniture_ffe")
 
+    def test_vehicle_priority_over_generic_furniture(self) -> None:
+        # A generic furniture buying vehicle keeps its vehicle-watch signal:
+        # co-op/IDIQ/vendor-pool outranks plain furniture/FF&E.
+        self.assertEqual(lead_radar.classify_lead_type("Office Furniture Catalog (IDIQ)"),
+                         "co-op_contract_vehicle")
+        self.assertEqual(lead_radar.classify_lead_type("Furniture vendor pool"),
+                         "co-op_contract_vehicle")
+
+    def test_specific_context_outranks_vehicle(self) -> None:
+        # A specific institutional buyer cluster is more actionable than the
+        # vehicle label, so it wins even when both appear.
+        self.assertEqual(lead_radar.classify_lead_type("Residence hall furniture IDIQ"),
+                         "dorm_student_housing")
+        self.assertEqual(lead_radar.classify_lead_type("County jail furniture vendor pool"),
+                         "correctional_detention")
+        self.assertEqual(lead_radar.classify_lead_type("Emergency shelter supplies cooperative"),
+                         "shelter_emergency")
+        self.assertEqual(
+            lead_radar.classify_lead_type("Behavioral health residential furniture cooperative"),
+            "public_health_residential")
+
     def test_institutional_contexts(self) -> None:
         self.assertEqual(lead_radar.classify_lead_type("Residence hall move-in supplies"),
                          "dorm_student_housing")

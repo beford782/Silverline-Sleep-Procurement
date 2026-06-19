@@ -67,7 +67,8 @@ class IngestTests(unittest.TestCase):
         self.assertNotIn("Office Furniture Catalog (IDIQ)", active_titles)
         self.assertIn("Office Furniture Catalog (IDIQ)", lead_titles)
         office = lead_titles["Office Furniture Catalog (IDIQ)"]
-        # "IDIQ" is a co-op contract-vehicle term and outranks the furniture cue.
+        # "IDIQ" is a co-op vehicle term and outranks the generic furniture cue,
+        # so the vehicle-watch signal is preserved.
         self.assertEqual(office["lead_type"], "co-op_contract_vehicle")
         self.assertTrue(office["next_action"].startswith("HUMAN:"))
         self.assertEqual(len(rejected), 1)  # janitorial -> no mattress signal

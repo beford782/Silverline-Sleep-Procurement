@@ -7,6 +7,7 @@ Lightweight Python utilities for the procurement toolkit.
 | Script | Stdlib only? | Purpose |
 | --- | --- | --- |
 | `pipeline.py` | yes | Manage the opportunity pipeline at `bids/active/_pipeline.csv`. Subcommands: `add`, `list`, `summary`, `score`, `move-to-archive`. |
+| `lead_radar.py` | yes | Manage the **Lead Radar** at `leads/review/_lead_radar.csv` — broad upstream opportunities (co-op vehicles, FF&E, dorm/student-housing, correctional, shelter, public-health residential) that are not yet confirmed mattress bids. Subcommands: `summary`, `list`, `add`, `archive`, `promote`. `promote` is the only path into the active bid pipeline and requires an explicit human `--confirmed-products`. |
 | `dashboard.py` | yes | Print a read-only operator dashboard for active deadlines, ownership gaps, scoring gaps, risk, and drafts ready to promote. |
 | `draft_bid_response.py` | yes | Render a starter bid response by combining one pipeline row (looked up by `opportunity_id` in active first, then archive) with a vendor profile JSON. Output is markdown under `build/drafts/` (gitignored) so generated content never collides with committed bid markdown. |
 | `promote_draft.py` | yes | Promote `build/drafts/<opportunity-id>_draft.md` into `bids/active/<opportunity-id>.md` with overwrite and archive-collision checks. |
@@ -56,6 +57,56 @@ mattress vocabulary you actually see in solicitations.
 
 `fit_score` is numeric (`0` to `100`). `risk_level` is one of `low`,
 `medium`, or `high`.
+
+### Capture upstream leads (Lead Radar)
+
+The active pipeline (`bids/active/_pipeline.csv`) is kept strict: **only
+confirmed mattress / product-fit bids belong there.** But much institutional
+mattress demand never appears as a standalone "mattress" RFP — it is bought
+through broad cooperative / vendor-pool / IDIQ vehicles (BuyBoard, TIPS,
+Choice Partners, Sourcewell, HGACBuy, OMNIA), school-furniture / FF&E
+contracts, dorm / student-housing, correctional / detention supply,
+shelter / emergency supply, and public-health residential contracts.
+
+**Lead Radar** (`leads/review/_lead_radar.csv`) is a separate, looser layer
+for those broad upstream signals. It makes the hidden market visible without
+polluting the clean bid pipeline.
+
+```sh
+python tools/lead_radar.py add \
+    --source "IonWave" \
+    --buyer "Region 6 ESC (EPIC6)" \
+    --solicitation-number "RFP 16.26" \
+    --title "School Furniture & Related Services" \
+    --lead-type broad_furniture_ffe \
+    --trigger-terms "furniture; ff&e" \
+    --due-date 2026-07-15
+
+python tools/lead_radar.py list      # review leads, sorted by due_date
+python tools/lead_radar.py summary   # counts by status, source, lead_type
+python tools/lead_radar.py archive <lead-id> --status no-fit --note "furniture only"
+
+# The ONLY path from a lead into the active bid pipeline. A human must
+# state the confirmed product fit; broad leads never auto-promote.
+python tools/lead_radar.py promote <lead-id> \
+    --confirmed-products "mattresses; bed frames"
+```
+
+`lead_type` is one of `co-op_contract_vehicle`, `broad_furniture_ffe`,
+`dorm_student_housing`, `correctional_detention`, `shelter_emergency`,
+`public_health_residential`, `awarded_contract_watch`, `other`. `status` is
+one of `watching`, `reviewing`, `promoted`, `archived`, `no-fit`, `stale`.
+
+`promote` copies the lead into `bids/active/_pipeline.csv` as a `watching`
+row (deduped by generated `opportunity_id`), records the human-confirmed
+products, and marks the lead `promoted` — it never deletes the lead, and it
+refuses to run without `--confirmed-products`.
+
+The intended two-stage flow: a future ingest change will route
+`relevance.REVIEW` items to Lead Radar (broad / ambiguous) while `relevance.ACCEPT`
+items continue straight to the active pipeline, and `relevance.REJECT` is
+dropped. (That ingest routing is a separate change; this layer is the
+destination it will write to.)
 
 ### Review the operator dashboard
 

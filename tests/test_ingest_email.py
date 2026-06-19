@@ -310,6 +310,92 @@ class IonWaveDigestTests(unittest.TestCase):
         )
 
 
+FORWARDED_FIXTURE = ROOT / "tests" / "fixtures" / "email_alerts_forwarded_sample.json"
+
+
+class ForwardedAlertTests(unittest.TestCase):
+    """Outlook-forwarded alerts must parse like direct ones on every provider
+    path (the scheduled weekly run reads forwarded items via Microsoft Graph)."""
+
+    def _load(self) -> list[dict]:
+        with FORWARDED_FIXTURE.open(encoding="utf-8") as fh:
+            return json.load(fh)
+
+    def test_unwrap_recovers_original_sender_and_subject(self) -> None:
+        msg = self._load()[0]  # forwarded IonWave digest
+        self.assertIn("silverlinesleep.com", msg["sender"])  # forwarding mailbox
+        out = ingest_email.unwrap_forwarded(msg)
+        self.assertEqual(out["sender"], "ESC 6 eMarketplace <esc6emkt@customer.ionwave.net>")
+        self.assertEqual(out["subject"], "ESC 6 eMarketplace Matching Bid Opportunities")
+        # Source now maps to the real portal, not the forwarder's domain.
+        self.assertEqual(ingest_email.source_for_sender(out["sender"]), "IonWave")
+        # Body trimmed to the forwarded content (signature preamble dropped).
+        self.assertTrue(out["body"].lstrip().startswith("From: ESC 6 eMarketplace"))
+        # Original message date is preserved (it parses; the quoted "Sent:" does not).
+        self.assertEqual(out["date"], msg["date"])
+
+    def test_unwrap_is_noop_on_direct_alert(self) -> None:
+        # A normal direct alert (no forwarded header block) is returned unchanged.
+        direct = _load_fixture()[0]  # Bonfire direct alert
+        self.assertIs(ingest_email.unwrap_forwarded(direct), direct)
+
+    def test_forwarded_digest_routes_to_lead_radar(self) -> None:
+        digest = self._load()[0]
+        new_rows, leads, _, _, _ = ingest_email.ingest([digest], [], TODAY)
+        self.assertEqual(len(new_rows), 0)  # broad furniture never hits active
+        self.assertEqual(len(leads), 2)
+        by_soln = {lead["solicitation_number"]: lead for lead in leads}
+        self.assertEqual(set(by_soln), {"RFP 15.26", "RFP 16.26"})
+        self.assertEqual(by_soln["RFP 16.26"]["title"], "School Furniture & Related Services")
+        self.assertEqual(by_soln["RFP 16.26"]["source"], "IonWave")
+        self.assertEqual(by_soln["RFP 16.26"]["due_date"], "2026-06-05")
+
+    def test_forwarded_mattress_routes_to_active(self) -> None:
+        mattress = self._load()[1]
+        new_rows, leads, _, _, _ = ingest_email.ingest([mattress], [], TODAY)
+        self.assertEqual(len(leads), 0)
+        self.assertEqual(len(new_rows), 1)
+        self.assertEqual(new_rows[0]["source"], "Bonfire")
+        self.assertEqual(new_rows[0]["title"], "Dormitory Mattresses and Bed Frames")
+        self.assertEqual(new_rows[0]["portal_url"],
+                         "https://city.bonfirehub.com/opportunities/55501")
+
+    def test_forwarded_registration_is_rejected(self) -> None:
+        reg = self._load()[2]
+        new_rows, leads, _, _, rejected = ingest_email.ingest([reg], [], TODAY)
+        self.assertEqual(len(new_rows), 0)
+        self.assertEqual(len(leads), 0)
+        self.assertEqual(len(rejected), 1)
+
+    def test_whole_forwarded_fixture_routing(self) -> None:
+        new_rows, leads, dupes, skipped, rejected = ingest_email.ingest(self._load(), [], TODAY)
+        self.assertEqual(len(new_rows), 1)   # forwarded Bonfire mattress -> active
+        self.assertEqual(len(leads), 2)      # forwarded ESC6 furniture digest -> Lead Radar
+        self.assertEqual(len(rejected), 1)   # forwarded TIPS registration notice
+        self.assertEqual(len(dupes), 0)
+        self.assertEqual(len(skipped), 0)
+
+    def test_forwarded_via_graph_provider_path(self) -> None:
+        # Mirror the scheduled run: a Microsoft Graph message whose own sender is
+        # the forwarding mailbox, carrying a forwarded IonWave digest in a text
+        # body (Graph is fetched with Prefer: outlook.body-content-type="text").
+        graph_msg = {
+            "id": "AAMk-fwd-1",
+            "subject": "FW: ESC 6 eMarketplace Matching Bid Opportunities",
+            "from": {"emailAddress": {"name": "Blake Ford", "address": "beford@silverlinesleep.com"}},
+            "receivedDateTime": "2026-05-13T14:55:00Z",
+            "body": {"contentType": "text", "content": self._load()[0]["body"]},
+        }
+        norm = ingest_email.normalize_graph_message(graph_msg)
+        self.assertEqual(norm["sender"], "beford@silverlinesleep.com")  # forwarder
+        new_rows, leads, _, _, _ = ingest_email.ingest([norm], [], TODAY)
+        self.assertEqual(len(new_rows), 0)
+        self.assertEqual(len(leads), 2)
+        self.assertEqual({lead["source"] for lead in leads}, {"IonWave"})
+        self.assertEqual({lead["solicitation_number"] for lead in leads},
+                         {"RFP 15.26", "RFP 16.26"})
+
+
 class CliTests(unittest.TestCase):
     def _run(self, *argv: str) -> tuple[int, str]:
         out = io.StringIO()

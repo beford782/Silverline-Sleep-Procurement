@@ -54,6 +54,14 @@ PARSER SCOPE:
   Bid Number -> solicitation_number + close date) instead of collapsing
   the digest to a single row titled with the generic email subject.
 
+  Forwarded alerts are normalized first: when the operator's Outlook rule
+  FORWARDS a portal alert (so the message sender is the forwarding mailbox and
+  the original alert is quoted in the body), unwrap_forwarded() recovers the
+  original portal sender/subject from the quoted "From:/Subject:" header so the
+  alert parses exactly like a direct one. This runs on every provider path
+  (Graph, Gmail, fixture), so the scheduled Graph run handles forwarded alerts
+  the same way the manual sweep did by hand.
+
 Usage:
     # offline / test
     python tools/ingest_email.py --fixture tests/fixtures/email_alerts_sample.json --dry-run
@@ -223,6 +231,59 @@ def extract_url(text: str, source_hint: str = "") -> str:
             return u
     non_admin = [u for u in urls if not _ADMIN_LINK_RE.search(u)]
     return (non_admin or urls)[0]
+
+
+# --------------------------------------------------------------------------
+# Forwarded-alert normalization (provider-agnostic)
+# --------------------------------------------------------------------------
+# The operator setup (docs/email_ingest_setup.md, 2026-06-18) FORWARDS portal
+# alerts from the Outlook business mailbox to a triage inbox. A forwarded alert
+# carries the forwarding mailbox as its sender (e.g. beford@silverlinesleep.com)
+# and quotes the ORIGINAL portal alert — including a "From:/Sent:/Subject:"
+# header block — inside the body. Left as-is, source_for_sender() mislabels the
+# source as the forwarder's domain and the per-sender adapters never fire (the
+# IonWave splitter keys on "ionwave" in the sender). This recovers the original
+# portal sender/subject from the quoted header so a forwarded alert parses
+# identically to a direct one — the same recovery the manual Gmail sweep did by
+# hand, now applied automatically on every provider path (Graph, Gmail, fixture).
+#
+# Conservative: only fires when the body contains a real forwarded header block
+# (a "From:" line bearing an email address AND a following "Subject:" line), so
+# direct portal alerts that merely mention "From:" in prose are left untouched.
+_FWD_FROM_RE = re.compile(r"^[ \t>]*From:[ \t]*(?P<sender>.+?)[ \t]*$",
+                          re.IGNORECASE | re.MULTILINE)
+_FWD_SUBJECT_RE = re.compile(r"^[ \t>]*Subject:[ \t]*(?P<subject>.+?)[ \t]*$",
+                             re.IGNORECASE | re.MULTILINE)
+
+
+def unwrap_forwarded(msg: dict) -> dict:
+    """Recover the original portal sender/subject from a forwarded alert body.
+
+    Returns a shallow copy of `msg` with `sender` (and `subject`, when present)
+    taken from the quoted forwarded header and `body` trimmed to the forwarded
+    content. Returns `msg` unchanged when no forwarded header block is found.
+    The message's own `date` is intentionally kept (the provider-normalized
+    received date parses; the quoted human "Sent:" string does not).
+    """
+    body = msg.get("body") or ""
+    mfrom = _FWD_FROM_RE.search(body)
+    if not mfrom:
+        return msg
+    sender = mfrom.group("sender").strip()
+    if "@" not in sender:  # a forwarded From: header always carries an address
+        return msg
+    tail = body[mfrom.start():]
+    msubj = _FWD_SUBJECT_RE.search(tail)
+    if not msubj:  # require a Subject: line to confirm a real header block
+        return msg
+
+    new = dict(msg)
+    new["sender"] = sender
+    subject = msubj.group("subject").strip()
+    if subject:
+        new["subject"] = subject
+    new["body"] = tail
+    return new
 
 
 # --------------------------------------------------------------------------
@@ -397,10 +458,12 @@ def ingest(messages: Iterable[dict], existing_rows: list[dict], today: str,
     dupes: list[dict] = []
     skipped: list[dict] = []
     rejected: list[dict] = []
-    # Expand IonWave multi-bid digests into one unit per bid; other messages
-    # pass through unchanged (one unit each).
+    # Recover original portal sender/subject from forwarded alerts first (so
+    # source mapping + per-sender adapters work), then expand IonWave multi-bid
+    # digests into one unit per bid; other messages pass through unchanged.
     units: list[dict] = []
     for msg in messages:
+        msg = unwrap_forwarded(msg)
         units.extend(split_ionwave_digest(msg) or [msg])
     for msg in units:
         row = parse_message(msg, today)

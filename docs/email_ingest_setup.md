@@ -186,14 +186,11 @@ failures (bad secret, missing admin consent, wrong mailbox/folder).
 
 Scheduled automatically by
 `.github/workflows/weekly_email_ingest.yml` (Mondays 13:30 UTC + manual
-`workflow_dispatch`): it ingests, re-scores, runs the repo checks, and —
-if `bids/active/_pipeline.csv` changed — opens a PR for human triage. It
-never auto-archives, auto-submits, or pushes to `main`.
-
-> Note: the scheduled job currently detects and commits **only** the active
-> pipeline. `REVIEW`-band alerts written to `leads/review/_lead_radar.csv`
-> (the default route) are produced by manual / on-demand runs; wiring the
-> weekly job to also stage Lead Radar changes is a follow-up.
+`workflow_dispatch`): it ingests, re-scores, runs the repo checks, and — if
+`bids/active/_pipeline.csv` **or** `leads/review/_lead_radar.csv` changed —
+opens a PR for human triage. The PR title/body state whether the run updated
+active bids, Lead Radar, or both. It never auto-archives, auto-submits, or
+pushes to `main`.
 
 ---
 

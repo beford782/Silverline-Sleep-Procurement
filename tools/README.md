@@ -13,8 +13,8 @@ Lightweight Python utilities for the procurement toolkit.
 | `promote_draft.py` | yes | Promote `build/drafts/<opportunity-id>_draft.md` into `bids/active/<opportunity-id>.md` with overwrite and archive-collision checks. |
 | `ingest_sam.py` | yes | Pull federal opportunities from SAM.gov's public API (`api.sam.gov/opportunities/v2/search`) into `bids/active/_pipeline.csv`. Stdlib HTTPS via `urllib.request`. Requires `SAM_API_KEY` env var. Dedupes by `solicitation_number` + `opportunity_id`. |
 | `ingest_portal_csv.py` | yes | Import an operator-downloaded portal CSV export into the active pipeline using a JSON column mapping such as `configs/portal_csv/esbd.json`. |
-| `ingest_email.py` | yes | Ingest portal commodity/NIGP email alerts from the alert mailbox into the active pipeline. Stdlib HTTPS via `urllib.request`. Two backends: `--provider graph` (Outlook/M365 via Microsoft Graph, app-only OAuth; `GRAPH_TENANT_ID`/`GRAPH_CLIENT_ID`/`GRAPH_CLIENT_SECRET`/`GRAPH_MAILBOX`) and `--provider gmail` (Gmail REST, refresh-token; `GMAIL_*`). `--fixture` for offline use. Generic title/link/due-date parser; dedupes by `opportunity_id`. Gated by `relevance.py`. See `docs/email_ingest_setup.md`. |
-| `ingest_rss.py` | yes | Ingest RSS 2.0 / Atom feeds (Google Alerts, Bonfire `/opportunities/rss`, RFPMart, etc.) into the active pipeline. Stdlib `urllib` + `xml.etree`; unwraps Google Alerts redirect links. Feeds via `--feed`/`--source`, `--feeds-config` (see `configs/feeds.example.json`), or `--fixture`. Gated by `relevance.py`; dedupes by `opportunity_id`. |
+| `ingest_email.py` | yes | Ingest portal commodity/NIGP email alerts from the alert mailbox. Stdlib HTTPS via `urllib.request`. Two backends: `--provider graph` (Outlook/M365 via Microsoft Graph, app-only OAuth; `GRAPH_TENANT_ID`/`GRAPH_CLIENT_ID`/`GRAPH_CLIENT_SECRET`/`GRAPH_MAILBOX`) and `--provider gmail` (Gmail REST, refresh-token; `GMAIL_*`). `--fixture` for offline use. Generic title/link/due-date parser; dedupes by `opportunity_id`. Gated by `relevance.py`: `ACCEPT` rows write to `bids/active/_pipeline.csv`; `REVIEW` rows route to Lead Radar (`--leads`, default `leads/review/_lead_radar.csv`); `REJECT` is dropped. `--review-target` overrides routing. See `docs/email_ingest_setup.md`. |
+| `ingest_rss.py` | yes | Ingest RSS 2.0 / Atom feeds (Google Alerts, Bonfire `/opportunities/rss`, RFPMart, etc.). Stdlib `urllib` + `xml.etree`; unwraps Google Alerts redirect links. Feeds via `--feed`/`--source`, `--feeds-config` (see `configs/feeds.example.json`), or `--fixture`. Gated by `relevance.py`: `ACCEPT` rows write to `bids/active/_pipeline.csv`; `REVIEW` rows route to Lead Radar (`--leads`, default `leads/review/_lead_radar.csv`); `REJECT` is dropped. `--review-target` overrides routing. Dedupes by `opportunity_id` (leads also deduped against Lead Radar + active/archive). |
 | `portal_csv_mapping.py` | yes | Inspect a portal CSV export and write a starter mapping JSON for `ingest_portal_csv.py`. |
 | `generate_procurement_packet.py` | yes | Reads a questionnaire CSV, writes a markdown packet and printable HTML. Default output dir is `build/generated/` (gitignored). |
 | `validate_vendor_profile.py` | yes | Validates `vendor-profiles/*.profile.json` against `vendor-profiles/vendor_profile.schema.json`. Walks the schema at runtime; no parallel hardcoded rules. |
@@ -102,11 +102,38 @@ row (deduped by generated `opportunity_id`), records the human-confirmed
 products, and marks the lead `promoted` — it never deletes the lead, and it
 refuses to run without `--confirmed-products`.
 
-The intended two-stage flow: a future ingest change will route
-`relevance.REVIEW` items to Lead Radar (broad / ambiguous) while `relevance.ACCEPT`
-items continue straight to the active pipeline, and `relevance.REJECT` is
-dropped. (That ingest routing is a separate change; this layer is the
-destination it will write to.)
+#### Ingest routing (email + RSS)
+
+Lead Radar is intentionally **not** the bid pipeline. It holds `REVIEW`-band
+opportunities that may indicate future or indirect mattress spend, while the
+active pipeline stays limited to confirmed product-fit bid opportunities.
+
+`tools/ingest_email.py` and `tools/ingest_rss.py` both gate every parsed item
+through `relevance.py` and route by decision band:
+
+| Relevance band | Destination | Notes |
+| --- | --- | --- |
+| `ACCEPT` | `bids/active/_pipeline.csv` | Clear mattress / product-fit signal. |
+| `REVIEW` | `leads/review/_lead_radar.csv` | Broad / ambiguous upstream signal — **default route**. |
+| `REJECT` | *(dropped)* | Never enters the active pipeline **or** Lead Radar. |
+
+Routing flags (both ingesters):
+
+- `--leads PATH` — Lead Radar CSV the `REVIEW` rows are written to
+  (default `leads/review/_lead_radar.csv`).
+- `--review-target {leads,active,reject-log}` — override where `REVIEW`-band
+  items go. `leads` is the default; `active` is the legacy/debug behavior
+  (writes the flagged row straight to the active pipeline); `reject-log`
+  diverts them to the optional `--reject-log` audit CSV instead.
+- `--dry-run` — preview both would-be active rows and would-be lead rows;
+  writes neither file.
+
+`REVIEW` items become Lead Radar rows (classified `lead_type`, status
+`reviewing`, a `HUMAN: confirm mattress/bedding scope before promotion.`
+next-action) and are deduped against the existing Lead Radar, active, and
+archive rows. Nothing flows from a lead into the active pipeline automatically:
+a human must run `tools/lead_radar.py promote <lead-id> --confirmed-products
+"..."` (see above), which is the only path across that boundary.
 
 ### Review the operator dashboard
 

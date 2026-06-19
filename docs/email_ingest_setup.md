@@ -76,8 +76,13 @@ validated end-to-end on 2026-06-18:
 2. Map each alert to the `ingest_email.py` fixture shape
    (`id`, `sender`, `subject`, `date`, `body`).
 3. `python tools/ingest_email.py --fixture <built>.json --dry-run` to
-   preview, then drop `--dry-run` against `bids/active/_pipeline.csv`.
-4. Triage the new `watching` rows and open a PR.
+   preview, then drop `--dry-run`. The ingester gates each alert through
+   `relevance.py`: `ACCEPT` rows are written to `bids/active/_pipeline.csv`,
+   `REVIEW` rows are routed to Lead Radar (`leads/review/_lead_radar.csv`),
+   and `REJECT` is dropped. (See `tools/README.md` → *Ingest routing* for
+   `--leads` and `--review-target`.)
+4. Triage the new `watching` rows (and any Lead Radar `reviewing` rows) and
+   open a PR.
 
 This needs no Gmail OAuth token or repo secrets — it relies on the
 assistant's existing Gmail access. Mint the `GMAIL_*` secrets (above) only
@@ -184,6 +189,11 @@ Scheduled automatically by
 `workflow_dispatch`): it ingests, re-scores, runs the repo checks, and —
 if `bids/active/_pipeline.csv` changed — opens a PR for human triage. It
 never auto-archives, auto-submits, or pushes to `main`.
+
+> Note: the scheduled job currently detects and commits **only** the active
+> pipeline. `REVIEW`-band alerts written to `leads/review/_lead_radar.csv`
+> (the default route) are produced by manual / on-demand runs; wiring the
+> weekly job to also stage Lead Radar changes is a follow-up.
 
 ---
 

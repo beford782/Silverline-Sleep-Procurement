@@ -1,9 +1,9 @@
 # Operator Portal Registration & Alert Setup Checklist
 
-**For:** Blake / Continental Silverline (Houston, TX — institutional mattress & bedding; Texas CMBL registered)
-**Region:** TX / OK / LA / MS / AR / NM
-**Date:** 2026-06-19
-**Type:** Operator runbook (docs only). No code, no `configs/feeds.json` change, no CSV writes, no Contract Vehicle Watch.
+- **For:** Blake / Continental Silverline (Houston, TX — institutional mattress & bedding; Texas CMBL registered)
+- **Service geography:** TX / OK / LA / MS / AR / NM
+- **Date:** 2026-06-19
+- **Type:** Operator runbook (docs only). No code, no `configs/feeds.json` change, no CSV writes, no Contract Vehicle Watch.
 
 This checklist is the **source-acquisition** follow-on to the RSS feed expansion (PR #37) and the strategy docs ([`wild_opportunity_discovery_strategy.md`](wild_opportunity_discovery_strategy.md), [`research/opportunity_expansion_plan_2026-06.md`](research/opportunity_expansion_plan_2026-06.md)). Most remaining high-value sources are **registration / commodity-alert** setups, not code. The goal: register once with the right commodity terms so each portal *emails* matching opportunities, then forward those emails into the existing ingest funnel.
 

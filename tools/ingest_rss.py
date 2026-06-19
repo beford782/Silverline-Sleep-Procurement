@@ -57,6 +57,7 @@ from pipeline import (  # noqa: E402
     slugify,
 )
 import relevance  # noqa: E402
+import lead_radar  # noqa: E402
 
 
 def _localname(tag: str) -> str:
@@ -197,12 +198,28 @@ def existing_ids(rows: list[dict]) -> set[str]:
 
 
 def ingest(entries: list[tuple[dict, str]], existing_rows: list[dict], today: str,
-           home_states: frozenset[str] = relevance.HOME_STATES_DEFAULT
-           ) -> tuple[list[dict], list[dict], list[dict]]:
-    """Partition (entry, source) pairs into (new_rows, dupes, rejected)."""
+           home_states: frozenset[str] = relevance.HOME_STATES_DEFAULT,
+           existing_leads: list[dict] | None = None,
+           review_target: str = "leads"
+           ) -> tuple[list[dict], list[dict], list[dict], list[dict]]:
+    """Partition (entry, source) pairs into (new_rows, leads, dupes, rejected).
+
+    ACCEPT rows write to the active pipeline (new_rows). REVIEW rows route per
+    `review_target` (default 'leads' -> Lead Radar; 'active' keeps the legacy
+    HUMAN-flagged watching row; 'reject-log' drops them). REJECT is unchanged.
+    """
+    existing_leads = existing_leads or []
     ids = existing_ids(existing_rows)
+    lead_ids: set[str] = set()
+    for r in existing_leads:
+        lead_ids |= lead_radar.lead_match_keys(r)
+    for r in existing_rows:
+        lead_ids |= lead_radar.lead_match_keys(r)
+
     seen: set[str] = set()
+    lead_seen: set[str] = set()
     new_rows: list[dict] = []
+    leads: list[dict] = []
     dupes: list[dict] = []
     rejected: list[dict] = []
     for entry, source in entries:
@@ -225,6 +242,20 @@ def ingest(entries: list[tuple[dict, str]], existing_rows: list[dict], today: st
             rejected.append(row)
             continue
         if decision == "REVIEW":
+            if review_target == "reject-log":
+                row["next_action"] = "HUMAN: confirm mattress scope — " + "; ".join(reasons[:2])
+                rejected.append(row)
+                continue
+            if review_target == "leads":
+                lead = lead_radar.build_lead_row(row, verdict, today)
+                keys = lead_radar.lead_match_keys(lead)
+                if keys & lead_ids or keys & lead_seen:
+                    dupes.append(row)
+                    continue
+                lead_seen |= keys
+                leads.append(lead)
+                continue
+            # review_target == "active": legacy fall-through to active pipeline.
             row["next_action"] = "HUMAN: confirm mattress scope — " + "; ".join(reasons[:2])
         oid = row["opportunity_id"]
         if oid in ids or oid in seen:
@@ -232,7 +263,7 @@ def ingest(entries: list[tuple[dict, str]], existing_rows: list[dict], today: st
             continue
         seen.add(oid)
         new_rows.append(row)
-    return new_rows, dupes, rejected
+    return new_rows, leads, dupes, rejected
 
 
 def fetch_feed(url: str, timeout: float = DEFAULT_TIMEOUT_S) -> str:
@@ -262,6 +293,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--fixture", default=None, help="Read one feed's XML from a file (testing).")
     parser.add_argument("--active", default=str(DEFAULT_ACTIVE))
     parser.add_argument("--archive", default=str(DEFAULT_ARCHIVE))
+    parser.add_argument("--leads", default=str(lead_radar.DEFAULT_REVIEW),
+                        help="Lead Radar CSV write target for REVIEW rows (default: %(default)s)")
+    parser.add_argument("--review-target", choices=("leads", "active", "reject-log"), default="leads",
+                        help="Where REVIEW-band items go: 'leads' (Lead Radar, default), "
+                             "'active' (legacy), or 'reject-log'.")
     parser.add_argument("--reject-log", default=None, help="Optional CSV path to append rejected rows.")
     parser.add_argument("--dry-run", action="store_true", help="Show what would be added; do not write.")
     args = parser.parse_args(argv)
@@ -269,8 +305,10 @@ def main(argv: list[str] | None = None) -> int:
     today = datetime.now().date().isoformat()
     active_path = Path(args.active)
     archive_path = Path(args.archive)
+    leads_path = Path(args.leads)
     existing_active = _read_existing_or_empty(active_path)
     existing_rows = existing_active + _read_existing_or_empty(archive_path)
+    existing_leads = _read_existing_leads_or_empty(leads_path)
 
     entries: list[tuple[dict, str]] = []
     if args.fixture:
@@ -294,14 +332,18 @@ def main(argv: list[str] | None = None) -> int:
             except ValueError as exc:
                 print(f"warn: {source}: {exc}", file=sys.stderr)
 
-    new_rows, dupes, rejected = ingest(entries, existing_rows, today)
+    new_rows, leads, dupes, rejected = ingest(
+        entries, existing_rows, today, existing_leads=existing_leads,
+        review_target=args.review_target)
     print(f"feed entries fetched: {len(entries)}")
-    print(f"  new:      {len(new_rows)}")
+    print(f"  active:   {len(new_rows)}")
+    print(f"  leads:    {len(leads)} (review -> {args.review_target})")
     print(f"  dupes:    {len(dupes)}")
     print(f"  rejected: {len(rejected)} (not mattress-relevant)")
     for r in new_rows:
-        flag = " [REVIEW]" if r.get("next_action", "").startswith("HUMAN:") else ""
-        print(f"  + [{r['source']}] {r['title']}{flag}")
+        print(f"  + [{r['source']}] {r['title']}")
+    for lead in leads:
+        print(f"  ~ [lead/{lead['lead_type']}] {lead['title']}")
 
     if args.reject_log and rejected:
         _append_reject_log(Path(args.reject_log), rejected)
@@ -310,11 +352,18 @@ def main(argv: list[str] | None = None) -> int:
     if args.dry_run:
         print("(--dry-run: no files written)")
         return 0
-    if not new_rows:
+
+    wrote_anything = False
+    if new_rows:
+        write_rows_atomic(active_path, existing_active + new_rows)
+        print(f"wrote {len(new_rows)} active row(s) to {active_path}")
+        wrote_anything = True
+    if leads:
+        lead_radar.write_lead_rows_atomic(leads_path, existing_leads + leads)
+        print(f"wrote {len(leads)} lead(s) to {leads_path}")
+        wrote_anything = True
+    if not wrote_anything:
         print("(no new rows to write)")
-        return 0
-    write_rows_atomic(active_path, existing_active + new_rows)
-    print(f"wrote {len(new_rows)} new row(s) to {active_path}")
     return 0
 
 
@@ -322,6 +371,14 @@ def _read_existing_or_empty(path: Path) -> list[dict]:
     if not path.exists():
         return []
     _, rows = read_rows(path)
+    return rows
+
+
+def _read_existing_leads_or_empty(path: Path) -> list[dict]:
+    """Existing Lead Radar rows for dedup; empty when the file is absent."""
+    if not path.exists():
+        return []
+    _, rows = lead_radar.read_lead_rows(path)
     return rows
 
 

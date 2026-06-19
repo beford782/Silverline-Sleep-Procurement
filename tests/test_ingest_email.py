@@ -140,8 +140,9 @@ class GraphNormalizeTests(unittest.TestCase):
 
 class IngestTests(unittest.TestCase):
     def test_partition_counts(self) -> None:
-        new_rows, dupes, skipped, rejected = ingest_email.ingest(_load_fixture(), [], TODAY)
+        new_rows, leads, dupes, skipped, rejected = ingest_email.ingest(_load_fixture(), [], TODAY)
         self.assertEqual(len(new_rows), 3)   # bonfire, region4, demandstar (all mattress)
+        self.assertEqual(len(leads), 0)      # no broad/review items in this fixture
         self.assertEqual(len(dupes), 1)      # bonfire duplicate
         self.assertEqual(len(skipped), 1)    # empty subject
         self.assertEqual(len(rejected), 0)   # all fixture items are mattress-relevant
@@ -150,7 +151,7 @@ class IngestTests(unittest.TestCase):
         msgs = _load_fixture()
         first = ingest_email.parse_message(msgs[0], TODAY)
         existing = [first]
-        new_rows, dupes, _, _ = ingest_email.ingest(msgs, existing, TODAY)
+        new_rows, _leads, dupes, _, _ = ingest_email.ingest(msgs, existing, TODAY)
         self.assertNotIn(first["opportunity_id"], {r["opportunity_id"] for r in new_rows})
         self.assertIn(first["opportunity_id"], {d["opportunity_id"] for d in dupes})
 
@@ -162,9 +163,43 @@ class IngestTests(unittest.TestCase):
             "date": "Tue, 16 Jun 2026 08:00:00 -0500",
             "body": "Dear Supplier, your registration has been activated.",
         }]
-        new_rows, _, _, rejected = ingest_email.ingest(msgs, [], TODAY)
+        new_rows, leads, _, _, rejected = ingest_email.ingest(msgs, [], TODAY)
         self.assertEqual(len(new_rows), 0)
+        self.assertEqual(len(leads), 0)
         self.assertEqual(len(rejected), 1)
+
+    def test_dormitory_mattress_routes_to_active_not_leads(self) -> None:
+        # An explicit mattress item is a confirmed product-fit -> active pipeline.
+        bonfire = _load_fixture()[0]
+        new_rows, leads, _, _, _ = ingest_email.ingest([bonfire], [], TODAY)
+        self.assertEqual(len(new_rows), 1)
+        self.assertEqual(len(leads), 0)
+        self.assertEqual(new_rows[0]["title"], "Dormitory Mattresses and Bed Frames")
+
+    def test_broad_furniture_routes_to_leads_not_active(self) -> None:
+        # A broad IonWave furniture/related-services digest is REVIEW-band:
+        # it must feed Lead Radar, never the strict active pipeline.
+        digest = IonWaveDigestTests.DIGEST
+        new_rows, leads, _, _, _ = ingest_email.ingest([digest], [], TODAY)
+        self.assertEqual(len(new_rows), 0)  # nothing pollutes active bids
+        self.assertEqual(len(leads), 2)     # both furniture bids land as leads
+        titles = {lead["title"] for lead in leads}
+        self.assertIn("School Furniture & Related Services", titles)
+        for lead in leads:
+            self.assertEqual(lead["lead_type"], "broad_furniture_ffe")
+            self.assertEqual(lead["status"], "reviewing")
+            self.assertTrue(lead["next_action"].startswith("HUMAN:"))
+            self.assertTrue(lead["lead_id"])
+            self.assertTrue(set(lead).issuperset(set(ingest_email.lead_radar.LEAD_HEADER)))
+
+    def test_review_target_active_keeps_legacy_behavior(self) -> None:
+        # Opt back into the old behavior: REVIEW items go to active, flagged.
+        digest = IonWaveDigestTests.DIGEST
+        new_rows, leads, _, _, _ = ingest_email.ingest(
+            [digest], [], TODAY, review_target="active")
+        self.assertEqual(len(leads), 0)
+        self.assertEqual(len(new_rows), 2)
+        self.assertTrue(all(r["next_action"].startswith("HUMAN:") for r in new_rows))
 
 
 class IonWaveDigestTests(unittest.TestCase):
@@ -215,12 +250,14 @@ class IonWaveDigestTests(unittest.TestCase):
         }
         self.assertIsNone(ingest_email.split_ionwave_digest(msg))
 
-    def test_digest_ingests_as_two_rows_with_fields(self) -> None:
-        new_rows, _, _, _ = ingest_email.ingest([self.DIGEST], [], TODAY)
-        self.assertEqual(len(new_rows), 2)
-        by_soln = {r["solicitation_number"]: r for r in new_rows}
+    def test_digest_ingests_as_two_leads_with_fields(self) -> None:
+        # Broad furniture digest -> Lead Radar (not active), one lead per bid,
+        # fields carried through including the "Close Date:" due_date fix.
+        new_rows, leads, _, _, _ = ingest_email.ingest([self.DIGEST], [], TODAY)
+        self.assertEqual(len(new_rows), 0)
+        self.assertEqual(len(leads), 2)
+        by_soln = {lead["solicitation_number"]: lead for lead in leads}
         self.assertEqual(by_soln["RFP 16.26"]["title"], "School Furniture & Related Services")
-        # Close-date extraction (the "Close Date:" label fix) populates due_date.
         self.assertEqual(by_soln["RFP 16.26"]["due_date"], "2026-06-05")
         self.assertEqual(by_soln["RFP 16.26"]["source"], "IonWave")
 
@@ -259,8 +296,9 @@ class IonWaveDigestTests(unittest.TestCase):
                 "https://esc6emkt.ionwave.net/VendorLanding.aspx?e=question"
             ),
         }
-        new_rows, dupes, _, _ = ingest_email.ingest([self.DIGEST, qa], [], TODAY)
-        self.assertEqual(len(new_rows), 2)
+        new_rows, leads, dupes, _, _ = ingest_email.ingest([self.DIGEST, qa], [], TODAY)
+        self.assertEqual(len(new_rows), 0)
+        self.assertEqual(len(leads), 2)
         self.assertEqual(len(dupes), 1)
         self.assertEqual(dupes[0]["solicitation_number"], "RFP 16.26")
 
@@ -284,8 +322,25 @@ class CliTests(unittest.TestCase):
             active = Path(d) / "active.csv"
             rc, out = self._run("--fixture", str(FIXTURE), "--active", str(active), "--dry-run")
         self.assertEqual(rc, 0)
-        self.assertIn("new:     3", out)
+        self.assertIn("active:  3", out)
         self.assertFalse(active.exists())
+
+    def test_broad_digest_writes_leads_not_active(self) -> None:
+        # End-to-end: a furniture digest fixture must write Lead Radar rows and
+        # leave the active pipeline untouched (0 rows).
+        with tempfile.TemporaryDirectory() as d:
+            active = Path(d) / "active.csv"
+            leads = Path(d) / "leads.csv"
+            digest_fixture = Path(d) / "digest.json"
+            digest_fixture.write_text(json.dumps([IonWaveDigestTests.DIGEST]), encoding="utf-8")
+            rc, out = self._run("--fixture", str(digest_fixture), "--active", str(active),
+                                "--leads", str(leads))
+            self.assertEqual(rc, 0)
+            self.assertFalse(active.exists())  # active pipeline never written
+            self.assertTrue(leads.exists())
+            _, lead_rows = ingest_email.lead_radar.read_lead_rows(leads)
+            self.assertEqual(len(lead_rows), 2)
+            self.assertIn("leads:   2", out)
 
     def test_writes_rows_and_dedups_against_archive(self) -> None:
         with tempfile.TemporaryDirectory() as d:

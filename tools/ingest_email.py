@@ -94,6 +94,7 @@ from pipeline import (  # noqa: E402
     slugify,
 )
 import relevance  # noqa: E402
+import lead_radar  # noqa: E402
 
 
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
@@ -361,20 +362,38 @@ def existing_ids(rows: list[dict]) -> set[str]:
 
 
 def ingest(messages: Iterable[dict], existing_rows: list[dict], today: str,
-           home_states: frozenset[str] = relevance.HOME_STATES_DEFAULT
-           ) -> tuple[list[dict], list[dict], list[dict], list[dict]]:
-    """Partition messages into (new_rows, dupes, skipped, rejected).
+           home_states: frozenset[str] = relevance.HOME_STATES_DEFAULT,
+           existing_leads: list[dict] | None = None,
+           review_target: str = "leads"
+           ) -> tuple[list[dict], list[dict], list[dict], list[dict], list[dict]]:
+    """Partition messages into (new_rows, leads, dupes, skipped, rejected).
 
     Each parsed row is gated by the central mattress-relevance classifier:
-      REJECT -> rejected (never written to the pipeline);
-      REVIEW -> kept, but next_action flags it for human confirmation;
-      ACCEPT -> kept as a normal watching row.
-    dupes: rows whose opportunity_id is already tracked.
+      REJECT -> rejected (never written anywhere but an optional audit log);
+      REVIEW -> routed per `review_target` (default 'leads'): a broad upstream
+                signal goes to Lead Radar (`leads`) instead of polluting the
+                strict active bid pipeline. 'active' keeps the old behavior
+                (kept as a HUMAN-flagged watching row); 'reject-log' drops it.
+      ACCEPT -> kept as a normal watching row in the active pipeline (new_rows).
+    leads: REVIEW rows mapped onto the Lead Radar schema.
+    dupes: rows already tracked (active/archive for ACCEPT; Lead Radar +
+           active/archive for leads).
     skipped: messages that produced no usable row (no title).
     """
+    existing_leads = existing_leads or []
     ids = existing_ids(existing_rows)
+    # Lead dedup spans existing Lead Radar rows AND active/archive rows, so a
+    # broad signal already tracked (as a lead or a live bid) is not re-added.
+    lead_ids: set[str] = set()
+    for r in existing_leads:
+        lead_ids |= lead_radar.lead_match_keys(r)
+    for r in existing_rows:
+        lead_ids |= lead_radar.lead_match_keys(r)
+
     seen: set[str] = set()
+    lead_seen: set[str] = set()
     new_rows: list[dict] = []
+    leads: list[dict] = []
     dupes: list[dict] = []
     skipped: list[dict] = []
     rejected: list[dict] = []
@@ -400,6 +419,21 @@ def ingest(messages: Iterable[dict], existing_rows: list[dict], today: str,
             rejected.append(row)
             continue
         if verdict.decision == "REVIEW":
+            if review_target == "reject-log":
+                row["next_action"] = "HUMAN: confirm mattress scope — " + "; ".join(verdict.reasons[:2])
+                rejected.append(row)
+                continue
+            if review_target == "leads":
+                lead = lead_radar.build_lead_row(row, verdict, today)
+                keys = lead_radar.lead_match_keys(lead)
+                if keys & lead_ids or keys & lead_seen:
+                    dupes.append(row)
+                    continue
+                lead_seen |= keys
+                leads.append(lead)
+                continue
+            # review_target == "active": fall through to the active pipeline,
+            # flagged for human confirmation (legacy behavior).
             row["next_action"] = "HUMAN: confirm mattress scope — " + "; ".join(verdict.reasons[:2])
         keys = row_dedupe_keys(row)
         if keys & ids or keys & seen:
@@ -407,7 +441,7 @@ def ingest(messages: Iterable[dict], existing_rows: list[dict], today: str,
             continue
         seen.update(keys)
         new_rows.append(row)
-    return new_rows, dupes, skipped, rejected
+    return new_rows, leads, dupes, skipped, rejected
 
 
 # --------------------------------------------------------------------------
@@ -594,6 +628,14 @@ def _read_existing_or_empty(path: Path) -> list[dict]:
     return rows
 
 
+def _read_existing_leads_or_empty(path: Path) -> list[dict]:
+    """Existing Lead Radar rows for dedup; empty when the file is absent."""
+    if not path.exists():
+        return []
+    _, rows = lead_radar.read_lead_rows(path)
+    return rows
+
+
 def _require_env(names: list[str]) -> list[str]:
     vals = [os.environ.get(n) for n in names]
     missing = [n for n, v in zip(names, vals) if not v]
@@ -699,11 +741,13 @@ def _run_check(args, today: str) -> int:
         print(f"FAILED\n  {exc}")
         return 1
 
-    new_rows, _, skipped, rejected = ingest(messages, [], today)
-    print(f"  [3/3] parsed {len(messages)} message(s); {len(new_rows)} relevant, "
-          f"{len(rejected)} filtered out, {len(skipped)} no-title:")
+    new_rows, leads, _, skipped, rejected = ingest(messages, [], today)
+    print(f"  [3/3] parsed {len(messages)} message(s); {len(new_rows)} active-relevant, "
+          f"{len(leads)} lead(s), {len(rejected)} filtered out, {len(skipped)} no-title:")
     for r in new_rows[:5]:
         print(f"    + [{r['source']}] {r['title']}  due={r['due_date'] or '?'}  url={r['portal_url'] or '?'}")
+    for lead in leads[:5]:
+        print(f"    ~ [lead/{lead['lead_type']}] {lead['title']}  due={lead['due_date'] or '?'}")
     print("connectivity check OK (no rows written)")
     return 0
 
@@ -723,9 +767,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-messages", type=int, default=DEFAULT_MAX_MESSAGES,
                         help=f"Safety cap on messages fetched (default {DEFAULT_MAX_MESSAGES}).")
     parser.add_argument("--active", default=str(DEFAULT_ACTIVE),
-                        help=f"Pipeline CSV write target (default: {DEFAULT_ACTIVE.relative_to(REPO_ROOT)})")
+                        help=f"Pipeline CSV write target for ACCEPT rows (default: {DEFAULT_ACTIVE.relative_to(REPO_ROOT)})")
     parser.add_argument("--archive", default=str(DEFAULT_ARCHIVE),
                         help=f"Archive CSV consulted for dedup only; never written. Default: {DEFAULT_ARCHIVE.relative_to(REPO_ROOT)}")
+    parser.add_argument("--leads", default=str(lead_radar.DEFAULT_REVIEW),
+                        help=f"Lead Radar CSV write target for REVIEW rows (default: {lead_radar.DEFAULT_REVIEW.relative_to(REPO_ROOT)})")
+    parser.add_argument("--review-target", choices=("leads", "active", "reject-log"), default="leads",
+                        help="Where REVIEW-band items go: 'leads' (Lead Radar, default), "
+                             "'active' (legacy: active pipeline, HUMAN-flagged), or 'reject-log'.")
     parser.add_argument("--check", action="store_true",
                         help="Connectivity check: verify credentials + mailbox access with "
                              "stepwise diagnostics, print a parse preview, write nothing.")
@@ -743,21 +792,27 @@ def main(argv: list[str] | None = None) -> int:
 
     active_path = Path(args.active)
     archive_path = Path(args.archive)
+    leads_path = Path(args.leads)
     existing_active = _read_existing_or_empty(active_path)
     existing_archive = _read_existing_or_empty(archive_path)
     existing_rows = existing_active + existing_archive
+    existing_leads = _read_existing_leads_or_empty(leads_path)
 
     messages = _load_messages(args, today)
-    new_rows, dupes, skipped, rejected = ingest(messages, existing_rows, today)
+    new_rows, leads, dupes, skipped, rejected = ingest(
+        messages, existing_rows, today, existing_leads=existing_leads,
+        review_target=args.review_target)
 
     print(f"email alerts fetched: {len(messages)} message(s)")
-    print(f"  new:     {len(new_rows)}")
+    print(f"  active:  {len(new_rows)}")
+    print(f"  leads:   {len(leads)} (review -> {args.review_target})")
     print(f"  dupes:   {len(dupes)}")
     print(f"  rejected: {len(rejected)} (not mattress-relevant)")
     print(f"  skipped: {len(skipped)} (no usable title)")
     for r in new_rows:
-        flag = " [REVIEW]" if r.get("next_action", "").startswith("HUMAN:") else ""
-        print(f"  + [{r['source']}] {r['opportunity_id']} :: {r['title']}{flag}")
+        print(f"  + [{r['source']}] {r['opportunity_id']} :: {r['title']}")
+    for lead in leads:
+        print(f"  ~ [lead/{lead['lead_type']}] {lead['lead_id']} :: {lead['title']}")
 
     if args.reject_log and rejected:
         _append_reject_log(Path(args.reject_log), rejected)
@@ -766,12 +821,18 @@ def main(argv: list[str] | None = None) -> int:
     if args.dry_run:
         print("(--dry-run: no files written)")
         return 0
-    if not new_rows:
-        print("(no new rows to write)")
-        return 0
 
-    write_rows_atomic(active_path, existing_active + new_rows)
-    print(f"wrote {len(new_rows)} new row(s) to {active_path}")
+    wrote_anything = False
+    if new_rows:
+        write_rows_atomic(active_path, existing_active + new_rows)
+        print(f"wrote {len(new_rows)} active row(s) to {active_path}")
+        wrote_anything = True
+    if leads:
+        lead_radar.write_lead_rows_atomic(leads_path, existing_leads + leads)
+        print(f"wrote {len(leads)} lead(s) to {leads_path}")
+        wrote_anything = True
+    if not wrote_anything:
+        print("(no new rows to write)")
     return 0
 
 

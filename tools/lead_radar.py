@@ -32,6 +32,7 @@ from __future__ import annotations
 import argparse
 import csv
 import os
+import re
 import sys
 import tempfile
 from collections import Counter
@@ -91,6 +92,144 @@ def derive_lead_id(source: str, buyer: str, solicitation_number: str, title: str
     """Stable lead id from source + buyer + solicitation/title (same rule the
     active pipeline uses for opportunity_id, so a promoted lead is traceable)."""
     return pipeline.derive_opportunity_id(source, buyer, solicitation_number, title)
+
+
+# ---------------------------------------------------------------------
+# Lead classification + row mapping
+# ---------------------------------------------------------------------
+# Shared by the ingest tools (ingest_email.py, ingest_rss.py) so REVIEW-band
+# opportunities can be routed into Lead Radar WITHOUT duplicating the id rule
+# or the CSV shape. The active bid pipeline stays strict (ACCEPT only); broad
+# upstream signals land here for a human to triage.
+def _lead_term_re(term: str) -> "re.Pattern[str]":
+    """Whole-word/phrase matcher (spaces/hyphens interchangeable), so 'cot'
+    never fires inside 'Scott' and 'tips' never inside 'fingertips'."""
+    parts = re.split(r"[ \-]+", term)
+    body = r"[\s\-]+".join(re.escape(p) for p in parts)
+    return re.compile(r"(?<![A-Za-z0-9])" + body + r"(?![A-Za-z0-9])", re.IGNORECASE)
+
+
+# Lead-type families in priority order: the first family whose term appears in
+# the text wins, so classification is deterministic and conservative (no match
+# -> "other").
+#
+# Specific institutional buyer/use contexts (dorm, correctional, shelter,
+# public-health) come FIRST so they outrank a generic vehicle label — a
+# "County Jail Furniture Vendor Pool" is more actionable as a correctional
+# cluster than as a vendor pool. But the co-op/IDIQ/vendor-pool vehicle family
+# still outranks generic furniture/FF&E, so a broad buying vehicle like an
+# "Office Furniture Catalog (IDIQ)" keeps its vehicle-watch signal instead of
+# collapsing to plain furniture.
+_LEAD_TYPE_TERMS: list[tuple[str, list[str]]] = [
+    ("dorm_student_housing", [
+        "dorm", "dormitory", "residence hall", "student housing", "twin xl",
+    ]),
+    ("correctional_detention", [
+        "jail", "jails", "prison", "prisons", "detention", "inmate",
+        "correctional",
+    ]),
+    ("shelter_emergency", [
+        "shelter", "emergency", "disaster", "cot", "cots",
+    ]),
+    ("public_health_residential", [
+        "public health", "residential care", "behavioral health",
+        "nursing home", "long-term care", "long term care",
+    ]),
+    ("co-op_contract_vehicle", [
+        "buyboard", "tips", "choice partners", "sourcewell", "hgacbuy",
+        "omnia", "vendor pool", "idiq", "cooperative", "co-op", "coop",
+        "purchasing cooperative", "interlocal",
+    ]),
+    ("broad_furniture_ffe", [
+        "furniture", "ff&e", "ffe", "furnishings", "casegoods", "case goods",
+    ]),
+]
+_LEAD_TYPE_COMPILED = [
+    (lead_type, [_lead_term_re(w) for w in words]) for lead_type, words in _LEAD_TYPE_TERMS
+]
+
+
+def classify_lead_type(text: str) -> str:
+    """Bucket a lead into a lead_type from free text. First family to match in
+    priority order wins; unmatched text is 'other'."""
+    blob = text or ""
+    for lead_type, patterns in _LEAD_TYPE_COMPILED:
+        if any(rx.search(blob) for rx in patterns):
+            return lead_type
+    return "other"
+
+
+def build_lead_row(opp_row: dict, verdict=None, today: str = "") -> dict:
+    """Map a pipeline-style opportunity row (a REVIEW-band item) onto a Lead
+    Radar row.
+
+    opp_row uses active-pipeline field names (source, buyer,
+    solicitation_number, title, portal_url, posted_date, due_date, fit_score,
+    commodity_terms). lead_id reuses the canonical id rule so a later
+    `promote` is traceable. `verdict`, when given, is a relevance.Verdict whose
+    matched terms seed trigger_terms and whose reasons seed notes.
+    """
+    source = opp_row.get("source", "") or ""
+    buyer = opp_row.get("buyer", "") or ""
+    soln = opp_row.get("solicitation_number", "") or ""
+    title = opp_row.get("title", "") or ""
+
+    trigger_terms = ""
+    notes = ""
+    if verdict is not None:
+        trigger_terms = "; ".join(getattr(verdict, "matched_include", []) or [])
+        notes = "; ".join(getattr(verdict, "reasons", []) or [])
+
+    blob = " ".join(p for p in (
+        title, opp_row.get("commodity_terms", "") or "", trigger_terms, source, buyer
+    ) if p)
+
+    row = {k: "" for k in LEAD_HEADER}
+    row.update({
+        "lead_id": derive_lead_id(source, buyer, soln, title),
+        "status": "reviewing",
+        "source": source,
+        "buyer": buyer,
+        "solicitation_number": soln,
+        "title": title,
+        "portal_url": opp_row.get("portal_url", "") or "",
+        "posted_date": opp_row.get("posted_date", "") or "",
+        "due_date": opp_row.get("due_date", "") or "",
+        "lead_type": classify_lead_type(blob),
+        "trigger_terms": trigger_terms,
+        "fit_score": opp_row.get("fit_score", "") or "",
+        "next_action": "HUMAN: confirm mattress/bedding scope before promotion.",
+        "created_date": today,
+        "last_reviewed": today,
+        "notes": notes,
+    })
+    return row
+
+
+def lead_match_keys(row: dict) -> set[str]:
+    """Stable dedup keys recognizing the same lead across the Lead Radar, the
+    active pipeline, and the archive.
+
+    Reads source/buyer/solicitation_number/title (and an explicit lead_id when
+    present). The derived key uses the same rule as a promoted opportunity_id,
+    so a lead matches an already-active bid with the same source+title even
+    though the two trackers store different id columns.
+    """
+    keys: set[str] = set()
+    source = (row.get("source") or "").strip()
+    buyer = (row.get("buyer") or "").strip()
+    soln = (row.get("solicitation_number") or "").strip()
+    title = (row.get("title") or "").strip()
+
+    explicit = (row.get("lead_id") or "").strip()
+    if explicit:
+        keys.add(f"lead:{explicit}")
+    derived = derive_lead_id(source, buyer, soln, title)
+    if derived and derived != "untitled":
+        keys.add(f"lead:{derived}")
+    if source and soln:
+        keys.add(f"sol:{source.lower()}:{soln.lower()}")
+    return keys
 
 
 def _validate_date(value: str, field: str) -> None:

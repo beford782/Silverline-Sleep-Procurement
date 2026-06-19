@@ -39,6 +39,103 @@ class HeaderTests(unittest.TestCase):
         )
 
 
+class ClassifyLeadTypeTests(unittest.TestCase):
+    def test_co_op_vehicle_terms(self) -> None:
+        self.assertEqual(lead_radar.classify_lead_type("BuyBoard cooperative contract"),
+                         "co-op_contract_vehicle")
+        self.assertEqual(lead_radar.classify_lead_type("Sourcewell vendor pool IDIQ"),
+                         "co-op_contract_vehicle")
+
+    def test_furniture_ffe(self) -> None:
+        self.assertEqual(lead_radar.classify_lead_type("School Furniture & Related Services"),
+                         "broad_furniture_ffe")
+        self.assertEqual(lead_radar.classify_lead_type("Institutional FF&E package"),
+                         "broad_furniture_ffe")
+
+    def test_vehicle_priority_over_generic_furniture(self) -> None:
+        # A generic furniture buying vehicle keeps its vehicle-watch signal:
+        # co-op/IDIQ/vendor-pool outranks plain furniture/FF&E.
+        self.assertEqual(lead_radar.classify_lead_type("Office Furniture Catalog (IDIQ)"),
+                         "co-op_contract_vehicle")
+        self.assertEqual(lead_radar.classify_lead_type("Furniture vendor pool"),
+                         "co-op_contract_vehicle")
+
+    def test_specific_context_outranks_vehicle(self) -> None:
+        # A specific institutional buyer cluster is more actionable than the
+        # vehicle label, so it wins even when both appear.
+        self.assertEqual(lead_radar.classify_lead_type("Residence hall furniture IDIQ"),
+                         "dorm_student_housing")
+        self.assertEqual(lead_radar.classify_lead_type("County jail furniture vendor pool"),
+                         "correctional_detention")
+        self.assertEqual(lead_radar.classify_lead_type("Emergency shelter supplies cooperative"),
+                         "shelter_emergency")
+        self.assertEqual(
+            lead_radar.classify_lead_type("Behavioral health residential furniture cooperative"),
+            "public_health_residential")
+
+    def test_institutional_contexts(self) -> None:
+        self.assertEqual(lead_radar.classify_lead_type("Residence hall move-in supplies"),
+                         "dorm_student_housing")
+        self.assertEqual(lead_radar.classify_lead_type("County jail inmate intake kits"),
+                         "correctional_detention")
+        self.assertEqual(lead_radar.classify_lead_type("Emergency disaster shelter cots"),
+                         "shelter_emergency")
+        self.assertEqual(lead_radar.classify_lead_type("Behavioral health residential care beds"),
+                         "public_health_residential")
+
+    def test_word_boundary_no_false_positive(self) -> None:
+        # 'cot' must not fire inside 'Scott'; no family matches -> 'other'.
+        self.assertEqual(lead_radar.classify_lead_type("Scott County paving project"), "other")
+
+    def test_unmatched_is_other(self) -> None:
+        self.assertEqual(lead_radar.classify_lead_type("Annual fireworks display"), "other")
+
+
+class BuildLeadRowTests(unittest.TestCase):
+    def _verdict(self):
+        # Minimal stand-in shaped like relevance.Verdict.
+        class V:
+            matched_include = ["furniture", "ff&e"]
+            reasons = ["weak only: furniture (no explicit mattress term)"]
+        return V()
+
+    def test_maps_opportunity_fields(self) -> None:
+        opp = {
+            "source": "IonWave", "buyer": "", "solicitation_number": "RFP 16.26",
+            "title": "School Furniture & Related Services",
+            "portal_url": "https://esc6emkt.ionwave.net/x",
+            "posted_date": "2026-05-01", "due_date": "2026-06-05",
+            "fit_score": "40", "commodity_terms": "",
+        }
+        lead = lead_radar.build_lead_row(opp, self._verdict(), "2026-06-18")
+        self.assertEqual(set(lead), set(lead_radar.LEAD_HEADER))
+        self.assertEqual(lead["status"], "reviewing")
+        self.assertEqual(lead["source"], "IonWave")
+        self.assertEqual(lead["solicitation_number"], "RFP 16.26")
+        self.assertEqual(lead["due_date"], "2026-06-05")
+        self.assertEqual(lead["fit_score"], "40")
+        self.assertEqual(lead["lead_type"], "broad_furniture_ffe")
+        self.assertIn("furniture", lead["trigger_terms"])
+        self.assertTrue(lead["next_action"].startswith("HUMAN:"))
+        self.assertEqual(lead["created_date"], "2026-06-18")
+        # lead_id matches the canonical promote-time opportunity_id rule.
+        self.assertEqual(
+            lead["lead_id"],
+            pipeline.derive_opportunity_id("IonWave", "", "RFP 16.26",
+                                           "School Furniture & Related Services"),
+        )
+
+    def test_lead_matches_active_row_by_keys(self) -> None:
+        # A lead and an active-pipeline row for the same opportunity share a
+        # dedup key, even though they store different id columns.
+        opp = {"source": "IonWave", "buyer": "", "solicitation_number": "RFP 16.26",
+               "title": "School Furniture & Related Services"}
+        lead = lead_radar.build_lead_row(opp, None, "2026-06-18")
+        active_like = {"source": "IonWave", "solicitation_number": "RFP 16.26",
+                       "title": "School Furniture & Related Services"}
+        self.assertTrue(lead_radar.lead_match_keys(lead) & lead_radar.lead_match_keys(active_like))
+
+
 class _CliCase(unittest.TestCase):
     """Base class providing a temp review/archive/active workspace + run()."""
 

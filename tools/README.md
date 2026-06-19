@@ -135,6 +135,21 @@ archive rows. Nothing flows from a lead into the active pipeline automatically:
 a human must run `tools/lead_radar.py promote <lead-id> --confirmed-products
 "..."` (see above), which is the only path across that boundary.
 
+#### Forwarded Outlook alerts (email)
+
+Portal alerts are **forwarded** from the Outlook business mailbox (so the
+message sender is the forwarding mailbox and the original alert is quoted in the
+body). Before parsing, `tools/ingest_email.py` recovers the original portal
+sender and subject from the quoted `From:`/`Subject:` header so a forwarded
+alert is sourced and parsed exactly like a direct one (e.g. an IonWave "Matching
+Bid Opportunities" digest still splits into one row per bid). This normalization
+is shared across **all** provider paths — Microsoft Graph, Gmail, and
+`--fixture` — which is why the scheduled Graph workflow can process
+Outlook-forwarded alerts sitting in the `Procurement Alerts` folder. Routing is
+unchanged: recovered alerts still flow `ACCEPT` → active and `REVIEW` → Lead
+Radar per the table above. See `docs/email_ingest_setup.md` for the operator
+setup and the forwarding rule.
+
 ### Review the operator dashboard
 
 ```sh

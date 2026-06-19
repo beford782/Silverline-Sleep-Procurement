@@ -208,3 +208,23 @@ blank.
 real alert samples are captured, add per-sender adapters in
 `SENDER_SOURCES` / `parse_message` (with fixtures in
 `tests/fixtures/email_alerts_sample.json`) to extract richer fields.
+
+### Forwarded alerts
+
+Because the operator setup **forwards** portal alerts (the message sender is
+the forwarding mailbox; the original alert is quoted in the body), the ingester
+normalizes forwarded messages first: `unwrap_forwarded()` recovers the original
+portal sender/subject from the quoted `From:`/`Subject:` header so a forwarded
+alert is sourced and parsed exactly like a direct one (e.g. an IonWave
+"Matching Bid Opportunities" digest still splits into one row per bid). This
+runs on **every** provider path — Microsoft Graph, Gmail, and `--fixture` — so
+the scheduled weekly Graph run handles forwarded items in the scanned folder
+the same way the manual sweep did by hand. Both real provider paths prefer the
+plain-text body (Graph sends `Prefer: outlook.body-content-type="text"`; Gmail
+prefers `text/plain`), where the forwarded header sits on its own lines.
+
+> Operational note: the scheduled run reads the `--graph-folder` you configure
+> (default `"Procurement Alerts"`). Whatever rule populates that folder —
+> filing the originals or forwarding copies into it — the alerts must actually
+> land there for the weekly run to see them. Forwarded **and** direct alerts
+> are both handled. (Fixtures in `tests/fixtures/email_alerts_forwarded_sample.json`.)

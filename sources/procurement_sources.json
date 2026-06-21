@@ -458,7 +458,36 @@
       "correctional supplies"
     ],
     "cadence": "weekly",
-    "notes": "BidNet local-agency aggregator. Verified 2026-06-21: Texas Purchasing Group public page invites vendors to register for local-government RFPs, bids, and awards and showed 2,302 statewide/federal open solicitations plus 78 group bids. Vendor registration provides real-time notifications of matching bids. Keyword result pages returned 403 to automated fetches; verify mattress/bedding/dormitory/correctional saved searches after login."
+    "notes": "BidNet local-agency aggregator. Verified 2026-06-21: Texas Purchasing Group public page invites vendors to register for local-government RFPs, bids, and awards and showed 2,302 statewide/federal open solicitations plus 78 group bids. Vendor registration provides real-time notifications of matching bids. Keyword result pages returned 403 to automated fetches. Operator screenshot 2026-06-21 confirmed Texas Purchasing Group notifications set to All Solicitations and NIGP 42068 Mattresses and Bedsprings selected; verify mattress/bedding/dormitory/correctional saved searches after login."
+  },
+  {
+    "name": "BidNet Direct - Louisiana Purchasing Group",
+    "source_type": "state_portal",
+    "official_url": "https://www.bidnetdirect.com/louisiana",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "geography": ["LA"],
+    "buyer_level": "state",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "bed frame",
+      "dormitory",
+      "jail mattress",
+      "detention bedding",
+      "shelter cots"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "institutional furniture",
+      "correctional supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "BidNet local-agency aggregator for Louisiana parishes, cities, schools, and other local agencies. Operator screenshot 2026-06-21 confirmed Louisiana Purchasing Group notifications set to All Solicitations and NIGP 42068 Mattresses and Bedsprings selected. Use logged-in saved searches for mattress/bedding/dormitory/correctional opportunities; LaGov/LaPAC remains the primary state-agency channel."
   },
   {
     "name": "BidNet Direct - Oklahoma Purchasing Group",

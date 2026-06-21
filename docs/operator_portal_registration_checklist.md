@@ -144,11 +144,11 @@ Lower volume individually but high standing bed counts and new-construction FF&E
 | Bexar County / ADC (San Antonio, 4,000+ beds) | Bexar County Purchasing [UNVERIFIED] | Large jail; recurring replacement | Active |
 | Bernalillo County (Albuquerque) / MDC | Bernalillo County Purchasing [UNVERIFIED] | Largest NM metro jail; NM coverage | Active |
 | (also) Walker County, TX | Bonfire `co-walker-tx.bonfirehub.com` [verified-research; RSS configured] | Huntsville (TDCJ HQ); jail/institutional bedding | Active / Lead Radar |
-| (also) BidNet Direct — TX & OK Groups | `bidnetdirect.com/texas`, `/oklahoma` [verified-research] | One registration aggregates many small TX/OK local agencies; TX page showed 2,302 statewide/federal open solicitations + 78 group bids on 2026-06-21 | Active / Lead Radar |
+| (also) BidNet Direct — TX, LA & OK Groups | `bidnetdirect.com/texas`, `/louisiana`, `/oklahoma` [verified-research; TX+LA registered] | One registration aggregates many local agencies; TX page showed 2,302 statewide/federal open solicitations + 78 group bids on 2026-06-21; profile has NIGP 42068 | Active / Lead Radar |
 
 - **Terms:** jail mattress, detention bedding, correctional supplies, inmate supplies, mattress, bedding, cots.
 - **Alerts/forwarding:** register for commodity notifications (DemandStar/BidNet support free commodity alerts) → forward to funnel.
-- **Human follow-up:** **confirm county jail procurement portals** (mostly UNVERIFIED — many run on IonWave/Euna); register on **BidNet TX + OK groups** and **DemandStar** as efficient aggregators. BidNet keyword result pages require/blocked to automated public fetches, so run the mattress/bedding/dormitory/correctional saved searches after login.
+- **Human follow-up:** **confirm county jail procurement portals** (mostly UNVERIFIED — many run on IonWave/Euna); use registered **BidNet TX + LA groups**, add/verify **BidNet OK**, and use **DemandStar** as efficient aggregators. BidNet keyword result pages require/blocked to automated public fetches, so run the mattress/bedding/dormitory/correctional saved searches after login.
 
 ---
 

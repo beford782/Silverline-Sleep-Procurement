@@ -373,6 +373,64 @@
     "notes": "UH main-campus Purchasing Department. UH System institutions (UH-Downtown, UH-Clear Lake, UH-Victoria) run separate purchasing offices; the UH-System office coordinates but bid postings are at the campus level."
   },
   {
+    "name": "BidNet Direct - Texas Purchasing Group",
+    "source_type": "aggregator_portal",
+    "official_url": "https://www.bidnetdirect.com/texas",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "geography": ["TX"],
+    "buyer_level": "local_aggregator",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "bed frame",
+      "dormitory",
+      "jail mattress",
+      "detention bedding",
+      "shelter cots"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "institutional furniture",
+      "correctional supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "BidNet local-agency aggregator. Verified 2026-06-21: Texas Purchasing Group public page invites vendors to register for local-government RFPs, bids, and awards and showed 2,302 statewide/federal open solicitations plus 78 group bids. Vendor registration provides real-time notifications of matching bids. Keyword result pages returned 403 to automated fetches; verify mattress/bedding/dormitory/correctional saved searches after login."
+  },
+  {
+    "name": "BidNet Direct - Oklahoma Purchasing Group",
+    "source_type": "aggregator_portal",
+    "official_url": "https://www.bidnetdirect.com/oklahoma",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "geography": ["OK"],
+    "buyer_level": "local_aggregator",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "bed frame",
+      "dormitory",
+      "jail mattress",
+      "detention bedding",
+      "shelter cots"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "institutional furniture",
+      "correctional supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "BidNet local-agency aggregator for Oklahoma counties, cities, schools, and other local agencies. BidNet footer lists Oklahoma Purchasing Group; direct automated fetch of the Oklahoma page returned 403 on 2026-06-21. Register/login to verify open opportunities and configure mattress/bedding/dormitory/correctional saved-search alerts."
+  },
+  {
     "name": "BuyBoard",
     "source_type": "cooperative",
     "official_url": "https://www.buyboard.com/",

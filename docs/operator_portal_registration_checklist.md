@@ -144,11 +144,11 @@ Lower volume individually but high standing bed counts and new-construction FF&E
 | Bexar County / ADC (San Antonio, 4,000+ beds) | Bexar County Purchasing [UNVERIFIED] | Large jail; recurring replacement | Active |
 | Bernalillo County (Albuquerque) / MDC | Bernalillo County Purchasing [UNVERIFIED] | Largest NM metro jail; NM coverage | Active |
 | (also) Walker County, TX | DemandStar agency page [verified-research] | Huntsville (TDCJ HQ); jail/institutional bedding | Active / Lead Radar |
-| (also) BidNet Direct — TX & OK Groups | `bidnetdirect.com/texas`, `/oklahoma` [verified-research] | One registration aggregates many small TX/OK local agencies | Active / Lead Radar |
+| (also) BidNet Direct — TX & OK Groups | `bidnetdirect.com/texas`, `/oklahoma` [verified-research] | One registration aggregates many small TX/OK local agencies; TX page showed 2,302 statewide/federal open solicitations + 78 group bids on 2026-06-21 | Active / Lead Radar |
 
 - **Terms:** jail mattress, detention bedding, correctional supplies, inmate supplies, mattress, bedding, cots.
 - **Alerts/forwarding:** register for commodity notifications (DemandStar/BidNet support free commodity alerts) → forward to funnel.
-- **Human follow-up:** **confirm county jail procurement portals** (mostly UNVERIFIED — many run on IonWave/Euna); register on **BidNet TX + OK groups** and **DemandStar** as efficient aggregators.
+- **Human follow-up:** **confirm county jail procurement portals** (mostly UNVERIFIED — many run on IonWave/Euna); register on **BidNet TX + OK groups** and **DemandStar** as efficient aggregators. BidNet keyword result pages require/blocked to automated public fetches, so run the mattress/bedding/dormitory/correctional saved searches after login.
 
 ---
 

@@ -149,6 +149,8 @@ Lower volume individually but high standing bed counts and new-construction FF&E
 | Oklahoma County / Detention Center (OKC) | BidNet via Oklahoma County Purchasing [verified-research; login required] | Major OK county detention buyer; county site routes active bids to BidNet | Lead Radar / Active |
 | Orleans Parish / New Orleans detention & shelter buyers | City of New Orleans BRASS / Infor [verified-research] | Orleans jail/shelter coverage; public BRASS bid list is visible | Lead Radar / Active |
 | East Baton Rouge Parish / Parish Prison | BRLA Purchasing / Central Bidding / Vendor Self Service [verified-research; login required] | Large parish prison; city-parish purchasing route | Lead Radar / Active |
+| Hinds County / Raymond Detention Center (Jackson) | Hinds County Purchasing / Find RFP [verified-research; manual review] | Consent-decree jail refresh watch; county central purchasing and annual bids | Lead Radar / Active |
+| Pulaski County / Sheriff & Juvenile Detention (Little Rock) | Arkansas IonWave `arkansas.ionwave.net` [verified-research] | Largest AR county jail/detention market; county site routes bids to IonWave | Lead Radar / Active |
 | (also) Walker County, TX | Bonfire `co-walker-tx.bonfirehub.com` [verified-research; RSS configured] | Huntsville (TDCJ HQ); jail/institutional bedding | Active / Lead Radar |
 | (also) BidNet Direct — TX, LA, AR, MS, NM & OK Groups | `bidnetdirect.com` purchasing groups [verified-research; six-state profile configured] | One registration aggregates many local agencies; TX page showed 2,302 statewide/federal open solicitations + 78 group bids on 2026-06-21; profile has NIGP 42068 | Active / Lead Radar |
 

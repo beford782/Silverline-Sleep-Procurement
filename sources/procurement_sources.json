@@ -569,6 +569,66 @@
     "notes": "City of Baton Rouge / Parish of East Baton Rouge Purchasing. Verified 2026-06-21: official Purchasing page says the division purchases supplies, materials, and contractual services for City-Parish user agencies and links Central Bidding, Vendor Self Service, Upcoming Procurement Opportunities, Scheduled Bid Openings, Recent Bid Results, and Vendor Self Service Registration; contact purchasinginfo@brla.gov, phone 225-389-3259. Public CivicEngage bids page showed no open bid postings at review time; Central Bidding public agency URL exposed only a login/menu page to automated fetch. Register/review Vendor Self Service and Central Bidding for prison, detention, mattress, bedding, shelter, cot, and institutional furniture terms."
   },
   {
+    "name": "Hinds County MS Purchasing",
+    "source_type": "county_portal",
+    "official_url": "https://www.hindscountyms.com/departments/purchasing",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "manual_review",
+    "csv_export_supported": false,
+    "geography": ["MS", "Hinds County", "Jackson"],
+    "buyer_level": "county",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "jail mattress",
+      "detention bedding",
+      "inmate supplies",
+      "cots",
+      "shelter bedding",
+      "furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "correctional",
+      "institutional furniture",
+      "shelter supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "Hinds County, Mississippi Purchasing. Verified 2026-06-21: official Purchasing page says the Central Purchasing Office has sole responsibility for purchasing equipment, machinery, supplies, commodities, materials, and services used by county offices/departments, maintains the Master Vendor List, and uses annual bid agreements for commonly used supplies/services. Contact: Purchasing Clerk Dru Anderson, danderson@co.hinds.ms.us, phone 601-968-6534, fax 601-968-6544. Visible RFP archive includes inmate medical services, inmate mental health services, and a 2022 infrastructure planning RFI, but no current mattress, bedding, jail/detention supplies, shelter, cot, or furniture product-fit opportunity. Page says Hinds County uses Find RFP e-purchasing and formal bids publish in the Jackson Advocate, so manual review/registration is required."
+  },
+  {
+    "name": "Pulaski County AR IonWave",
+    "source_type": "county_portal",
+    "official_url": "https://arkansas.ionwave.net/SourcingEvents.aspx?SourceType=1",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "csv_export_supported": false,
+    "geography": ["AR", "Pulaski County", "Little Rock"],
+    "buyer_level": "county",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "jail mattress",
+      "detention bedding",
+      "inmate supplies",
+      "cots",
+      "shelter bedding",
+      "furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "correctional",
+      "institutional furniture",
+      "shelter supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "Pulaski County, Arkansas procurement via Arkansas IonWave. Verified 2026-06-21: official Pulaski County site links Bid to https://arkansas.ionwave.net/Login.aspx and Purchasing page lists contact Michelle Johnson, Assistant Comptroller, pcpurchase@pulaskicounty.net, office 501-340-8397. Public Arkansas IonWave current-events sweep showed Pulaski County open rows for Providence Park Street/Drainage/Utility Improvements Phase 3, Hilaro Springs Road to Baseline, Online Auction Services, and Vending Services; no current mattress, bedding, jail, detention, furniture, shelter, cot, or bed product fit. Register in Arkansas IonWave for notifications and monitor Pulaski Sheriff/Juvenile Detention terms."
+  },
+  {
     "name": "Houston ISD IonWave",
     "source_type": "isd_portal",
     "official_url": "https://houstonisd.ionwave.net/Login.aspx",

@@ -490,6 +490,93 @@
     "notes": "BidNet local-agency aggregator for Louisiana parishes, cities, schools, and other local agencies. Operator screenshot 2026-06-21 confirmed Louisiana Purchasing Group notifications set to All Solicitations and NIGP 42068 Mattresses and Bedsprings selected. Use logged-in saved searches for mattress/bedding/dormitory/correctional opportunities; LaGov/LaPAC remains the primary state-agency channel."
   },
   {
+    "name": "BidNet Direct - Arkansas Purchasing Group",
+    "source_type": "state_portal",
+    "official_url": "https://www.bidnetdirect.com/arkansas",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "geography": ["AR"],
+    "buyer_level": "state",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "bed frame",
+      "dormitory",
+      "jail mattress",
+      "detention bedding",
+      "shelter cots"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "institutional furniture",
+      "correctional supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "BidNet local-agency aggregator for Arkansas counties, cities, schools, and other local agencies. Operator screenshot 2026-06-21 confirmed Arkansas Purchasing Group added/member since 2026-06-21 with no registration form required. Direct automated fetch returned 403, so use logged-in saved searches for mattress/bedding/dormitory/correctional opportunities; ARBuy remains the primary Arkansas state-agency channel."
+  },
+  {
+    "name": "BidNet Direct - Mississippi Purchasing Group",
+    "source_type": "state_portal",
+    "official_url": "https://www.bidnetdirect.com/mississippi",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "geography": ["MS"],
+    "buyer_level": "state",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "bed frame",
+      "dormitory",
+      "jail mattress",
+      "detention bedding",
+      "shelter cots"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "institutional furniture",
+      "correctional supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "BidNet local-agency aggregator for Mississippi counties, cities, schools, and other local agencies. Operator screenshot 2026-06-21 confirmed Mississippi Purchasing Group added/member since 2026-06-21 with no registration form required. Direct automated fetch returned 403, so use logged-in saved searches for mattress/bedding/dormitory/correctional opportunities; MAGIC remains the primary Mississippi state-agency channel."
+  },
+  {
+    "name": "BidNet Direct - New Mexico Purchasing Group",
+    "source_type": "state_portal",
+    "official_url": "https://www.bidnetdirect.com/new-mexico",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "geography": ["NM"],
+    "buyer_level": "state",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "bed frame",
+      "dormitory",
+      "jail mattress",
+      "detention bedding",
+      "shelter cots"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "institutional furniture",
+      "correctional supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "BidNet local-agency aggregator for New Mexico counties, cities, schools, and other local agencies. Operator screenshot 2026-06-21 confirmed New Mexico Purchasing Group registration completed with last update 2026-06-21. Direct automated fetch returned 403, so use logged-in saved searches for mattress/bedding/dormitory/correctional opportunities; New Mexico SPD remains the primary state-agency channel."
+  },
+  {
     "name": "BidNet Direct - Oklahoma Purchasing Group",
     "source_type": "state_portal",
     "official_url": "https://www.bidnetdirect.com/oklahoma",
@@ -516,7 +603,7 @@
       "correctional supplies"
     ],
     "cadence": "weekly",
-    "notes": "BidNet local-agency aggregator for Oklahoma counties, cities, schools, and other local agencies. BidNet footer lists Oklahoma Purchasing Group; direct automated fetch of the Oklahoma page returned 403 on 2026-06-21. Register/login to verify open opportunities and configure mattress/bedding/dormitory/correctional saved-search alerts."
+    "notes": "BidNet local-agency aggregator for Oklahoma counties, cities, schools, and other local agencies. BidNet footer lists Oklahoma Purchasing Group; direct automated fetch of the Oklahoma page returned 403 on 2026-06-21. Operator screenshot 2026-06-21 confirmed Oklahoma Purchasing Group registration completed with last update 2026-06-21. Use logged-in saved searches for mattress/bedding/dormitory/correctional opportunities; OMES remains the primary Oklahoma state-agency channel."
   },
   {
     "name": "BuyBoard",

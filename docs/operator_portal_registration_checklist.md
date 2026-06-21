@@ -142,7 +142,7 @@ Lower volume individually but high standing bed counts and new-construction FF&E
 |---|---|---|---|
 | Dallas County / Sheriff (jail ~7,100 beds) | BidNet `bidnetdirect.com/texas/dallas-county` [verified-research] | One of the largest US jails; high mattress turnover | Active / Lead Radar |
 | Bexar County / ADC (San Antonio, 4,000+ beds) | Infor supplier portal via Bexar County Purchasing [verified-research] | Large jail; recurring replacement | Lead Radar / Active |
-| Bernalillo County (Albuquerque) / MDC | Bernalillo County Purchasing [UNVERIFIED] | Largest NM metro jail; NM coverage | Active |
+| Bernalillo County (Albuquerque) / MDC | Bonfire `bernco.bonfirehub.com` [verified-research; RSS configured] | Largest NM metro jail; NM coverage; closed 2026 Correctional Mattresses signal | Lead Radar / Active |
 | (also) Walker County, TX | Bonfire `co-walker-tx.bonfirehub.com` [verified-research; RSS configured] | Huntsville (TDCJ HQ); jail/institutional bedding | Active / Lead Radar |
 | (also) BidNet Direct — TX, LA, AR, MS, NM & OK Groups | `bidnetdirect.com` purchasing groups [verified-research; six-state profile configured] | One registration aggregates many local agencies; TX page showed 2,302 statewide/federal open solicitations + 78 group bids on 2026-06-21; profile has NIGP 42068 | Active / Lead Radar |
 
@@ -162,7 +162,7 @@ Lower volume individually but high standing bed counts and new-construction FF&E
 
 **For every portal:** set the **business mailbox** as the notification address and **forward the alerts into the Gmail/Graph funnel** in [`email_ingest_setup.md`](email_ingest_setup.md). `tools/ingest_email.py` unwraps the forwarded alert and routes it via `relevance.py` — **ACCEPT → active pipeline, REVIEW → Lead Radar** — with no further code needed.
 
-**Open verification debt** (confirm before relying): NM live portal (Bonfire vs legacy GSD); university procurement pages (OU/OSU/LSU/Ole Miss/Miss State/UArk/UNM); county jail portals (Dallas/Bexar/Bernalillo); current expirations on OMNIA Gateway Mattress and LA Norix contracts.
+**Open verification debt** (confirm before relying): NM live portal (Bonfire vs legacy GSD); university procurement pages (OU/OSU/LSU/Ole Miss/Miss State/UArk/UNM); remaining county jail portals beyond Dallas/Bexar/Bernalillo; current expirations on OMNIA Gateway Mattress and LA Norix contracts.
 
 ---
 

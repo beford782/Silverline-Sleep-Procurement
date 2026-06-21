@@ -358,6 +358,37 @@
     "notes": "Bexar County, Texas procurement portal. Verified 2026-06-21: the official Supplier Portal/Vendor Registration page routes suppliers to Bexar County Infor Sourcing Supplier and says registered suppliers receive bid notifications based on selected commodity codes. Public CivicEngage bid postings page showed no open bid postings at review time. Infor supplier portal and CivCast road/repair search did not expose product-fit public result text to automated fetches, so registration/login review is required. Monitor for jail, detention, mattress, bedding, shelter, cot, and institutional furniture terms."
   },
   {
+    "name": "Bernalillo County NM Bonfire",
+    "source_type": "county_portal",
+    "official_url": "https://bernco.bonfirehub.com/portal/",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "csv_export_supported": false,
+    "geography": ["NM", "Bernalillo County"],
+    "buyer_level": "county",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "correctional mattresses",
+      "jail mattress",
+      "detention bedding",
+      "inmate supplies",
+      "cots",
+      "shelter bedding",
+      "furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "correctional",
+      "institutional furniture",
+      "shelter supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "Bernalillo County, New Mexico procurement portal. Verified 2026-06-21: bernco.bonfirehub.com is a live Bonfire tenant for Bernalillo County and the RSS feed is configured in configs/feeds.json. RSS/open public API showed two open opportunities at review time (Development Partner RFSQ 52-26-NH and Opioid Settlement RFP 53-26-EM), neither product fit. Past public API showed closed product-fit RFB 48-26-DC Correctional Mattresses, closed 2026-05-21 and marked public-award true. Register on Bonfire for commodity notifications and monitor for jail, detention, mattress, bedding, shelter, cot, and institutional furniture terms."
+  },
+  {
     "name": "Houston ISD IonWave",
     "source_type": "isd_portal",
     "official_url": "https://houstonisd.ionwave.net/Login.aspx",

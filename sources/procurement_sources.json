@@ -419,6 +419,36 @@
     "notes": "Tarrant County, Texas procurement portal. Verified 2026-06-21: the official Tarrant County Purchasing Department page links Current Solicitations, Solicitation Awards, and Vendor Registration to tarrantcountytx.ionwave.net/Login.aspx; contact phone 817-884-1414. IonWave current-solicitations sweep returned 17 open events and no mattress, bedding, jail, detention, furniture, shelter, cot, or bed product fit. Recent closed jail-adjacent events included Green Bay Jail Roof Replacement and Jail Security Electronic Upgrades, both non-bedding scopes. Register in IonWave for commodity notifications and monitor for jail, detention, mattress, bedding, shelter, cot, and institutional furniture terms."
   },
   {
+    "name": "Travis County TX Purchasing Transparency Portal",
+    "source_type": "county_portal",
+    "official_url": "https://purchasingtransparency.traviscountytx.gov/public/search/solicitations",
+    "has_api": false,
+    "requires_login": false,
+    "intake_method": "manual_review",
+    "csv_export_supported": false,
+    "geography": ["TX", "Travis County"],
+    "buyer_level": "county",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "jail mattress",
+      "detention bedding",
+      "inmate supplies",
+      "cots",
+      "shelter bedding",
+      "furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "correctional",
+      "institutional furniture",
+      "shelter supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "Travis County, Texas procurement portal. Verified 2026-06-21: the official Travis County Purchasing Office page links Current Solicitations and the Transparency Portal to purchasingtransparency.traviscountytx.gov. Contact: C.W. Bruner, Purchasing Agent, 700 Lavaca Suite 800, Austin, TX 78701, phone 512-854-9700. The current solicitations page is Blazor-rendered; static fetch confirms the ACTIVE solicitations search UI but does not expose row data, so manual portal review is required for product-fit searches. Monitor for jail, detention, mattress, bedding, shelter, cot, and institutional furniture terms."
+  },
+  {
     "name": "Houston ISD IonWave",
     "source_type": "isd_portal",
     "official_url": "https://houstonisd.ionwave.net/Login.aspx",

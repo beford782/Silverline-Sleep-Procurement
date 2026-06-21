@@ -62,13 +62,13 @@ The highest-conviction, most-direct mattress demand. Set these up first.
 - **Human follow-up:** **Confirm CMBL commodity-code selections are current** (205/420 + correctional/medical/dormitory). Note: TX state-agency mattress volume is partly absorbed by the **TCI/WorkQuest set-aside** — verify how supplemental purchases are allowed.
 
 ### 1.3 Texas A&M — AggieBid / SciQuest
-- **URL:** Texas A&M University System procurement https://www.tamus.edu/procurement/ [committed] · campus bids via **AggieBid / Jaggaer (SciQuest)** [UNVERIFIED — confirm the public bid-board URL for the College Station campus]
+- **URL:** Texas A&M University System procurement https://www.tamus.edu/procurement/ [committed] · AggieBid public board https://bids.sciquest.com/apps/Router/PublicEvent?CustomerOrg=TAMU [verified-research] · AggieBuy/AggieBid supplier portal https://solutions.sciquest.com/apps/Router/SupplierLogin?CustOrg=TAMU [verified-research]
 - **Why it matters:** ~11,000+ on-campus beds plus the Corps of Cadets — one of the largest standing dorm inventories in the region, on a summer refresh cycle.
 - **Commodity/profile terms:** residence hall, student housing, Twin XL, dormitory furniture, mattress, mattresses, bed frame, beds, bunk, FF&E, furniture and related services.
 - **Alert frequency:** Vendor-portal notifications by category (configure on registration); else monitor the public bid board.
 - **Email/forwarding:** Portal notifications → business mailbox → funnel.
 - **Usual route:** **Lead Radar** for residence-hall FF&E; **Active** for an explicit mattress/Twin-XL solicitation.
-- **Human follow-up:** **Confirm the AggieBid/SciQuest public bid URL and register** (close the UNVERIFIED gap).
+- **Human follow-up:** **Register in AggieBuy/AggieBid** and select mattress/dormitory/residence-hall/furniture terms or commodity codes where available; forward alerts to the funnel. Public sweep 2026-06-21 found 19 open events but no current mattress, bedding, dormitory, bed, Twin XL, or furniture product-fit opportunity.
 
 ### 1.4 Region ESC / EPIC / IonWave-style furniture co-ops (esp. Region 4 ESC → OMNIA)
 - **URL:** Region 4 ESC supplier portal `region4esc.ionwave.net` [verified-research]
@@ -161,7 +161,7 @@ Lower volume individually but high standing bed counts and new-construction FF&E
 
 **For every portal:** set the **business mailbox** as the notification address and **forward the alerts into the Gmail/Graph funnel** in [`email_ingest_setup.md`](email_ingest_setup.md). `tools/ingest_email.py` unwraps the forwarded alert and routes it via `relevance.py` — **ACCEPT → active pipeline, REVIEW → Lead Radar** — with no further code needed.
 
-**Open verification debt** (confirm before relying): Texas A&M AggieBid/SciQuest URL; NM live portal (Bonfire vs legacy GSD); university procurement pages (OU/OSU/LSU/Ole Miss/Miss State/UArk/UNM); county jail portals (Dallas/Bexar/Bernalillo); current expirations on OMNIA Gateway Mattress and LA Norix contracts.
+**Open verification debt** (confirm before relying): NM live portal (Bonfire vs legacy GSD); university procurement pages (OU/OSU/LSU/Ole Miss/Miss State/UArk/UNM); county jail portals (Dallas/Bexar/Bernalillo); current expirations on OMNIA Gateway Mattress and LA Norix contracts.
 
 ---
 

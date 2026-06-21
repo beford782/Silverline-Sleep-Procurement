@@ -124,9 +124,9 @@ Lower volume individually but high standing bed counts and new-construction FF&E
 ### Universities (residence-life / dorms)
 | Buyer | Procurement page | Why | Route |
 |---|---|---|---|
-| University of Oklahoma (OU) | `ou.edu/purchasing` [UNVERIFIED] | New South/North residence halls under construction = new bed buys | Lead Radar / Active (mattress) |
-| Oklahoma State (OSU) | `adminfinance.okstate.edu/purchasing/` [UNVERIFIED] | Large Stillwater residential system | Lead Radar / Active |
-| LSU | `lsu.edu/procurement/` [UNVERIFIED] (posts via LaPAC) | New residence halls broke ground Dec 2025 = imminent FF&E | Lead Radar / Active |
+| University of Oklahoma (OU) | OU Procurement / Jaggaer public sourcing [verified-research] | Large Norman housing base; supplier registration needed to respond in Jaggaer; public sweep found no current product-fit | Lead Radar / Active (mattress) |
+| Oklahoma State (OSU) | OSU A&M Jaggaer public sourcing [verified-research] | Large Stillwater residential system; adminfinance pages need browser/manual check due Cloudflare, but public Jaggaer board is visible | Lead Radar / Active |
+| LSU | LSU Procurement / LaPAC department 19 [verified-research] | LSU posts ITBs/RFPs through LaPAC; dorm/student-housing FF&E watch, no current product-fit in public sweep | Lead Radar / Active |
 | Ole Miss | `procurement.olemiss.edu` [UNVERIFIED] | Large hall system | Lead Radar / Active |
 | Mississippi State | `procurement.msstate.edu` [UNVERIFIED] (also Bonfire: MS IHL feed) | Large Starkville base | Lead Radar / Active |
 | University of Arkansas | `procurement.uark.edu` [UNVERIFIED] | Pomfret ~800 + large system | Lead Radar / Active |

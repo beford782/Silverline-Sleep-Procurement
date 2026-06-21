@@ -106,6 +106,74 @@
     "notes": "Oklahoma Office of Management and Enterprise Services (OMES) Central Purchasing. Open solicitations are posted publicly on the OMES solicitations page (public search utility); register in the Oklahoma Supplier Portal to receive commodity-based notifications and to respond. Bid submission remains manual."
   },
   {
+    "name": "University of Oklahoma Procurement / Jaggaer",
+    "source_type": "university_portal",
+    "official_url": "https://www.ou.edu/procurement",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "portal_registration",
+    "csv_export_supported": false,
+    "geography": ["OK", "Norman", "University of Oklahoma"],
+    "buyer_level": "university",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "linen",
+      "bed frame",
+      "beds",
+      "dormitory",
+      "residence hall",
+      "student housing",
+      "Twin XL",
+      "furniture",
+      "FF&E"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "institutional furniture",
+      "student housing furniture"
+    ],
+    "cadence": "weekly",
+    "notes": "Verified 2026-06-21: OU Procurement navigation links the public solicitations board at https://bids.sciquest.com/apps/Router/PublicEvent?CustomerOrg=OUHSC and supplier registration in Jaggaer. Supplier page says registration is required only if a supplier wishes to participate in bids and solicitations; questions go to SupplierRelations@ou.edu. Public board sweep found no current mattress, bedding, bed, dormitory, residence-hall, furniture, or FF&E product fit; RFP-2026-378 Enterprise DDI Infrastructure Modernization and Support Services remained open to 2026-07-31 and was IT-only."
+  },
+  {
+    "name": "Oklahoma State University Procurement / Jaggaer",
+    "source_type": "university_portal",
+    "official_url": "https://bids.sciquest.com/apps/Router/PublicEvent?CustomerOrg=OSU",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "portal_registration",
+    "csv_export_supported": false,
+    "geography": ["OK", "Stillwater", "Oklahoma State University"],
+    "buyer_level": "university",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "linen",
+      "bed frame",
+      "beds",
+      "dormitory",
+      "residence hall",
+      "student housing",
+      "Twin XL",
+      "furniture",
+      "FF&E"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "institutional furniture",
+      "student housing furniture"
+    ],
+    "cadence": "weekly",
+    "notes": "Verified 2026-06-21: OSU A&M System public sourcing board is available through Jaggaer/SciQuest CustomerOrg=OSU. The board says it is the Office of Central Procurement solicitations and awards page for Oklahoma State University and the A&M Colleges and includes open, upcoming, closed, awarded, and all-opportunities tabs plus Respond Now links. adminfinance.okstate.edu purchasing subpages returned a Cloudflare challenge to automated fetches during review. Public OSU board sweep found no current mattress, bedding, bed, dormitory, residence-hall, furniture, linen, or FF&E product fit."
+  },
+  {
     "name": "Louisiana LaPAC",
     "source_type": "state_portal",
     "official_url": "https://wwwcfprd.doa.louisiana.gov/osp/lapac/pubmain.cfm",
@@ -132,6 +200,40 @@
     ],
     "cadence": "weekly",
     "notes": "LaPAC (Louisiana Procurement and Contract Network), the Office of State Procurement bid board (Division of Administration). Open bids are searchable publicly; email notifications require LaGov supplier self-registration (subscription). Bid submission remains manual."
+  },
+  {
+    "name": "Louisiana State University Procurement / LaPAC",
+    "source_type": "university_portal",
+    "official_url": "https://www.lsu.edu/administration/ofa/procurement/",
+    "has_api": false,
+    "requires_login": false,
+    "intake_method": "saved_search",
+    "csv_export_supported": false,
+    "geography": ["LA", "Baton Rouge", "Louisiana State University"],
+    "buyer_level": "university",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "box spring",
+      "bed frame",
+      "beds",
+      "dormitory",
+      "residence hall",
+      "student housing",
+      "Twin XL",
+      "furniture",
+      "FF&E"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "institutional furniture",
+      "student housing furniture"
+    ],
+    "cadence": "weekly",
+    "notes": "Verified 2026-06-21: LSU Procurement routes ITBs and RFPs/public bid notices to Louisiana LaPAC, with direct department-19 postings at https://wwwcfprd.doa.louisiana.gov/osp/lapac/dspbid.cfm?search=department&term=19. Supplier email notifications require LaGov supplier self-registration/subscription. LSU formal bids are submitted electronically to lsubids@lsu.edu per solicitation instructions; no hard copies accepted. Public LSU LaPAC sweep found open HVAC, liquid nitrogen, printing, manufacturing equipment, arbor, plumbing, light-show maintenance, sports, waste, custodial, and newspaper-printing rows, but no current mattress, bedding, bed, dormitory, residence-hall, furniture, or FF&E product fit."
   },
   {
     "name": "Mississippi MAGIC Supplier Portal",

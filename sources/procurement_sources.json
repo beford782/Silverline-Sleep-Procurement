@@ -505,5 +505,31 @@
     ],
     "cadence": "monthly",
     "notes": "National cooperative formed from the 2019 merger of National IPA and US Communities. Member entities buy under awarded cooperative contracts; vendor participation is via OMNIA's lead-agency RFPs (a public agency runs a competitive procurement and the resulting contract is made available cooperatively)."
+  },
+  {
+    "name": "E&I Cooperative Services",
+    "source_type": "cooperative",
+    "official_url": "https://www.eandi.org/",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "geography": ["US"],
+    "buyer_level": "cooperative",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "dormitory",
+      "residence hall",
+      "student residential",
+      "bedding"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "student residential furniture"
+    ],
+    "cadence": "monthly",
+    "notes": "Member-owned sourcing cooperative dedicated to education. Verified 2026-06-21: supplier registration uses E&I Supplier Management Portal and suppliers should monitor current/upcoming RFP solicitations in SciQuest (CustomerOrg=EandICooperative). Contract Navigator lists Office & Classroom, Interiors coverage including Student Residential/Dorm Furniture and active University Sleep Products mattress contract EI00071 / RFP 683486 through 2031-01-31. Registration alone does not create awarded-partner status; suppliers must respond to an applicable RFP and be awarded."
   }
 ]

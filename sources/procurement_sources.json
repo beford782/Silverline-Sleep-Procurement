@@ -449,6 +449,66 @@
     "notes": "Travis County, Texas procurement portal. Verified 2026-06-21: the official Travis County Purchasing Office page links Current Solicitations and the Transparency Portal to purchasingtransparency.traviscountytx.gov. Contact: C.W. Bruner, Purchasing Agent, 700 Lavaca Suite 800, Austin, TX 78701, phone 512-854-9700. The current solicitations page is Blazor-rendered; static fetch confirms the ACTIVE solicitations search UI but does not expose row data, so manual portal review is required for product-fit searches. Monitor for jail, detention, mattress, bedding, shelter, cot, and institutional furniture terms."
   },
   {
+    "name": "El Paso County TX IonWave",
+    "source_type": "county_portal",
+    "official_url": "https://epcountypurchasing.ionwave.net/SourcingEvents.aspx?SourceType=1",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "csv_export_supported": false,
+    "geography": ["TX", "El Paso County"],
+    "buyer_level": "county",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "jail mattress",
+      "detention bedding",
+      "inmate supplies",
+      "cots",
+      "shelter bedding",
+      "furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "correctional",
+      "institutional furniture",
+      "shelter supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "El Paso County, Texas procurement portal. Verified 2026-06-21: the official El Paso County Purchasing Department page links Current Bids, Closed Bids, Awarded Bids, Non-Awarded Bids, and Register as a Vendor to epcountypurchasing.ionwave.net; contact purchasingagent@epcountytx.gov, BidQuestions@epcountytx.gov, phone 915-273-3349. IonWave current-bids sweep returned six open events and no mattress, bedding, jail, detention, furniture, shelter, cot, or bed product fit. Register in IonWave for automatic bid notifications and monitor for jail, detention, mattress, bedding, shelter, cot, and institutional furniture terms."
+  },
+  {
+    "name": "Oklahoma County OK BidNet",
+    "source_type": "county_portal",
+    "official_url": "https://www.bidnetdirect.com/oklahoma/oklahomacounty",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "csv_export_supported": false,
+    "geography": ["OK", "Oklahoma County"],
+    "buyer_level": "county",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "jail mattress",
+      "detention bedding",
+      "inmate supplies",
+      "cots",
+      "shelter bedding",
+      "furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "correctional",
+      "institutional furniture",
+      "shelter supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "Oklahoma County, Oklahoma procurement portal. Verified 2026-06-21: the official Oklahoma County Purchasing page lists Purchasing at 320 Robert S. Kerr Avenue #321, Oklahoma City, OK 73102, phone 405-713-1485, purchasing@oklahomacounty.org, and links Active Bids to BidNet Direct for Oklahoma County. Automated public fetch of the BidNet Oklahoma County open-bids page returned 403, so logged-in BidNet review is required. Monitor the registered Oklahoma Purchasing Group/BidNet account for jail, detention, mattress, bedding, shelter, cot, and institutional furniture terms."
+  },
+  {
     "name": "Houston ISD IonWave",
     "source_type": "isd_portal",
     "official_url": "https://houstonisd.ionwave.net/Login.aspx",

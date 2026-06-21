@@ -145,6 +145,8 @@ Lower volume individually but high standing bed counts and new-construction FF&E
 | Bernalillo County (Albuquerque) / MDC | Bonfire `bernco.bonfirehub.com` [verified-research; RSS configured] | Largest NM metro jail; NM coverage; closed 2026 Correctional Mattresses signal | Lead Radar / Active |
 | Tarrant County / Sheriff (Fort Worth jail complex) | IonWave `tarrantcountytx.ionwave.net` [verified-research] | Large urban jail; recent jail facility/security work | Lead Radar / Active |
 | Travis County / Sheriff (Austin jail complex) | Travis County Purchasing Transparency Portal [verified-research; manual review] | Large urban jail; Austin metro coverage | Lead Radar / Active |
+| El Paso County / Sheriff (El Paso detention complex) | IonWave `epcountypurchasing.ionwave.net` [verified-research] | Large border-region jail; county IonWave alerts | Lead Radar / Active |
+| Oklahoma County / Detention Center (OKC) | BidNet via Oklahoma County Purchasing [verified-research; login required] | Major OK county detention buyer; county site routes active bids to BidNet | Lead Radar / Active |
 | (also) Walker County, TX | Bonfire `co-walker-tx.bonfirehub.com` [verified-research; RSS configured] | Huntsville (TDCJ HQ); jail/institutional bedding | Active / Lead Radar |
 | (also) BidNet Direct — TX, LA, AR, MS, NM & OK Groups | `bidnetdirect.com` purchasing groups [verified-research; six-state profile configured] | One registration aggregates many local agencies; TX page showed 2,302 statewide/federal open solicitations + 78 group bids on 2026-06-21; profile has NIGP 42068 | Active / Lead Radar |
 

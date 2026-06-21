@@ -183,7 +183,7 @@ cooperatives still rely on portal-side notifications and manual
 `tools/pipeline.py add` rows until mappings are added.
 
 **Scheduled run.** `.github/workflows/weekly_sam_ingest.yml` runs the
-ingest every Monday at 13:00 UTC (08:00 Houston CDT) and on manual
+ingest every Monday and Thursday at 13:00 UTC (08:00 Houston CDT) and on manual
 `workflow_dispatch`. It scores the new rows and, if
 `bids/active/_pipeline.csv` changed, opens a PR for human triage. It
 never auto-archives, never auto-submits, and never pushes to `main`.
@@ -314,12 +314,12 @@ Behavior:
   [`docs/email_ingest_setup.md`](docs/email_ingest_setup.md).
 
 **Scheduled run.** `.github/workflows/weekly_email_ingest.yml` runs every
-Monday at 13:30 UTC and on manual `workflow_dispatch`, ingests (Graph),
+Monday and Thursday at 13:30 UTC and on manual `workflow_dispatch`, ingests (Graph),
 re-scores, runs the repo checks, and opens a PR for human triage if the
-active pipeline changed. It never auto-archives, auto-submits, or pushes
-to `main`. Requires the `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`,
-`GRAPH_CLIENT_SECRET`, and `GRAPH_MAILBOX` repo secrets; it fails fast if
-any are missing.
+active pipeline or Lead Radar changed. It never auto-archives, auto-submits,
+or pushes to `main`. Requires the `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`,
+`GRAPH_CLIENT_SECRET`, and `GRAPH_MAILBOX` repo secrets; it fails fast if any
+are missing.
 
 ### 9. RSS/feed ingestion (Bonfire portals, etc.)
 
@@ -340,8 +340,24 @@ python tools/ingest_rss.py --feed https://harriscountytx.bonfirehub.com/opportun
   (Quora/Reddit/social/retail) are rejected — so news/catalog noise stays
   out. Google Alerts feeds *can* be added but are low-signal (mostly news
   even when scoped); prefer Bonfire/portal feeds.
-- Scheduled by `.github/workflows/weekly_rss_ingest.yml` (Mon 13:45 UTC +
+- Scheduled by `.github/workflows/weekly_rss_ingest.yml` (Mon/Thu 13:45 UTC +
   manual). No secrets — the feeds are public. Opens a PR on change.
+
+### 10. Twice-weekly procurement digest
+
+`.github/workflows/procurement_digest.yml` runs every Monday and Thursday at
+14:30 UTC, after the SAM.gov, email-alert, and RSS/feed ingests. It posts a
+single human-readable digest to a standing GitHub issue titled
+`Procurement ingest digest` (creating it if needed, then commenting on it for
+future runs). The digest includes:
+
+- current active pipeline counts;
+- current Lead Radar counts;
+- open automation PRs that need triage;
+- recent ingest workflow status links.
+
+This is the operator-facing update channel. The ingest workflows still open
+separate PRs only when data changed.
 
 ## Tools
 

@@ -1,0 +1,111 @@
+name: Procurement ingest digest
+
+on:
+  schedule:
+    # Mondays + Thursdays 14:30 UTC = 09:30 Houston CDT / 08:30 CST.
+    # Runs after SAM, email-alert, and RSS ingest workflows.
+    - cron: '30 14 * * 1,4'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+  actions: read
+
+jobs:
+  digest:
+    name: Post procurement ingest digest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Build digest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TODAY=$(date -u +%F)
+
+          {
+            echo "# Procurement ingest digest - ${TODAY}"
+            echo
+            echo "Triggered by: \`${EVENT_NAME}\` ([run #${RUN_NUMBER}](${RUN_URL}))"
+            echo
+            echo "## Current active pipeline"
+            echo
+            echo '```text'
+            python tools/pipeline.py summary
+            echo '```'
+            echo
+            echo "## Current Lead Radar"
+            echo
+            echo '```text'
+            python tools/lead_radar.py summary
+            echo '```'
+            echo
+            echo "## Open automation PRs"
+            echo
+          } > /tmp/digest.md
+
+          gh pr list --state open --json number,title,url,headRefName,updatedAt \
+            --jq '.[] | select(.headRefName | startswith("auto/")) | "- #\(.number) [\(.title)](\(.url)) (`\(.headRefName)`, updated \(.updatedAt))"' \
+            > /tmp/open_auto_prs.md
+
+          if [ -s /tmp/open_auto_prs.md ]; then
+            cat /tmp/open_auto_prs.md >> /tmp/digest.md
+          else
+            echo "No open automation PRs." >> /tmp/digest.md
+          fi
+
+          {
+            echo
+            echo "## Recent ingest runs"
+            echo
+          } >> /tmp/digest.md
+
+          gh run list --limit 20 \
+            --json workflowName,conclusion,status,createdAt,url,event \
+            --jq '.[] | select(.workflowName == "Twice-weekly SAM.gov mattress ingest" or .workflowName == "Twice-weekly portal email-alert ingest" or .workflowName == "Twice-weekly RSS/feed ingest") | "- \(.workflowName): \(.conclusion // .status) on \(.createdAt) ([run](\(.url)))"' \
+            > /tmp/recent_runs.md
+
+          if [ -s /tmp/recent_runs.md ]; then
+            cat /tmp/recent_runs.md >> /tmp/digest.md
+          else
+            echo "No recent ingest runs found." >> /tmp/digest.md
+          fi
+
+          {
+            echo
+            echo "## What to do"
+            echo
+            echo "- If there are open automation PRs, review those first."
+            echo "- Active pipeline rows are confirmed bid candidates; Lead Radar rows are watch/research signals."
+            echo "- If both counts look unchanged and there are no automation PRs, no action is needed."
+          } >> /tmp/digest.md
+
+          cat /tmp/digest.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post digest issue/comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE="Procurement ingest digest"
+          ISSUE_NUMBER=$(gh issue list --state open --search "\"${TITLE}\" in:title" --json number,title \
+            --jq ".[] | select(.title == \"${TITLE}\") | .number" | head -n 1)
+
+          if [ -z "$ISSUE_NUMBER" ]; then
+            ISSUE_URL=$(gh issue create --title "$TITLE" --body-file /tmp/digest.md)
+            echo "Created digest issue: $ISSUE_URL"
+          else
+            gh issue comment "$ISSUE_NUMBER" --body-file /tmp/digest.md
+            echo "Posted digest comment to issue #$ISSUE_NUMBER"
+          fi

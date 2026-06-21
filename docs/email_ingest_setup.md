@@ -185,12 +185,16 @@ prints a parse preview, with actionable hints on the common 401/403/404
 failures (bad secret, missing admin consent, wrong mailbox/folder).
 
 Scheduled automatically by
-`.github/workflows/weekly_email_ingest.yml` (Mondays 13:30 UTC + manual
+`.github/workflows/weekly_email_ingest.yml` (Mondays and Thursdays 13:30 UTC + manual
 `workflow_dispatch`): it ingests, re-scores, runs the repo checks, and — if
 `bids/active/_pipeline.csv` **or** `leads/review/_lead_radar.csv` changed —
 opens a PR for human triage. The PR title/body state whether the run updated
 active bids, Lead Radar, or both. It never auto-archives, auto-submits, or
 pushes to `main`.
+
+Operator digest: `.github/workflows/procurement_digest.yml` runs after the
+scheduled ingests on Mondays and Thursdays at 14:30 UTC and posts one concise
+update to the standing GitHub issue `Procurement ingest digest`.
 
 ---
 

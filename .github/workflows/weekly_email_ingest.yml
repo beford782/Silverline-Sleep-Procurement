@@ -1,4 +1,4 @@
-name: Weekly portal email-alert ingest
+name: Twice-weekly portal email-alert ingest
 
 # Reads commodity/NIGP email alerts from the Outlook/M365 procurement alert
 # inbox via the Microsoft Graph API and turns them into pipeline rows
@@ -12,8 +12,8 @@ name: Weekly portal email-alert ingest
 
 on:
   schedule:
-    # Mondays 13:30 UTC = 08:30 Houston CDT (30 min after the SAM ingest).
-    - cron: '30 13 * * 1'
+    # Mondays + Thursdays 13:30 UTC = 08:30 Houston CDT (30 min after the SAM ingest).
+    - cron: '30 13 * * 1,4'
   workflow_dispatch:
 
 permissions:
@@ -127,11 +127,11 @@ jobs:
           # Stage both relevance-routed CSVs; `git add` on an unchanged file is
           # a no-op, and the step only runs when at least one of them changed.
           git add bids/active/_pipeline.csv leads/review/_lead_radar.csv
-          git commit -m "Weekly portal email-alert ingest (${SCOPE}): ${TODAY}"
+          git commit -m "Twice-weekly portal email-alert ingest (${SCOPE}): ${TODAY}"
           git push -u origin "$BRANCH"
 
           cat > /tmp/pr_body.md <<'EOF'
-          Automated weekly portal email-alert ingest (state/local + cooperative funnel). **Human triage required before merge.**
+          Automated twice-weekly portal email-alert ingest (state/local + cooperative funnel). **Human triage required before merge.**
 
           **This run updated: __SCOPE__.**
 
@@ -173,7 +173,7 @@ jobs:
           sed -i "s|__RUN_NUMBER__|${RUN_NUMBER}|g" /tmp/pr_body.md
 
           gh pr create \
-            --title "Weekly portal email-alert ingest (${SCOPE}): ${TODAY}" \
+            --title "Twice-weekly portal email-alert ingest (${SCOPE}): ${TODAY}" \
             --body-file /tmp/pr_body.md \
             --base main \
             --head "$BRANCH"

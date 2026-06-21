@@ -143,7 +143,7 @@ Lower volume individually but high standing bed counts and new-construction FF&E
 | Dallas County / Sheriff (jail ~7,100 beds) | Dallas County Purchasing [UNVERIFIED — confirm platform] | One of the largest US jails; high mattress turnover | Active (jail mattress) |
 | Bexar County / ADC (San Antonio, 4,000+ beds) | Bexar County Purchasing [UNVERIFIED] | Large jail; recurring replacement | Active |
 | Bernalillo County (Albuquerque) / MDC | Bernalillo County Purchasing [UNVERIFIED] | Largest NM metro jail; NM coverage | Active |
-| (also) Walker County, TX | DemandStar agency page [verified-research] | Huntsville (TDCJ HQ); jail/institutional bedding | Active / Lead Radar |
+| (also) Walker County, TX | Bonfire `co-walker-tx.bonfirehub.com` [verified-research; RSS configured] | Huntsville (TDCJ HQ); jail/institutional bedding | Active / Lead Radar |
 | (also) BidNet Direct — TX & OK Groups | `bidnetdirect.com/texas`, `/oklahoma` [verified-research] | One registration aggregates many small TX/OK local agencies; TX page showed 2,302 statewide/federal open solicitations + 78 group bids on 2026-06-21 | Active / Lead Radar |
 
 - **Terms:** jail mattress, detention bedding, correctional supplies, inmate supplies, mattress, bedding, cots.

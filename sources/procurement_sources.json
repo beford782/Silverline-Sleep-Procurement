@@ -269,6 +269,35 @@
     "notes": "Harris County opportunity portal. Free vendor registration. High-fit categories include jail, public health, facilities."
   },
   {
+    "name": "Walker County TX Bonfire",
+    "source_type": "county_portal",
+    "official_url": "https://co-walker-tx.bonfirehub.com/portal/",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "csv_export_supported": false,
+    "geography": ["TX", "Walker County"],
+    "buyer_level": "county",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "jail mattress",
+      "detention bedding",
+      "inmate supplies",
+      "cots",
+      "shelter bedding"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "correctional",
+      "institutional furniture",
+      "shelter supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "Walker County, Texas procurement portal. Verified 2026-06-21: official county site Vendor Registration link points to co-walker-tx.bonfirehub.com, not DemandStar. Bonfire RSS feed is configured in configs/feeds.json and returned a valid empty Open Public Opportunities feed; public API returned projects: []. Register on Bonfire for commodity notifications and monitor the RSS for jail, detention, mattress, bedding, shelter, cot, and institutional furniture terms."
+  },
+  {
     "name": "Houston ISD IonWave",
     "source_type": "isd_portal",
     "official_url": "https://houstonisd.ionwave.net/Login.aspx",
@@ -374,13 +403,13 @@
   },
   {
     "name": "BidNet Direct - Texas Purchasing Group",
-    "source_type": "aggregator_portal",
+    "source_type": "state_portal",
     "official_url": "https://www.bidnetdirect.com/texas",
     "has_api": false,
     "requires_login": true,
     "intake_method": "email_notification",
     "geography": ["TX"],
-    "buyer_level": "local_aggregator",
+    "buyer_level": "state",
     "search_terms": [
       "mattress",
       "mattresses",
@@ -403,13 +432,13 @@
   },
   {
     "name": "BidNet Direct - Oklahoma Purchasing Group",
-    "source_type": "aggregator_portal",
+    "source_type": "state_portal",
     "official_url": "https://www.bidnetdirect.com/oklahoma",
     "has_api": false,
     "requires_login": true,
     "intake_method": "email_notification",
     "geography": ["OK"],
-    "buyer_level": "local_aggregator",
+    "buyer_level": "state",
     "search_terms": [
       "mattress",
       "mattresses",

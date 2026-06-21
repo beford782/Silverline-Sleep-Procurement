@@ -141,7 +141,7 @@ Lower volume individually but high standing bed counts and new-construction FF&E
 | Buyer | Portal | Why | Route |
 |---|---|---|---|
 | Dallas County / Sheriff (jail ~7,100 beds) | BidNet `bidnetdirect.com/texas/dallas-county` [verified-research] | One of the largest US jails; high mattress turnover | Active / Lead Radar |
-| Bexar County / ADC (San Antonio, 4,000+ beds) | Bexar County Purchasing [UNVERIFIED] | Large jail; recurring replacement | Active |
+| Bexar County / ADC (San Antonio, 4,000+ beds) | Infor supplier portal via Bexar County Purchasing [verified-research] | Large jail; recurring replacement | Lead Radar / Active |
 | Bernalillo County (Albuquerque) / MDC | Bernalillo County Purchasing [UNVERIFIED] | Largest NM metro jail; NM coverage | Active |
 | (also) Walker County, TX | Bonfire `co-walker-tx.bonfirehub.com` [verified-research; RSS configured] | Huntsville (TDCJ HQ); jail/institutional bedding | Active / Lead Radar |
 | (also) BidNet Direct — TX, LA, AR, MS, NM & OK Groups | `bidnetdirect.com` purchasing groups [verified-research; six-state profile configured] | One registration aggregates many local agencies; TX page showed 2,302 statewide/federal open solicitations + 78 group bids on 2026-06-21; profile has NIGP 42068 | Active / Lead Radar |

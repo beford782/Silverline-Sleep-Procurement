@@ -509,6 +509,66 @@
     "notes": "Oklahoma County, Oklahoma procurement portal. Verified 2026-06-21: the official Oklahoma County Purchasing page lists Purchasing at 320 Robert S. Kerr Avenue #321, Oklahoma City, OK 73102, phone 405-713-1485, purchasing@oklahomacounty.org, and links Active Bids to BidNet Direct for Oklahoma County. Automated public fetch of the BidNet Oklahoma County open-bids page returned 403, so logged-in BidNet review is required. Monitor the registered Oklahoma Purchasing Group/BidNet account for jail, detention, mattress, bedding, shelter, cot, and institutional furniture terms."
   },
   {
+    "name": "City of New Orleans BRASS",
+    "source_type": "city_portal",
+    "official_url": "https://nola.gov/view-bid-opportunities/",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "csv_export_supported": false,
+    "geography": ["LA", "New Orleans", "Orleans Parish"],
+    "buyer_level": "city",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "jail mattress",
+      "detention bedding",
+      "inmate supplies",
+      "cots",
+      "shelter bedding",
+      "furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "correctional",
+      "institutional furniture",
+      "shelter supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "City of New Orleans Bureau of Purchasing / BRASS procurement portal. Verified 2026-06-21: NOLA.gov Purchasing says the Bureau of Purchasing is the central authority for goods and services and routes suppliers to BRASS for registration, bid opportunities, and responses. Public View Bid Opportunities page exposed current open BRASS rows and a direct link to the Infor/Supply Management Supplier portal. Current public sweep found no mattress, bedding, jail, detention, furniture, shelter, cot, or bed product fit. Monitor BRASS and LaPAC/BidNet Louisiana alerts for Orleans Parish detention, shelter, and institutional-furniture terms."
+  },
+  {
+    "name": "East Baton Rouge Parish Purchasing",
+    "source_type": "county_portal",
+    "official_url": "https://www.brla.gov/358/Purchasing",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "csv_export_supported": false,
+    "geography": ["LA", "East Baton Rouge Parish", "Baton Rouge"],
+    "buyer_level": "county",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "jail mattress",
+      "detention bedding",
+      "inmate supplies",
+      "cots",
+      "shelter bedding",
+      "furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "correctional",
+      "institutional furniture",
+      "shelter supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "City of Baton Rouge / Parish of East Baton Rouge Purchasing. Verified 2026-06-21: official Purchasing page says the division purchases supplies, materials, and contractual services for City-Parish user agencies and links Central Bidding, Vendor Self Service, Upcoming Procurement Opportunities, Scheduled Bid Openings, Recent Bid Results, and Vendor Self Service Registration; contact purchasinginfo@brla.gov, phone 225-389-3259. Public CivicEngage bids page showed no open bid postings at review time; Central Bidding public agency URL exposed only a login/menu page to automated fetch. Register/review Vendor Self Service and Central Bidding for prison, detention, mattress, bedding, shelter, cot, and institutional furniture terms."
+  },
+  {
     "name": "Houston ISD IonWave",
     "source_type": "isd_portal",
     "official_url": "https://houstonisd.ionwave.net/Login.aspx",

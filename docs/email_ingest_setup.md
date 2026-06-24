@@ -14,9 +14,38 @@ This replaces the *manual* weekly portal walk for the email-notification
 sources. Submission stays manual; the tool only adds `watching` rows to
 triage.
 
-## Recommended path — route alerts to Gmail (no Azure admin)
+## Recommended path - Power Automate digest (no Azure admin)
 
-The simplest, no-admin setup, and the current plan:
+Current operator decision (2026-06-24): use Microsoft Power Automate instead
+of the scheduled Microsoft Graph workflow. Portal alerts remain in Outlook
+under the `Procurement Alerts` folder, and a scheduled Power Automate flow sends
+a digest to `beford@silverlinesleep.com`.
+
+Power Automate flow target:
+
+- **Trigger:** scheduled recurrence, Monday and Thursday.
+- **Action:** Office 365 Outlook **Get emails (V3)**.
+- **Folder:** `Procurement Alerts`.
+- **Fetch Only Unread Messages:** `No`.
+- **Top:** `50`.
+- **Action:** Office 365 Outlook **Send an email (V2)**.
+- **To:** `beford@silverlinesleep.com`.
+- **Subject:** `Procurement Alerts digest - @{formatDateTime(utcNow(),'yyyy-MM-dd')}`.
+- **Body:** ideally one combined digest containing sender, subject, received
+  date, and body preview/link for each message. A one-email-per-alert flow is
+  acceptable temporarily while the combined digest expression is tuned.
+
+Save and test the flow after configuration. Confirm that messages already in
+`Procurement Alerts` are included because the flow is intentionally not limited
+to unread mail.
+
+The scheduled GitHub Graph workflow is intentionally paused and available only
+as a manual fallback. Do not chase Azure Graph secrets unless that strategy is
+explicitly reopened.
+
+## Previous path - route alerts to Gmail (disabled)
+
+The older Gmail-forwarding setup is retained for history/fallback only:
 
 1. **Subscribe to the portal alerts** (section A) using
    **`blake.e.ford@gmail.com`** as the notification/contact address, so
@@ -35,7 +64,7 @@ The Outlook / Microsoft Graph backend below is an **alternative** for
 running directly against the Outlook mailbox — it needs a tenant-admin
 **Mail.Read** consent, so use it only if/when that's available.
 
-### Operator decision (2026-06-18): forward Outlook → Gmail
+### Previous operator decision (2026-06-18): forward Outlook → Gmail
 
 Portal alerts currently arrive at the registered supplier mailbox
 **`beford@silverlinesleep.com`** (Outlook), which the Gmail sweep cannot
@@ -57,8 +86,8 @@ reversible, and it keeps the business identity on the portals intact.
   action — keep the originals of record in the business inbox.
 - Check *Stop processing more rules*.
 
-**On-demand sweep (no OAuth, works once forwarding is on).** With alerts
-landing in the connected Gmail, an assistant runs the same tested flow we
+**On-demand sweep (no OAuth, only if forwarding works).** If alerts ever land
+in a connected Gmail again, an assistant can run the same tested flow we
 validated end-to-end on 2026-06-18:
 
 1. Search the Gmail funnel for forwarded Outlook alerts. Because the
@@ -185,12 +214,16 @@ prints a parse preview, with actionable hints on the common 401/403/404
 failures (bad secret, missing admin consent, wrong mailbox/folder).
 
 Scheduled automatically by
-`.github/workflows/weekly_email_ingest.yml` (Mondays 13:30 UTC + manual
+`.github/workflows/weekly_email_ingest.yml` (Mondays and Thursdays 13:30 UTC + manual
 `workflow_dispatch`): it ingests, re-scores, runs the repo checks, and — if
 `bids/active/_pipeline.csv` **or** `leads/review/_lead_radar.csv` changed —
 opens a PR for human triage. The PR title/body state whether the run updated
 active bids, Lead Radar, or both. It never auto-archives, auto-submits, or
 pushes to `main`.
+
+Operator digest: `.github/workflows/procurement_digest.yml` runs after the
+scheduled ingests on Mondays and Thursdays at 14:30 UTC and posts one concise
+update to the standing GitHub issue `Procurement ingest digest`.
 
 ---
 

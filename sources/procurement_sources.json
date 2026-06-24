@@ -106,6 +106,74 @@
     "notes": "Oklahoma Office of Management and Enterprise Services (OMES) Central Purchasing. Open solicitations are posted publicly on the OMES solicitations page (public search utility); register in the Oklahoma Supplier Portal to receive commodity-based notifications and to respond. Bid submission remains manual."
   },
   {
+    "name": "University of Oklahoma Procurement / Jaggaer",
+    "source_type": "university_portal",
+    "official_url": "https://www.ou.edu/procurement",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "portal_registration",
+    "csv_export_supported": false,
+    "geography": ["OK", "Norman", "University of Oklahoma"],
+    "buyer_level": "university",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "linen",
+      "bed frame",
+      "beds",
+      "dormitory",
+      "residence hall",
+      "student housing",
+      "Twin XL",
+      "furniture",
+      "FF&E"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "institutional furniture",
+      "student housing furniture"
+    ],
+    "cadence": "weekly",
+    "notes": "Verified 2026-06-21: OU Procurement navigation links the public solicitations board at https://bids.sciquest.com/apps/Router/PublicEvent?CustomerOrg=OUHSC and supplier registration in Jaggaer. Supplier page says registration is required only if a supplier wishes to participate in bids and solicitations; questions go to SupplierRelations@ou.edu. Public board sweep found no current mattress, bedding, bed, dormitory, residence-hall, furniture, or FF&E product fit; RFP-2026-378 Enterprise DDI Infrastructure Modernization and Support Services remained open to 2026-07-31 and was IT-only."
+  },
+  {
+    "name": "Oklahoma State University Procurement / Jaggaer",
+    "source_type": "university_portal",
+    "official_url": "https://bids.sciquest.com/apps/Router/PublicEvent?CustomerOrg=OSU",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "portal_registration",
+    "csv_export_supported": false,
+    "geography": ["OK", "Stillwater", "Oklahoma State University"],
+    "buyer_level": "university",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "linen",
+      "bed frame",
+      "beds",
+      "dormitory",
+      "residence hall",
+      "student housing",
+      "Twin XL",
+      "furniture",
+      "FF&E"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "institutional furniture",
+      "student housing furniture"
+    ],
+    "cadence": "weekly",
+    "notes": "Verified 2026-06-21: OSU A&M System public sourcing board is available through Jaggaer/SciQuest CustomerOrg=OSU. The board says it is the Office of Central Procurement solicitations and awards page for Oklahoma State University and the A&M Colleges and includes open, upcoming, closed, awarded, and all-opportunities tabs plus Respond Now links. adminfinance.okstate.edu purchasing subpages returned a Cloudflare challenge to automated fetches during review. Public OSU board sweep found no current mattress, bedding, bed, dormitory, residence-hall, furniture, linen, or FF&E product fit."
+  },
+  {
     "name": "Louisiana LaPAC",
     "source_type": "state_portal",
     "official_url": "https://wwwcfprd.doa.louisiana.gov/osp/lapac/pubmain.cfm",
@@ -132,6 +200,40 @@
     ],
     "cadence": "weekly",
     "notes": "LaPAC (Louisiana Procurement and Contract Network), the Office of State Procurement bid board (Division of Administration). Open bids are searchable publicly; email notifications require LaGov supplier self-registration (subscription). Bid submission remains manual."
+  },
+  {
+    "name": "Louisiana State University Procurement / LaPAC",
+    "source_type": "university_portal",
+    "official_url": "https://www.lsu.edu/administration/ofa/procurement/",
+    "has_api": false,
+    "requires_login": false,
+    "intake_method": "saved_search",
+    "csv_export_supported": false,
+    "geography": ["LA", "Baton Rouge", "Louisiana State University"],
+    "buyer_level": "university",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "box spring",
+      "bed frame",
+      "beds",
+      "dormitory",
+      "residence hall",
+      "student housing",
+      "Twin XL",
+      "furniture",
+      "FF&E"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "institutional furniture",
+      "student housing furniture"
+    ],
+    "cadence": "weekly",
+    "notes": "Verified 2026-06-21: LSU Procurement routes ITBs and RFPs/public bid notices to Louisiana LaPAC, with direct department-19 postings at https://wwwcfprd.doa.louisiana.gov/osp/lapac/dspbid.cfm?search=department&term=19. Supplier email notifications require LaGov supplier self-registration/subscription. LSU formal bids are submitted electronically to lsubids@lsu.edu per solicitation instructions; no hard copies accepted. Public LSU LaPAC sweep found open HVAC, liquid nitrogen, printing, manufacturing equipment, arbor, plumbing, light-show maintenance, sports, waste, custodial, and newspaper-printing rows, but no current mattress, bedding, bed, dormitory, residence-hall, furniture, or FF&E product fit."
   },
   {
     "name": "Mississippi MAGIC Supplier Portal",
@@ -269,6 +371,366 @@
     "notes": "Harris County opportunity portal. Free vendor registration. High-fit categories include jail, public health, facilities."
   },
   {
+    "name": "Walker County TX Bonfire",
+    "source_type": "county_portal",
+    "official_url": "https://co-walker-tx.bonfirehub.com/portal/",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "csv_export_supported": false,
+    "geography": ["TX", "Walker County"],
+    "buyer_level": "county",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "jail mattress",
+      "detention bedding",
+      "inmate supplies",
+      "cots",
+      "shelter bedding"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "correctional",
+      "institutional furniture",
+      "shelter supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "Walker County, Texas procurement portal. Verified 2026-06-21: official county site Vendor Registration link points to co-walker-tx.bonfirehub.com, not DemandStar. Bonfire RSS feed is configured in configs/feeds.json and returned a valid empty Open Public Opportunities feed; public API returned projects: []. Register on Bonfire for commodity notifications and monitor the RSS for jail, detention, mattress, bedding, shelter, cot, and institutional furniture terms."
+  },
+  {
+    "name": "Dallas County TX BidNet",
+    "source_type": "county_portal",
+    "official_url": "https://www.bidnetdirect.com/texas/dallas-county",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "csv_export_supported": false,
+    "geography": ["TX", "Dallas County"],
+    "buyer_level": "county",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "jail mattress",
+      "detention bedding",
+      "inmate supplies",
+      "cots",
+      "shelter bedding",
+      "furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "correctional",
+      "institutional furniture",
+      "shelter supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "Dallas County, Texas procurement portal. Verified 2026-06-21: Dallas County Purchasing says it implemented BidNet for public solicitations on 2024-12-19 and uses BidNet registration for solicitation notices, open-bid viewing, and online responses; formal notices are sent to registered vendors matching NIGP codes. Direct automated fetch of Dallas County BidNet agency and keyword pages returned 403, so logged-in saved searches are required. Monitor for jail, detention, mattress, bedding, shelter, cot, and institutional furniture terms."
+  },
+  {
+    "name": "Bexar County TX Infor",
+    "source_type": "county_portal",
+    "official_url": "https://bexarprod-lm01.cloud.infor.com:1442/lmscm/SourcingSupplier/html/SourcingSupplier?csk.SupplierGroup=100&csk.CHP=LMPROC",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "csv_export_supported": false,
+    "geography": ["TX", "Bexar County"],
+    "buyer_level": "county",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "jail mattress",
+      "detention bedding",
+      "inmate supplies",
+      "cots",
+      "shelter bedding",
+      "furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "correctional",
+      "institutional furniture",
+      "shelter supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "Bexar County, Texas procurement portal. Verified 2026-06-21: the official Supplier Portal/Vendor Registration page routes suppliers to Bexar County Infor Sourcing Supplier and says registered suppliers receive bid notifications based on selected commodity codes. Public CivicEngage bid postings page showed no open bid postings at review time. Infor supplier portal and CivCast road/repair search did not expose product-fit public result text to automated fetches, so registration/login review is required. Monitor for jail, detention, mattress, bedding, shelter, cot, and institutional furniture terms."
+  },
+  {
+    "name": "Bernalillo County NM Bonfire",
+    "source_type": "county_portal",
+    "official_url": "https://bernco.bonfirehub.com/portal/",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "csv_export_supported": false,
+    "geography": ["NM", "Bernalillo County"],
+    "buyer_level": "county",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "correctional mattresses",
+      "jail mattress",
+      "detention bedding",
+      "inmate supplies",
+      "cots",
+      "shelter bedding",
+      "furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "correctional",
+      "institutional furniture",
+      "shelter supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "Bernalillo County, New Mexico procurement portal. Verified 2026-06-21: bernco.bonfirehub.com is a live Bonfire tenant for Bernalillo County and the RSS feed is configured in configs/feeds.json. RSS/open public API showed two open opportunities at review time (Development Partner RFSQ 52-26-NH and Opioid Settlement RFP 53-26-EM), neither product fit. Past public API showed closed product-fit RFB 48-26-DC Correctional Mattresses, closed 2026-05-21 and marked public-award true. Register on Bonfire for commodity notifications and monitor for jail, detention, mattress, bedding, shelter, cot, and institutional furniture terms."
+  },
+  {
+    "name": "Tarrant County TX IonWave",
+    "source_type": "county_portal",
+    "official_url": "https://tarrantcountytx.ionwave.net/SourcingEvents.aspx?SourceType=1",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "csv_export_supported": false,
+    "geography": ["TX", "Tarrant County"],
+    "buyer_level": "county",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "jail mattress",
+      "detention bedding",
+      "inmate supplies",
+      "cots",
+      "shelter bedding",
+      "furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "correctional",
+      "institutional furniture",
+      "shelter supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "Tarrant County, Texas procurement portal. Verified 2026-06-21: the official Tarrant County Purchasing Department page links Current Solicitations, Solicitation Awards, and Vendor Registration to tarrantcountytx.ionwave.net/Login.aspx; contact phone 817-884-1414. IonWave current-solicitations sweep returned 17 open events and no mattress, bedding, jail, detention, furniture, shelter, cot, or bed product fit. Recent closed jail-adjacent events included Green Bay Jail Roof Replacement and Jail Security Electronic Upgrades, both non-bedding scopes. Register in IonWave for commodity notifications and monitor for jail, detention, mattress, bedding, shelter, cot, and institutional furniture terms."
+  },
+  {
+    "name": "Travis County TX Purchasing Transparency Portal",
+    "source_type": "county_portal",
+    "official_url": "https://purchasingtransparency.traviscountytx.gov/public/search/solicitations",
+    "has_api": false,
+    "requires_login": false,
+    "intake_method": "manual_review",
+    "csv_export_supported": false,
+    "geography": ["TX", "Travis County"],
+    "buyer_level": "county",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "jail mattress",
+      "detention bedding",
+      "inmate supplies",
+      "cots",
+      "shelter bedding",
+      "furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "correctional",
+      "institutional furniture",
+      "shelter supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "Travis County, Texas procurement portal. Verified 2026-06-21: the official Travis County Purchasing Office page links Current Solicitations and the Transparency Portal to purchasingtransparency.traviscountytx.gov. Contact: C.W. Bruner, Purchasing Agent, 700 Lavaca Suite 800, Austin, TX 78701, phone 512-854-9700. The current solicitations page is Blazor-rendered; static fetch confirms the ACTIVE solicitations search UI but does not expose row data, so manual portal review is required for product-fit searches. Monitor for jail, detention, mattress, bedding, shelter, cot, and institutional furniture terms."
+  },
+  {
+    "name": "El Paso County TX IonWave",
+    "source_type": "county_portal",
+    "official_url": "https://epcountypurchasing.ionwave.net/SourcingEvents.aspx?SourceType=1",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "csv_export_supported": false,
+    "geography": ["TX", "El Paso County"],
+    "buyer_level": "county",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "jail mattress",
+      "detention bedding",
+      "inmate supplies",
+      "cots",
+      "shelter bedding",
+      "furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "correctional",
+      "institutional furniture",
+      "shelter supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "El Paso County, Texas procurement portal. Verified 2026-06-21: the official El Paso County Purchasing Department page links Current Bids, Closed Bids, Awarded Bids, Non-Awarded Bids, and Register as a Vendor to epcountypurchasing.ionwave.net; contact purchasingagent@epcountytx.gov, BidQuestions@epcountytx.gov, phone 915-273-3349. IonWave current-bids sweep returned six open events and no mattress, bedding, jail, detention, furniture, shelter, cot, or bed product fit. Register in IonWave for automatic bid notifications and monitor for jail, detention, mattress, bedding, shelter, cot, and institutional furniture terms."
+  },
+  {
+    "name": "Oklahoma County OK BidNet",
+    "source_type": "county_portal",
+    "official_url": "https://www.bidnetdirect.com/oklahoma/oklahomacounty",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "csv_export_supported": false,
+    "geography": ["OK", "Oklahoma County"],
+    "buyer_level": "county",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "jail mattress",
+      "detention bedding",
+      "inmate supplies",
+      "cots",
+      "shelter bedding",
+      "furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "correctional",
+      "institutional furniture",
+      "shelter supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "Oklahoma County, Oklahoma procurement portal. Verified 2026-06-21: the official Oklahoma County Purchasing page lists Purchasing at 320 Robert S. Kerr Avenue #321, Oklahoma City, OK 73102, phone 405-713-1485, purchasing@oklahomacounty.org, and links Active Bids to BidNet Direct for Oklahoma County. Automated public fetch of the BidNet Oklahoma County open-bids page returned 403, so logged-in BidNet review is required. Monitor the registered Oklahoma Purchasing Group/BidNet account for jail, detention, mattress, bedding, shelter, cot, and institutional furniture terms."
+  },
+  {
+    "name": "City of New Orleans BRASS",
+    "source_type": "city_portal",
+    "official_url": "https://nola.gov/view-bid-opportunities/",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "csv_export_supported": false,
+    "geography": ["LA", "New Orleans", "Orleans Parish"],
+    "buyer_level": "city",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "jail mattress",
+      "detention bedding",
+      "inmate supplies",
+      "cots",
+      "shelter bedding",
+      "furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "correctional",
+      "institutional furniture",
+      "shelter supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "City of New Orleans Bureau of Purchasing / BRASS procurement portal. Verified 2026-06-21: NOLA.gov Purchasing says the Bureau of Purchasing is the central authority for goods and services and routes suppliers to BRASS for registration, bid opportunities, and responses. Public View Bid Opportunities page exposed current open BRASS rows and a direct link to the Infor/Supply Management Supplier portal. Current public sweep found no mattress, bedding, jail, detention, furniture, shelter, cot, or bed product fit. Monitor BRASS and LaPAC/BidNet Louisiana alerts for Orleans Parish detention, shelter, and institutional-furniture terms."
+  },
+  {
+    "name": "East Baton Rouge Parish Purchasing",
+    "source_type": "county_portal",
+    "official_url": "https://www.brla.gov/358/Purchasing",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "csv_export_supported": false,
+    "geography": ["LA", "East Baton Rouge Parish", "Baton Rouge"],
+    "buyer_level": "county",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "jail mattress",
+      "detention bedding",
+      "inmate supplies",
+      "cots",
+      "shelter bedding",
+      "furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "correctional",
+      "institutional furniture",
+      "shelter supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "City of Baton Rouge / Parish of East Baton Rouge Purchasing. Verified 2026-06-21: official Purchasing page says the division purchases supplies, materials, and contractual services for City-Parish user agencies and links Central Bidding, Vendor Self Service, Upcoming Procurement Opportunities, Scheduled Bid Openings, Recent Bid Results, and Vendor Self Service Registration; contact purchasinginfo@brla.gov, phone 225-389-3259. Public CivicEngage bids page showed no open bid postings at review time; Central Bidding public agency URL exposed only a login/menu page to automated fetch. Register/review Vendor Self Service and Central Bidding for prison, detention, mattress, bedding, shelter, cot, and institutional furniture terms."
+  },
+  {
+    "name": "Hinds County MS Purchasing",
+    "source_type": "county_portal",
+    "official_url": "https://www.hindscountyms.com/departments/purchasing",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "manual_review",
+    "csv_export_supported": false,
+    "geography": ["MS", "Hinds County", "Jackson"],
+    "buyer_level": "county",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "jail mattress",
+      "detention bedding",
+      "inmate supplies",
+      "cots",
+      "shelter bedding",
+      "furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "correctional",
+      "institutional furniture",
+      "shelter supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "Hinds County, Mississippi Purchasing. Verified 2026-06-21: official Purchasing page says the Central Purchasing Office has sole responsibility for purchasing equipment, machinery, supplies, commodities, materials, and services used by county offices/departments, maintains the Master Vendor List, and uses annual bid agreements for commonly used supplies/services. Contact: Purchasing Clerk Dru Anderson, danderson@co.hinds.ms.us, phone 601-968-6534, fax 601-968-6544. Visible RFP archive includes inmate medical services, inmate mental health services, and a 2022 infrastructure planning RFI, but no current mattress, bedding, jail/detention supplies, shelter, cot, or furniture product-fit opportunity. Page says Hinds County uses Find RFP e-purchasing and formal bids publish in the Jackson Advocate, so manual review/registration is required."
+  },
+  {
+    "name": "Pulaski County AR IonWave",
+    "source_type": "county_portal",
+    "official_url": "https://arkansas.ionwave.net/SourcingEvents.aspx?SourceType=1",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "csv_export_supported": false,
+    "geography": ["AR", "Pulaski County", "Little Rock"],
+    "buyer_level": "county",
+    "search_terms": [
+      "mattress",
+      "bedding",
+      "jail mattress",
+      "detention bedding",
+      "inmate supplies",
+      "cots",
+      "shelter bedding",
+      "furniture"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "correctional",
+      "institutional furniture",
+      "shelter supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "Pulaski County, Arkansas procurement via Arkansas IonWave. Verified 2026-06-21: official Pulaski County site links Bid to https://arkansas.ionwave.net/Login.aspx and Purchasing page lists contact Michelle Johnson, Assistant Comptroller, pcpurchase@pulaskicounty.net, office 501-340-8397. Public Arkansas IonWave current-events sweep showed Pulaski County open rows for Providence Park Street/Drainage/Utility Improvements Phase 3, Hilaro Springs Road to Baseline, Online Auction Services, and Vending Services; no current mattress, bedding, jail, detention, furniture, shelter, cot, or bed product fit. Register in Arkansas IonWave for notifications and monitor Pulaski Sheriff/Juvenile Detention terms."
+  },
+  {
     "name": "Houston ISD IonWave",
     "source_type": "isd_portal",
     "official_url": "https://houstonisd.ionwave.net/Login.aspx",
@@ -344,7 +806,7 @@
       "residence hall furniture"
     ],
     "cadence": "monthly",
-    "notes": "System-level procurement landing. Campus solicitations (Texas A&M College Station, A&M-Commerce, A&M-Corpus Christi, Prairie View A&M, Tarleton State, West Texas A&M, etc.) post via campus purchasing offices, typically through AggieBuy or campus-specific portals. Register at the campus level."
+    "notes": "System-level procurement landing. Verified 2026-06-21: AggieBid public events board is https://bids.sciquest.com/apps/Router/PublicEvent?CustomerOrg=TAMU and the AggieBuy/AggieBid supplier portal is https://solutions.sciquest.com/apps/Router/SupplierLogin?CustOrg=TAMU. Campus/system solicitations post through AggieBid or campus-specific purchasing offices; register in AggieBuy/AggieBid and at campuses where separate portals exist."
   },
   {
     "name": "University of Houston",
@@ -371,6 +833,180 @@
     ],
     "cadence": "monthly",
     "notes": "UH main-campus Purchasing Department. UH System institutions (UH-Downtown, UH-Clear Lake, UH-Victoria) run separate purchasing offices; the UH-System office coordinates but bid postings are at the campus level."
+  },
+  {
+    "name": "BidNet Direct - Texas Purchasing Group",
+    "source_type": "state_portal",
+    "official_url": "https://www.bidnetdirect.com/texas",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "geography": ["TX"],
+    "buyer_level": "state",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "bed frame",
+      "dormitory",
+      "jail mattress",
+      "detention bedding",
+      "shelter cots"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "institutional furniture",
+      "correctional supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "BidNet local-agency aggregator. Verified 2026-06-21: Texas Purchasing Group public page invites vendors to register for local-government RFPs, bids, and awards and showed 2,302 statewide/federal open solicitations plus 78 group bids. Vendor registration provides real-time notifications of matching bids. Keyword result pages returned 403 to automated fetches. Operator screenshot 2026-06-21 confirmed Texas Purchasing Group notifications set to All Solicitations and NIGP 42068 Mattresses and Bedsprings selected; verify mattress/bedding/dormitory/correctional saved searches after login."
+  },
+  {
+    "name": "BidNet Direct - Louisiana Purchasing Group",
+    "source_type": "state_portal",
+    "official_url": "https://www.bidnetdirect.com/louisiana",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "geography": ["LA"],
+    "buyer_level": "state",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "bed frame",
+      "dormitory",
+      "jail mattress",
+      "detention bedding",
+      "shelter cots"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "institutional furniture",
+      "correctional supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "BidNet local-agency aggregator for Louisiana parishes, cities, schools, and other local agencies. Operator screenshot 2026-06-21 confirmed Louisiana Purchasing Group notifications set to All Solicitations and NIGP 42068 Mattresses and Bedsprings selected. Use logged-in saved searches for mattress/bedding/dormitory/correctional opportunities; LaGov/LaPAC remains the primary state-agency channel."
+  },
+  {
+    "name": "BidNet Direct - Arkansas Purchasing Group",
+    "source_type": "state_portal",
+    "official_url": "https://www.bidnetdirect.com/arkansas",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "geography": ["AR"],
+    "buyer_level": "state",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "bed frame",
+      "dormitory",
+      "jail mattress",
+      "detention bedding",
+      "shelter cots"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "institutional furniture",
+      "correctional supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "BidNet local-agency aggregator for Arkansas counties, cities, schools, and other local agencies. Operator screenshot 2026-06-21 confirmed Arkansas Purchasing Group added/member since 2026-06-21 with no registration form required. Direct automated fetch returned 403, so use logged-in saved searches for mattress/bedding/dormitory/correctional opportunities; ARBuy remains the primary Arkansas state-agency channel."
+  },
+  {
+    "name": "BidNet Direct - Mississippi Purchasing Group",
+    "source_type": "state_portal",
+    "official_url": "https://www.bidnetdirect.com/mississippi",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "geography": ["MS"],
+    "buyer_level": "state",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "bed frame",
+      "dormitory",
+      "jail mattress",
+      "detention bedding",
+      "shelter cots"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "institutional furniture",
+      "correctional supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "BidNet local-agency aggregator for Mississippi counties, cities, schools, and other local agencies. Operator screenshot 2026-06-21 confirmed Mississippi Purchasing Group added/member since 2026-06-21 with no registration form required. Direct automated fetch returned 403, so use logged-in saved searches for mattress/bedding/dormitory/correctional opportunities; MAGIC remains the primary Mississippi state-agency channel."
+  },
+  {
+    "name": "BidNet Direct - New Mexico Purchasing Group",
+    "source_type": "state_portal",
+    "official_url": "https://www.bidnetdirect.com/new-mexico",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "geography": ["NM"],
+    "buyer_level": "state",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "bed frame",
+      "dormitory",
+      "jail mattress",
+      "detention bedding",
+      "shelter cots"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "institutional furniture",
+      "correctional supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "BidNet local-agency aggregator for New Mexico counties, cities, schools, and other local agencies. Operator screenshot 2026-06-21 confirmed New Mexico Purchasing Group registration completed with last update 2026-06-21. Direct automated fetch returned 403, so use logged-in saved searches for mattress/bedding/dormitory/correctional opportunities; New Mexico SPD remains the primary state-agency channel."
+  },
+  {
+    "name": "BidNet Direct - Oklahoma Purchasing Group",
+    "source_type": "state_portal",
+    "official_url": "https://www.bidnetdirect.com/oklahoma",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "geography": ["OK"],
+    "buyer_level": "state",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "bedding",
+      "bed frame",
+      "dormitory",
+      "jail mattress",
+      "detention bedding",
+      "shelter cots"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "institutional furniture",
+      "correctional supplies"
+    ],
+    "cadence": "weekly",
+    "notes": "BidNet local-agency aggregator for Oklahoma counties, cities, schools, and other local agencies. BidNet footer lists Oklahoma Purchasing Group; direct automated fetch of the Oklahoma page returned 403 on 2026-06-21. Operator screenshot 2026-06-21 confirmed Oklahoma Purchasing Group registration completed with last update 2026-06-21. Use logged-in saved searches for mattress/bedding/dormitory/correctional opportunities; OMES remains the primary Oklahoma state-agency channel."
   },
   {
     "name": "BuyBoard",
@@ -415,7 +1051,7 @@
       "bedding"
     ],
     "cadence": "monthly",
-    "notes": "Texas-headquartered national cooperative operated by Harris County Department of Education. Vendor participation is via Choice Partners RFP; awarded contracts are available to public-sector members nationwide."
+    "notes": "Texas-headquartered national cooperative operated by Harris County Department of Education. Vendor participation is via Choice Partners RFP; awarded contracts are available to public-sector members nationwide. Verified 2026-06-21: supplier registration runs through HCDE eBid/IonWave at hcdeebid.ionwave.net/VendorRegistration.aspx; commodity selections drive bid notifications. Current public sweep found no open mattress/bed/dormitory product-fit RFP; the next Furniture, Fixtures, Equipment (FFE) and Related Items cycle is listed with estimated advertise date 2027-06-01."
   },
   {
     "name": "TIPS",
@@ -482,7 +1118,7 @@
       "bedding"
     ],
     "cadence": "monthly",
-    "notes": "Sourcewell (formerly NJPA) is a Minnesota local unit of government operating a national cooperative procurement program. Vendor participation is via Sourcewell solicitations; awarded vendors sell to Sourcewell-member public-sector entities nationwide under the cooperative contract."
+    "notes": "Sourcewell (formerly NJPA) is a Minnesota local unit of government operating a national cooperative procurement program. Vendor participation is via nationally advertised Sourcewell solicitations through the Sourcewell procurement portal (proportal.sourcewell-mn.gov); awarded vendors sell to Sourcewell-member public-sector entities nationwide under the cooperative contract. Verified 2026-06-21: open solicitations had no mattress/bed/dormitory/furniture product fit. Current contract list shows Furniture Solutions with Related Accessories and Services contract family 091423 maturing 2027-12-04; KI contract 091423-KII explicitly includes dormitory and library furniture."
   },
   {
     "name": "OMNIA Partners",
@@ -505,5 +1141,31 @@
     ],
     "cadence": "monthly",
     "notes": "National cooperative formed from the 2019 merger of National IPA and US Communities. Member entities buy under awarded cooperative contracts; vendor participation is via OMNIA's lead-agency RFPs (a public agency runs a competitive procurement and the resulting contract is made available cooperatively)."
+  },
+  {
+    "name": "E&I Cooperative Services",
+    "source_type": "cooperative",
+    "official_url": "https://www.eandi.org/",
+    "has_api": false,
+    "requires_login": true,
+    "intake_method": "email_notification",
+    "geography": ["US"],
+    "buyer_level": "cooperative",
+    "search_terms": [
+      "mattress",
+      "mattresses",
+      "dormitory",
+      "residence hall",
+      "student residential",
+      "bedding"
+    ],
+    "commodity_terms": [
+      "mattress",
+      "bedding",
+      "dormitory furniture",
+      "student residential furniture"
+    ],
+    "cadence": "monthly",
+    "notes": "Member-owned sourcing cooperative dedicated to education. Verified 2026-06-21: supplier registration uses E&I Supplier Management Portal and suppliers should monitor current/upcoming RFP solicitations in SciQuest (CustomerOrg=EandICooperative). Contract Navigator lists Office & Classroom, Interiors coverage including Student Residential/Dorm Furniture and active University Sleep Products mattress contract EI00071 / RFP 683486 through 2031-01-31. Registration alone does not create awarded-partner status; suppliers must respond to an applicable RFP and be awarded."
   }
 ]

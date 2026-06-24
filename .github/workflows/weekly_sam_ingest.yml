@@ -1,9 +1,9 @@
-name: Weekly SAM.gov mattress ingest
+name: Twice-weekly SAM.gov mattress ingest
 
 on:
   schedule:
-    # Mondays 13:00 UTC = 08:00 Houston CDT / 07:00 CST.
-    - cron: '0 13 * * 1'
+    # Mondays + Thursdays 13:00 UTC = 08:00 Houston CDT / 07:00 CST.
+    - cron: '0 13 * * 1,4'
   workflow_dispatch:
 
 permissions:
@@ -98,16 +98,16 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           RUN_NUMBER: ${{ github.run_number }}
         run: |
-          BRANCH="auto/weekly-ingest-${POSTED_TO}-${RUN_NUMBER}"
+          BRANCH="auto/sam-ingest-${POSTED_TO}-${RUN_NUMBER}"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git checkout -b "$BRANCH"
           git add bids/active/_pipeline.csv
-          git commit -m "Weekly SAM.gov ingest: posted ${POSTED_FROM}..${POSTED_TO}"
+          git commit -m "Twice-weekly SAM.gov ingest: posted ${POSTED_FROM}..${POSTED_TO}"
           git push -u origin "$BRANCH"
 
           cat > /tmp/pr_body.md <<'EOF'
-          Automated weekly SAM.gov mattress ingest. **Human triage required before merge.**
+          Automated twice-weekly SAM.gov mattress ingest. **Human triage required before merge.**
 
           Posted-date window: `__POSTED_FROM__` to `__POSTED_TO__` (inclusive, today minus 7 days, UTC).
 
@@ -143,7 +143,7 @@ jobs:
           sed -i "s|__RUN_NUMBER__|${RUN_NUMBER}|g" /tmp/pr_body.md
 
           gh pr create \
-            --title "Weekly SAM.gov ingest: posted ${POSTED_FROM}..${POSTED_TO}" \
+            --title "Twice-weekly SAM.gov ingest: posted ${POSTED_FROM}..${POSTED_TO}" \
             --body-file /tmp/pr_body.md \
             --base main \
             --head "$BRANCH"

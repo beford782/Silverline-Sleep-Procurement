@@ -1,4 +1,4 @@
-name: Weekly RSS/feed ingest
+name: Twice-weekly RSS/feed ingest
 
 # Pulls open-opportunity RSS/Atom feeds (configs/feeds.json — e.g. Bonfire
 # per-portal /opportunities/rss feeds) through the central mattress-relevance
@@ -7,8 +7,8 @@ name: Weekly RSS/feed ingest
 
 on:
   schedule:
-    # Mondays 13:45 UTC (after the SAM 13:00 and email 13:30 runs).
-    - cron: '45 13 * * 1'
+    # Mondays + Thursdays 13:45 UTC (after the SAM 13:00 and email 13:30 runs).
+    - cron: '45 13 * * 1,4'
   workflow_dispatch:
 
 permissions:
@@ -69,11 +69,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git checkout -b "$BRANCH"
           git add bids/active/_pipeline.csv
-          git commit -m "Weekly RSS/feed ingest: ${TODAY}"
+          git commit -m "Twice-weekly RSS/feed ingest: ${TODAY}"
           git push -u origin "$BRANCH"
 
           cat > /tmp/pr_body.md <<'EOF'
-          Automated weekly RSS/feed ingest (Bonfire portal feeds, etc.), filtered by tools/relevance.py. **Human triage required before merge.**
+          Automated twice-weekly RSS/feed ingest (Bonfire portal feeds, etc.), filtered by tools/relevance.py. **Human triage required before merge.**
 
           ## Reviewer checklist
           1. Open `bids/active/_pipeline.csv`; review each new row. Items flagged `HUMAN: confirm mattress scope` need a look on the portal.
@@ -90,7 +90,7 @@ jobs:
           sed -i "s|__RUN_NUMBER__|${RUN_NUMBER}|g" /tmp/pr_body.md
 
           gh pr create \
-            --title "Weekly RSS/feed ingest: ${TODAY}" \
+            --title "Twice-weekly RSS/feed ingest: ${TODAY}" \
             --body-file /tmp/pr_body.md \
             --base main \
             --head "$BRANCH"

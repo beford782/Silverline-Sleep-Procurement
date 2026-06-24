@@ -62,13 +62,13 @@ The highest-conviction, most-direct mattress demand. Set these up first.
 - **Human follow-up:** **Confirm CMBL commodity-code selections are current** (205/420 + correctional/medical/dormitory). Note: TX state-agency mattress volume is partly absorbed by the **TCI/WorkQuest set-aside** — verify how supplemental purchases are allowed.
 
 ### 1.3 Texas A&M — AggieBid / SciQuest
-- **URL:** Texas A&M University System procurement https://www.tamus.edu/procurement/ [committed] · campus bids via **AggieBid / Jaggaer (SciQuest)** [UNVERIFIED — confirm the public bid-board URL for the College Station campus]
+- **URL:** Texas A&M University System procurement https://www.tamus.edu/procurement/ [committed] · AggieBid public board https://bids.sciquest.com/apps/Router/PublicEvent?CustomerOrg=TAMU [verified-research] · AggieBuy/AggieBid supplier portal https://solutions.sciquest.com/apps/Router/SupplierLogin?CustOrg=TAMU [verified-research]
 - **Why it matters:** ~11,000+ on-campus beds plus the Corps of Cadets — one of the largest standing dorm inventories in the region, on a summer refresh cycle.
 - **Commodity/profile terms:** residence hall, student housing, Twin XL, dormitory furniture, mattress, mattresses, bed frame, beds, bunk, FF&E, furniture and related services.
 - **Alert frequency:** Vendor-portal notifications by category (configure on registration); else monitor the public bid board.
 - **Email/forwarding:** Portal notifications → business mailbox → funnel.
 - **Usual route:** **Lead Radar** for residence-hall FF&E; **Active** for an explicit mattress/Twin-XL solicitation.
-- **Human follow-up:** **Confirm the AggieBid/SciQuest public bid URL and register** (close the UNVERIFIED gap).
+- **Human follow-up:** **Register in AggieBuy/AggieBid** and select mattress/dormitory/residence-hall/furniture terms or commodity codes where available; forward alerts to the funnel. Public sweep 2026-06-21 found 19 open events but no current mattress, bedding, dormitory, bed, Twin XL, or furniture product-fit opportunity.
 
 ### 1.4 Region ESC / EPIC / IonWave-style furniture co-ops (esp. Region 4 ESC → OMNIA)
 - **URL:** Region 4 ESC supplier portal `region4esc.ionwave.net` [verified-research]
@@ -105,12 +105,13 @@ These are **vehicle** plays: register to become an awarded vendor and/or monitor
 | Co-op | URL | Why / status | Terms | Alerts | Route | Follow-up |
 |---|---|---|---|---|---|---|
 | **TIPS** | https://www.tips-usa.com/ [committed] · vendor `tips-usa.com/vendors/become`, bids on `tips.ionwave.net` [verified-research] | Furniture re-solicited **~yearly** = shortest wait to bid | dormitory furniture, residence hall, mattress, FF&E, furniture and related services | Monthly bid notices + IonWave commodity alerts | Lead Radar | **Apply** — respond to next "Furniture, Furnishings & Services" RFP |
-| **Choice Partners (HCDE)** | https://www.choicepartners.org/ [committed] · register `hcdeebid.ionwave.net/VendorRegistration.aspx` [verified-research] | Local Houston; FF&E re-bid ~late 2026–2027; **no dorm/mattress line yet** | FF&E, institutional furniture, bed frame, dormitory furniture | IonWave commodity alerts | Lead Radar | **Register**; good for bed frames/FF&E |
-| **Sourcewell** | https://www.sourcewell-mn.gov/ [committed] · `sourcewell-mn.gov/sourcewell-for-vendors/become-a-supplier` [verified-research] | Furniture awarded 2023 (dorm via KI); next master RFP ~2027 | dormitory furniture, residence hall, mattress, FF&E | Supplier email alerts on new RFPs | Lead Radar | **Register for alerts**; monitor ~2027 re-bid |
+| **Choice Partners (HCDE)** | https://www.choicepartners.org/ [committed] · register `hcdeebid.ionwave.net/VendorRegistration.aspx` [verified-research] | Local Houston; next **Furniture, Fixtures, Equipment (FFE) and Related Items** advertise estimate 2027-06-01; **no dorm/mattress line yet** | FF&E, institutional furniture, bed frame, dormitory furniture | IonWave commodity alerts | Lead Radar | **Register**; good for bed frames/FF&E and watch the 2027 FFE cycle |
+| **Sourcewell** | https://www.sourcewell-mn.gov/ [committed] · procurement portal `proportal.sourcewell-mn.gov` [verified-research] | Furniture Solutions contract family `091423` matures 2027-12-04; KI page explicitly includes dormitory/library furniture; no current mattress line | dormitory furniture, residence hall, mattress, FF&E | Procurement-portal category alerts | Lead Radar | **Register for alerts**; monitor the 2027 furniture re-bid window |
+| **E&I Cooperative Services** | https://www.eandi.org/ [committed] · supplier/RFP path via SciQuest `CustomerOrg=EandICooperative` [verified-research] | Higher-ed cooperative; active University Sleep Products residence-hall mattress contract runs through 2031-01-31 | mattress, residence hall, dormitory furniture, student residential furniture, bedding | SciQuest supplier/RFP alerts | Lead Radar | **Register for alerts**; monitor the next RFP 683486 mattress cycle |
 | **OMNIA Partners** | https://www.omniapartners.com/ [committed] · register via Region 4 ESC IonWave (see §1.4) | Largest national co-op; **mattress category proven** (Gateway Mattress); local TX lead agency | mattress, dormitory furniture, residence hall, FF&E | Via Region 4 IonWave commodity alerts | Lead Radar | **Apply via Region 4 ESC** (highest reward) |
 | **HGACBuy** | https://www.hgacbuy.org/ [committed] · `hgacbuy.org/join/become-a-contractor` [verified-research] | **No furniture/FF&E/mattress category exists** (verified) | n/a | n/a | n/a | **Skip / monitor only** — optionally petition for a new FF&E category |
 
-> **Net-new vehicles worth registering** (from research, optional but high-value): **Equalis Group** (`equalisgroup.org` [verified-research] — furniture with **no entrenched mattress incumbent = white space**, TX lead agency Region 10 ESC) and **E&I Cooperative Services** (higher-ed; SciQuest `CustomerOrg=EandICooperative` [verified-research] — has a *named* dorm-mattress contract via Sysco Guest Supply; register for alerts and target the next residence-life RFP). Route: Lead Radar.
+> **Net-new vehicles worth registering** (from research, optional but high-value): **Equalis Group** (`equalisgroup.org` [verified-research] — furniture with **no entrenched mattress incumbent = white space**, TX lead agency Region 10 ESC). **E&I Cooperative Services** has now been promoted into the P3 table because it has public higher-ed interiors coverage and a named University Sleep Products mattress incumbent. Route: Lead Radar.
 
 > **Cross-state leverage:** a single national co-op award (OMNIA / TIPS / Equalis / Sourcewell) grants pass-through buying eligibility in **all six states** — the cheapest way to reach OK/LA/MS/AR/NM beyond the state boards.
 
@@ -123,9 +124,9 @@ Lower volume individually but high standing bed counts and new-construction FF&E
 ### Universities (residence-life / dorms)
 | Buyer | Procurement page | Why | Route |
 |---|---|---|---|
-| University of Oklahoma (OU) | `ou.edu/purchasing` [UNVERIFIED] | New South/North residence halls under construction = new bed buys | Lead Radar / Active (mattress) |
-| Oklahoma State (OSU) | `adminfinance.okstate.edu/purchasing/` [UNVERIFIED] | Large Stillwater residential system | Lead Radar / Active |
-| LSU | `lsu.edu/procurement/` [UNVERIFIED] (posts via LaPAC) | New residence halls broke ground Dec 2025 = imminent FF&E | Lead Radar / Active |
+| University of Oklahoma (OU) | OU Procurement / Jaggaer public sourcing [verified-research] | Large Norman housing base; supplier registration needed to respond in Jaggaer; public sweep found no current product-fit | Lead Radar / Active (mattress) |
+| Oklahoma State (OSU) | OSU A&M Jaggaer public sourcing [verified-research] | Large Stillwater residential system; adminfinance pages need browser/manual check due Cloudflare, but public Jaggaer board is visible | Lead Radar / Active |
+| LSU | LSU Procurement / LaPAC department 19 [verified-research] | LSU posts ITBs/RFPs through LaPAC; dorm/student-housing FF&E watch, no current product-fit in public sweep | Lead Radar / Active |
 | Ole Miss | `procurement.olemiss.edu` [UNVERIFIED] | Large hall system | Lead Radar / Active |
 | Mississippi State | `procurement.msstate.edu` [UNVERIFIED] (also Bonfire: MS IHL feed) | Large Starkville base | Lead Radar / Active |
 | University of Arkansas | `procurement.uark.edu` [UNVERIFIED] | Pomfret ~800 + large system | Lead Radar / Active |
@@ -139,15 +140,23 @@ Lower volume individually but high standing bed counts and new-construction FF&E
 ### County / jail-related & local
 | Buyer | Portal | Why | Route |
 |---|---|---|---|
-| Dallas County / Sheriff (jail ~7,100 beds) | Dallas County Purchasing [UNVERIFIED — confirm platform] | One of the largest US jails; high mattress turnover | Active (jail mattress) |
-| Bexar County / ADC (San Antonio, 4,000+ beds) | Bexar County Purchasing [UNVERIFIED] | Large jail; recurring replacement | Active |
-| Bernalillo County (Albuquerque) / MDC | Bernalillo County Purchasing [UNVERIFIED] | Largest NM metro jail; NM coverage | Active |
-| (also) Walker County, TX | DemandStar agency page [verified-research] | Huntsville (TDCJ HQ); jail/institutional bedding | Active / Lead Radar |
-| (also) BidNet Direct — TX & OK Groups | `bidnetdirect.com/texas`, `/oklahoma` [verified-research] | One registration aggregates many small TX/OK local agencies | Active / Lead Radar |
+| Dallas County / Sheriff (jail ~7,100 beds) | BidNet `bidnetdirect.com/texas/dallas-county` [verified-research] | One of the largest US jails; high mattress turnover | Active / Lead Radar |
+| Bexar County / ADC (San Antonio, 4,000+ beds) | Infor supplier portal via Bexar County Purchasing [verified-research] | Large jail; recurring replacement | Lead Radar / Active |
+| Bernalillo County (Albuquerque) / MDC | Bonfire `bernco.bonfirehub.com` [verified-research; RSS configured] | Largest NM metro jail; NM coverage; closed 2026 Correctional Mattresses signal | Lead Radar / Active |
+| Tarrant County / Sheriff (Fort Worth jail complex) | IonWave `tarrantcountytx.ionwave.net` [verified-research] | Large urban jail; recent jail facility/security work | Lead Radar / Active |
+| Travis County / Sheriff (Austin jail complex) | Travis County Purchasing Transparency Portal [verified-research; manual review] | Large urban jail; Austin metro coverage | Lead Radar / Active |
+| El Paso County / Sheriff (El Paso detention complex) | IonWave `epcountypurchasing.ionwave.net` [verified-research] | Large border-region jail; county IonWave alerts | Lead Radar / Active |
+| Oklahoma County / Detention Center (OKC) | BidNet via Oklahoma County Purchasing [verified-research; login required] | Major OK county detention buyer; county site routes active bids to BidNet | Lead Radar / Active |
+| Orleans Parish / New Orleans detention & shelter buyers | City of New Orleans BRASS / Infor [verified-research] | Orleans jail/shelter coverage; public BRASS bid list is visible | Lead Radar / Active |
+| East Baton Rouge Parish / Parish Prison | BRLA Purchasing / Central Bidding / Vendor Self Service [verified-research; login required] | Large parish prison; city-parish purchasing route | Lead Radar / Active |
+| Hinds County / Raymond Detention Center (Jackson) | Hinds County Purchasing / Find RFP [verified-research; manual review] | Consent-decree jail refresh watch; county central purchasing and annual bids | Lead Radar / Active |
+| Pulaski County / Sheriff & Juvenile Detention (Little Rock) | Arkansas IonWave `arkansas.ionwave.net` [verified-research] | Largest AR county jail/detention market; county site routes bids to IonWave | Lead Radar / Active |
+| (also) Walker County, TX | Bonfire `co-walker-tx.bonfirehub.com` [verified-research; RSS configured] | Huntsville (TDCJ HQ); jail/institutional bedding | Active / Lead Radar |
+| (also) BidNet Direct — TX, LA, AR, MS, NM & OK Groups | `bidnetdirect.com` purchasing groups [verified-research; six-state profile configured] | One registration aggregates many local agencies; TX page showed 2,302 statewide/federal open solicitations + 78 group bids on 2026-06-21; profile has NIGP 42068 | Active / Lead Radar |
 
 - **Terms:** jail mattress, detention bedding, correctional supplies, inmate supplies, mattress, bedding, cots.
 - **Alerts/forwarding:** register for commodity notifications (DemandStar/BidNet support free commodity alerts) → forward to funnel.
-- **Human follow-up:** **confirm county jail procurement portals** (mostly UNVERIFIED — many run on IonWave/Euna); register on **BidNet TX + OK groups** and **DemandStar** as efficient aggregators.
+- **Human follow-up:** **confirm county jail procurement portals** (mostly UNVERIFIED — many run on IonWave/Euna); use registered **BidNet TX/LA/AR/MS/NM/OK groups** and **DemandStar** as efficient aggregators. BidNet keyword result pages require/blocked to automated public fetches, so run the mattress/bedding/dormitory/correctional saved searches after login.
 
 ---
 
@@ -161,7 +170,7 @@ Lower volume individually but high standing bed counts and new-construction FF&E
 
 **For every portal:** set the **business mailbox** as the notification address and **forward the alerts into the Gmail/Graph funnel** in [`email_ingest_setup.md`](email_ingest_setup.md). `tools/ingest_email.py` unwraps the forwarded alert and routes it via `relevance.py` — **ACCEPT → active pipeline, REVIEW → Lead Radar** — with no further code needed.
 
-**Open verification debt** (confirm before relying): Texas A&M AggieBid/SciQuest URL; NM live portal (Bonfire vs legacy GSD); university procurement pages (OU/OSU/LSU/Ole Miss/Miss State/UArk/UNM); county jail portals (Dallas/Bexar/Bernalillo); current expirations on OMNIA Gateway Mattress and LA Norix contracts.
+**Open verification debt** (confirm before relying): NM live portal (Bonfire vs legacy GSD); university procurement pages (OU/OSU/LSU/Ole Miss/Miss State/UArk/UNM); remaining county jail portals beyond Dallas/Bexar/Bernalillo; current expirations on OMNIA Gateway Mattress and LA Norix contracts.
 
 ---
 

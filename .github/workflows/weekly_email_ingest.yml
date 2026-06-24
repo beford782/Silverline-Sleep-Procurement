@@ -1,19 +1,20 @@
-name: Weekly portal email-alert ingest
+name: Manual portal email-alert ingest (Graph fallback)
 
-# Reads commodity/NIGP email alerts from the Outlook/M365 procurement alert
-# inbox via the Microsoft Graph API and turns them into pipeline rows
-# (state/local + cooperative funnel). No scraping: portals have no public
-# feed/API, so the compliant channel is the email alert each portal sends to
-# a registered supplier.
+# Fallback path for reading commodity/NIGP email alerts from the Outlook/M365
+# procurement alert inbox via Microsoft Graph and turning them into pipeline
+# rows. No scraping: portals have no public feed/API, so the compliant channel
+# is the email alert each portal sends to a registered supplier.
 #
 # Requires four repo secrets (one-time Azure app registration, see
 # docs/email_ingest_setup.md): GRAPH_TENANT_ID, GRAPH_CLIENT_ID,
 # GRAPH_CLIENT_SECRET, GRAPH_MAILBOX. Never commit these.
+#
+# The scheduled Graph run is intentionally paused because this account does not
+# currently have the required Azure/Microsoft Graph setup. The live operator path
+# is a Microsoft Power Automate digest from Outlook folder "Procurement Alerts"
+# to beford@silverlinesleep.com; see docs/email_ingest_setup.md.
 
 on:
-  schedule:
-    # Mondays 13:30 UTC = 08:30 Houston CDT (30 min after the SAM ingest).
-    - cron: '30 13 * * 1'
   workflow_dispatch:
 
 permissions:
@@ -127,11 +128,11 @@ jobs:
           # Stage both relevance-routed CSVs; `git add` on an unchanged file is
           # a no-op, and the step only runs when at least one of them changed.
           git add bids/active/_pipeline.csv leads/review/_lead_radar.csv
-          git commit -m "Weekly portal email-alert ingest (${SCOPE}): ${TODAY}"
+          git commit -m "Twice-weekly portal email-alert ingest (${SCOPE}): ${TODAY}"
           git push -u origin "$BRANCH"
 
           cat > /tmp/pr_body.md <<'EOF'
-          Automated weekly portal email-alert ingest (state/local + cooperative funnel). **Human triage required before merge.**
+          Automated twice-weekly portal email-alert ingest (state/local + cooperative funnel). **Human triage required before merge.**
 
           **This run updated: __SCOPE__.**
 
@@ -173,7 +174,7 @@ jobs:
           sed -i "s|__RUN_NUMBER__|${RUN_NUMBER}|g" /tmp/pr_body.md
 
           gh pr create \
-            --title "Weekly portal email-alert ingest (${SCOPE}): ${TODAY}" \
+            --title "Twice-weekly portal email-alert ingest (${SCOPE}): ${TODAY}" \
             --body-file /tmp/pr_body.md \
             --base main \
             --head "$BRANCH"

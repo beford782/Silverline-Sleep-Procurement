@@ -277,9 +277,10 @@ stdlib `urllib`: **Outlook / Microsoft 365 via the Microsoft Graph API**
 (`--provider gmail`).
 
 > **Recommended operator path (no Azure admin):** route the portal alerts
-> to a Gmail address and ingest via `--provider gmail` (or an on-demand
-> assistant sweep). The Graph backend needs a tenant-admin Mail.Read
-> consent; see [`docs/email_ingest_setup.md`](docs/email_ingest_setup.md).
+> through the Microsoft Power Automate digest described in
+> [`docs/email_ingest_setup.md`](docs/email_ingest_setup.md). The Graph backend
+> needs tenant-admin Mail.Read consent and is paused unless that strategy is
+> explicitly reopened.
 
 ```sh
 # Offline / test (no creds, no network)
@@ -313,13 +314,12 @@ Behavior:
   for Graph, or a Gmail OAuth token) is in
   [`docs/email_ingest_setup.md`](docs/email_ingest_setup.md).
 
-**Scheduled run.** `.github/workflows/weekly_email_ingest.yml` runs every
-Monday and Thursday at 13:30 UTC and on manual `workflow_dispatch`, ingests (Graph),
-re-scores, runs the repo checks, and opens a PR for human triage if the
-active pipeline or Lead Radar changed. It never auto-archives, auto-submits,
-or pushes to `main`. Requires the `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`,
-`GRAPH_CLIENT_SECRET`, and `GRAPH_MAILBOX` repo secrets; it fails fast if any
-are missing.
+**Graph fallback.** `.github/workflows/weekly_email_ingest.yml` is currently
+manual-only because the scheduled Graph run requires Azure/Microsoft Graph
+secrets that are not available. The live operator path is the Power Automate
+digest in [`docs/email_ingest_setup.md`](docs/email_ingest_setup.md). If Graph
+is re-enabled later, the workflow ingests, re-scores, runs the repo checks, and
+opens a PR for human triage if the active pipeline or Lead Radar changed.
 
 ### 9. RSS/feed ingestion (Bonfire portals, etc.)
 

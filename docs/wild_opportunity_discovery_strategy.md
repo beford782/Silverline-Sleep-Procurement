@@ -166,6 +166,20 @@ Vocabulary aligned to `tools/relevance.py` tiers. Append the guardrail negatives
 
 **Commodity codes for portal filters:** NIGP `205` (bedding/mattresses), `420` (dormitory/household furniture); NAICS `337910` (mattress mfg), `337127` (institutional furniture); PSC `7210` (household furnishings), `7105` (household furniture).
 
+### Federal direct lane — SAM.gov saved search (added 2026-06-24)
+
+The query bank above is tuned for state/local/co-op portals. **Federal-direct demand is a separate, proven lane** that the 2026-06-24 scan confirmed is recurring and currently underserved: in a single week the funnel surfaced two genuine federal mattress fits (USCG Base Boston `37010PR260000078`; JBSA `FA301626Q0151`), and recurring federal buyers are now tracked in Lead Radar (VA/VHA, Bureau of Prisons, Army/DoD barracks).
+
+> **HARD GATE:** every federal-direct opportunity is **UEI-gated** — you cannot submit a federal offer without an active SAM.gov / UEI registration, which is **paused** pending incorporation docs. Until the UEI is issued, federal fits are forced no-bids (as USCG Boston already was). This lane's payoff is realized only after the UEI lands; set the alerts now so there is a ready queue then.
+
+**Repeatable monitoring recipe (free; no BidNet/HigherGov paywall needed):**
+1. SAM.gov → **Search → Contract Opportunities**.
+2. Filters: **NAICS `337910`** (Mattress Manufacturing) and/or **PSC `7210`** (Household Furnishings); **Status = Active** only; optionally add **NAICS `337127`** (institutional furniture) and **PSC `7105`** to widen.
+3. **Save the search and create an email alert** (requires a free SAM.gov login) so new federal mattress/bed solicitations arrive without manual sweeps.
+4. Recurring buyers to also alert by name: **VA / VHA (multiple VISNs)**, **DOJ Bureau of Prisons (FCIs)**, **Army MICC / AETC base contracting (barracks & billeting)**.
+
+> Note for automated agents: SAM.gov and HigherGov opportunity lists are **JS-rendered and not reliably web-search-indexed** — a live open-opportunity list cannot be enumerated via `WebFetch`/`WebSearch`. The authoritative live list requires the interactive SAM.gov saved search above (operator task).
+
 ### Guardrails (false-positive suppression — append on web/Alert queries)
 ```
 -"air mattress" -"air bed" -inflatable -concrete -"articulated concrete" -scour -gabion -"erosion control" -recycling -disposal -reupholster -reupholstery -refinish -aircraft -aviation

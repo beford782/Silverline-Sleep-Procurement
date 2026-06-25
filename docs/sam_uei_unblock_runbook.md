@@ -3,15 +3,24 @@
 - **For:** Blake / Continental Silverline (Houston, TX)
 - **Date:** 2026-06-24
 - **Type:** Operator runbook (docs only). No code, no CSV writes, no PII stored here.
-- **Goal:** Clear the SAM.gov **Entity Validation** failure so the **UEI is issued** and federal registration can complete. This is the single highest-leverage unblock — see [`wild_opportunity_discovery_strategy.md`](wild_opportunity_discovery_strategy.md) §"Federal direct lane".
+- **Goal:** Finish the full SAM.gov **Entity Registration** after the UEI was issued. This is the single highest-leverage federal unlock — see [`wild_opportunity_discovery_strategy.md`](wild_opportunity_discovery_strategy.md) §"Federal direct lane".
 
-> **Why this matters now.** The funnel is already catching genuine federal mattress fits (USCG Base Boston `37010PR260000078`; JBSA `FA301626Q0151`), but every one is a **forced no-bid** until an active UEI exists — you cannot submit a federal offer without it. Resolving validation converts captured demand into bid-eligible opportunities.
+> **Why this matters now.** The funnel is already catching genuine federal mattress fits (USCG Base Boston `37010PR260000078`; JBSA `FA301626Q0151`). UEI assignment removed the first hard blocker, but federal offers still generally require the full SAM entity registration to be active.
+
+## 0. Current SAM.gov status (updated 2026-06-24)
+
+- **UEI assigned:** `XF73FG8CVMX1`
+- **SAM entity display:** `CONTINENTAL SILVERLINE PRODUCTS, L.P.`
+- **Entity registration type:** All Awards
+- **Taxpayer Information:** submitted to IRS verification; SAM shows "May Require Review; Avg. 2-5 Days."
+- **Financial Information:** still in progress.
+- **Do not treat as bid-ready yet:** wait until SAM shows the entity registration active / complete.
 
 ---
 
-## 1. Diagnosis (confirmed 2026-06-24)
+## 1. UEI unblock history (confirmed 2026-06-24)
 
-The UEI is free and instant; the wall is **Entity Validation (EVS)**. SAM's automated match failed, so it requires uploaded documents proving **four** data points, which must **exactly** match what you type into SAM:
+The UEI was issued on 2026-06-24 after the entity validation/start-date blocker was cleared. Keep this section only as audit trail for future renewals or if SAM requests validation support again.
 
 | Data point | Status | Document that proves it |
 |---|---|---|
@@ -20,11 +29,11 @@ The UEI is free and instant; the wall is **Entity Validation (EVS)**. SAM's auto
 | **Start year** | ❌ **gap** | **TX Secretary of State formation record** (see §2) |
 | **State of incorporation** | ❌ **gap** | Same TX SOS record (shows TX) |
 
-Confirmed facts: "Continental Silverline" is a **formally registered TX entity under that exact legal name** (no brand-vs-legal-name mismatch), and SAM is **stuck at validation asking for documents**. So the only missing artifact is the **state formation record** — which is exactly the "incorporation / legal-start-year documentation" the blocker has always referred to.
+Confirmed result: SAM assigned UEI `XF73FG8CVMX1` for `CONTINENTAL SILVERLINE PRODUCTS, L.P.` at the Houston street address. The remaining work is the full registration checklist, especially IRS taxpayer verification and financial/payment information.
 
 ---
 
-## 2. The one missing document — get the TX SOS formation record
+## 2. If SAM asks again: TX SOS formation record
 
 Because the entity is a formed TX LLC/corporation, its formation record is public. Two ways to obtain an acceptable document:
 
@@ -40,7 +49,7 @@ Because the entity is a formed TX LLC/corporation, its formation record is publi
 
 ---
 
-## 3. Submit the validation (exact steps)
+## 3. Historical validation steps
 
 1. Sign in at <https://sam.gov> with the Login.gov account → **Entity Management / Get Started**.
 2. In **Entity Validation**, if your entity isn't matched, choose **"I don't see my entity / my information is different"** to open an **incidental validation ticket**.

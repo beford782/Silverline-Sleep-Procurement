@@ -414,6 +414,35 @@ class PipelineCliTests(unittest.TestCase):
         self.assertEqual(rows_after[0]["fit_score"], "50")
         self.assertEqual(rows_after[0]["risk_level"], "medium")
 
+    def test_score_only_created_date_limits_updates(self) -> None:
+        old_row = self._base_add_args(
+            opportunity_id="old-row",
+            title="Mattresses",
+            created_date="2026-06-24",
+            last_reviewed="2026-06-24",
+        )
+        new_row = self._base_add_args(
+            opportunity_id="new-row",
+            title="Mattresses",
+            created_date="2026-06-25",
+            last_reviewed="2026-06-25",
+        )
+        self._run(*old_row)
+        self._run(*new_row)
+
+        rc, _, err = self._run(
+            "--active", str(self.active), "--archive", str(self.archive),
+            "score", "--only-created-date", "2026-06-25",
+        )
+        self.assertEqual(rc, 0, err)
+        _, rows_after = _read_csv(self.active)
+        by_id = {r["opportunity_id"]: r for r in rows_after}
+        self.assertEqual(by_id["old-row"]["fit_score"], "")
+        self.assertEqual(by_id["old-row"]["risk_level"], "")
+        self.assertEqual(by_id["old-row"]["last_reviewed"], "2026-06-24")
+        self.assertEqual(by_id["new-row"]["fit_score"], "50")
+        self.assertEqual(by_id["new-row"]["risk_level"], "medium")
+
     def test_score_dry_run_does_not_mutate(self) -> None:
         argv = [
             "--active", str(self.active), "--archive", str(self.archive),

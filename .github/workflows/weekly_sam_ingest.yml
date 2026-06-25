@@ -70,7 +70,9 @@ jobs:
 
       - name: Re-score active pipeline
         if: steps.ingest_diff.outputs.changed == 'true'
-        run: python tools/pipeline.py score
+        env:
+          POSTED_TO: ${{ steps.window.outputs.posted_to }}
+        run: python tools/pipeline.py score --only-created-date "$POSTED_TO"
 
       - name: Run repository checks before PR creation
         if: steps.ingest_diff.outputs.changed == 'true'

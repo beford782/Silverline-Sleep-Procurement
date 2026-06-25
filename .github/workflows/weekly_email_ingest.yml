@@ -63,10 +63,38 @@ jobs:
         run: |
           python tools/ingest_email.py --provider graph --graph-folder "Procurement Alerts" --since-days 8
 
+      - name: Detect whether ingest changed active pipeline or Lead Radar
+        id: ingest_diff
+        run: |
+          active_changed=false
+          leads_changed=false
+          git diff --quiet -- bids/active/_pipeline.csv || active_changed=true
+          git diff --quiet -- leads/review/_lead_radar.csv || leads_changed=true
+
+          changed=false
+          if [ "$active_changed" = "true" ] || [ "$leads_changed" = "true" ]; then
+            changed=true
+          fi
+
+          {
+            echo "active_changed=$active_changed"
+            echo "leads_changed=$leads_changed"
+            echo "changed=$changed"
+          } >> "$GITHUB_OUTPUT"
+
+          if [ "$changed" = "true" ]; then
+            echo "Email ingest changed CSVs before scoring."
+            git --no-pager diff --stat -- bids/active/_pipeline.csv leads/review/_lead_radar.csv
+          else
+            echo "Email ingest added no active or Lead Radar rows."
+          fi
+
       - name: Re-score active pipeline
-        run: python tools/pipeline.py score
+        if: steps.ingest_diff.outputs.active_changed == 'true'
+        run: python tools/pipeline.py score --only-created-date "$(date -u +%F)"
 
       - name: Run repository checks before PR creation
+        if: steps.ingest_diff.outputs.changed == 'true'
         run: |
           python -m compileall -q tools tests
           python -m unittest discover -s tests

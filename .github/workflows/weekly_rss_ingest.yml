@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   ingest:
-    name: Ingest feeds, score, open PR if active changed
+    name: Ingest feeds, score, open PR if active or Lead Radar changed
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -33,10 +33,38 @@ jobs:
       - name: Run RSS/feed ingest (configs/feeds.json)
         run: python tools/ingest_rss.py --feeds-config configs/feeds.json
 
+      - name: Detect whether ingest changed active pipeline or Lead Radar
+        id: ingest_diff
+        run: |
+          active_changed=false
+          leads_changed=false
+          git diff --quiet -- bids/active/_pipeline.csv || active_changed=true
+          git diff --quiet -- leads/review/_lead_radar.csv || leads_changed=true
+
+          changed=false
+          if [ "$active_changed" = "true" ] || [ "$leads_changed" = "true" ]; then
+            changed=true
+          fi
+
+          {
+            echo "active_changed=$active_changed"
+            echo "leads_changed=$leads_changed"
+            echo "changed=$changed"
+          } >> "$GITHUB_OUTPUT"
+
+          if [ "$changed" = "true" ]; then
+            echo "RSS ingest changed CSVs before scoring."
+            git --no-pager diff --stat -- bids/active/_pipeline.csv leads/review/_lead_radar.csv
+          else
+            echo "RSS ingest added no active or Lead Radar rows."
+          fi
+
       - name: Re-score active pipeline
-        run: python tools/pipeline.py score
+        if: steps.ingest_diff.outputs.active_changed == 'true'
+        run: python tools/pipeline.py score --only-created-date "$(date -u +%F)"
 
       - name: Run repository checks before PR creation
+        if: steps.ingest_diff.outputs.changed == 'true'
         run: |
           python -m compileall -q tools tests
           python -m unittest discover -s tests
@@ -44,16 +72,41 @@ jobs:
           python tools/workflow_check.py
           python tools/dashboard.py --show summary
 
-      - name: Detect whether active pipeline changed
+      - name: Detect whether active pipeline or Lead Radar changed
         id: diff
         run: |
-          if git diff --quiet -- bids/active/_pipeline.csv; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "Active pipeline unchanged - no PR will be opened."
+          active_changed=false
+          leads_changed=false
+          git diff --quiet -- bids/active/_pipeline.csv || active_changed=true
+          git diff --quiet -- leads/review/_lead_radar.csv || leads_changed=true
+
+          changed=false
+          if [ "$active_changed" = "true" ] || [ "$leads_changed" = "true" ]; then
+            changed=true
+          fi
+
+          if [ "$active_changed" = "true" ] && [ "$leads_changed" = "true" ]; then
+            scope="active bids + Lead Radar"
+          elif [ "$active_changed" = "true" ]; then
+            scope="active bids"
+          elif [ "$leads_changed" = "true" ]; then
+            scope="Lead Radar"
           else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "Active pipeline has changes - will open PR."
-            git --no-pager diff --stat -- bids/active/_pipeline.csv
+            scope="none"
+          fi
+
+          {
+            echo "active_changed=$active_changed"
+            echo "leads_changed=$leads_changed"
+            echo "changed=$changed"
+            echo "scope=$scope"
+          } >> "$GITHUB_OUTPUT"
+
+          if [ "$changed" = "true" ]; then
+            echo "Changes detected ($scope) - will open PR."
+            git --no-pager diff --stat -- bids/active/_pipeline.csv leads/review/_lead_radar.csv
+          else
+            echo "No active-pipeline or Lead Radar changes - no PR will be opened."
           fi
 
       - name: Open PR with new rows
@@ -62,23 +115,28 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_NUMBER: ${{ github.run_number }}
           EVENT_NAME: ${{ github.event_name }}
+          SCOPE: ${{ steps.diff.outputs.scope }}
         run: |
           TODAY=$(date -u +%F)
           BRANCH="auto/rss-ingest-${TODAY}-${RUN_NUMBER}"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git checkout -b "$BRANCH"
-          git add bids/active/_pipeline.csv
-          git commit -m "Twice-weekly RSS/feed ingest: ${TODAY}"
+          git add bids/active/_pipeline.csv leads/review/_lead_radar.csv
+          git commit -m "Twice-weekly RSS/feed ingest (${SCOPE}): ${TODAY}"
           git push -u origin "$BRANCH"
 
           cat > /tmp/pr_body.md <<'EOF'
           Automated twice-weekly RSS/feed ingest (Bonfire portal feeds, etc.), filtered by tools/relevance.py. **Human triage required before merge.**
 
+          **This run updated: __SCOPE__.**
+
           ## Reviewer checklist
           1. Open `bids/active/_pipeline.csv`; review each new row. Items flagged `HUMAN: confirm mattress scope` need a look on the portal.
-          2. Archive out-of-scope rows with `python tools/pipeline.py move-to-archive <id> --status no-bid --next-action "No-bid archived" --note "<reason>"`, then amend this PR.
-          3. Refine/assign owners on the keepers and merge.
+          2. Open `leads/review/_lead_radar.csv`; review each new broad/ambiguous upstream signal before promotion.
+          3. Archive out-of-scope active rows with `python tools/pipeline.py move-to-archive <id> --status no-bid --next-action "No-bid archived" --note "<reason>"`, then amend this PR.
+          4. Archive dead Lead Radar rows with `python tools/lead_radar.py archive <lead-id> --status no-fit --note "<reason>"`.
+          5. Refine/assign owners on the keepers and merge.
 
           ## CI note
           Commits authored by `GITHUB_TOKEN` do not trigger PR-event workflows. Push a follow-up commit or use "Re-run all checks".
@@ -86,11 +144,12 @@ jobs:
           ---
           Triggered by: `__EVENT_NAME__` (run #__RUN_NUMBER__).
           EOF
+          sed -i "s|__SCOPE__|${SCOPE}|g" /tmp/pr_body.md
           sed -i "s|__EVENT_NAME__|${EVENT_NAME}|g" /tmp/pr_body.md
           sed -i "s|__RUN_NUMBER__|${RUN_NUMBER}|g" /tmp/pr_body.md
 
           gh pr create \
-            --title "Twice-weekly RSS/feed ingest: ${TODAY}" \
+            --title "Twice-weekly RSS/feed ingest (${SCOPE}): ${TODAY}" \
             --body-file /tmp/pr_body.md \
             --base main \
             --head "$BRANCH"
@@ -98,7 +157,7 @@ jobs:
       - name: Summary
         run: |
           if [ "${{ steps.diff.outputs.changed }}" = "true" ]; then
-            echo "RSS ingest opened a PR for human triage."
+            echo "RSS ingest opened a PR for human triage (scope: ${{ steps.diff.outputs.scope }})."
           else
             echo "RSS ingest ran clean - no new rows, no PR."
           fi

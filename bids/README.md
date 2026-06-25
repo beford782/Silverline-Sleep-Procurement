@@ -81,6 +81,7 @@ python tools/pipeline.py summary
 # Recompute fit_score; fill blank risk_level unless explicitly overwriting
 python tools/pipeline.py score --dry-run
 python tools/pipeline.py score   # apply
+python tools/pipeline.py score --only-created-date 2026-06-25   # automation-safe scope
 
 # Check for CSV/markdown/status drift
 python tools/workflow_check.py

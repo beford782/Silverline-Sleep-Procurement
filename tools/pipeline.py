@@ -155,6 +155,14 @@ def _validate_date(value: str, field: str) -> None:
         raise ValueError(f"{field}: expected YYYY-MM-DD, got {value!r} ({exc})") from exc
 
 
+def _parse_iso_date(value: str) -> str:
+    try:
+        _validate_date(value, "date")
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from exc
+    return value
+
+
 def _validate_fit_score(value: int | None) -> None:
     """Raise ValueError if fit_score is present and outside 0..100."""
     if value is None:
@@ -414,6 +422,8 @@ def cmd_score(args: argparse.Namespace) -> int:
 
     updates: list[tuple[dict, int, str, str, str]] = []
     for row in rows:
+        if args.only_created_date and row.get("created_date") != args.only_created_date:
+            continue
         text_blob = " ".join(
             row.get(field, "") or ""
             for field in ("title", "primary_products", "commodity_terms")
@@ -562,6 +572,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_score = sub.add_parser("score", help="Recompute fit_score; fill blank risk_level unless told to overwrite.")
     p_score.set_defaults(func=cmd_score)
     p_score.add_argument("--dry-run", action="store_true", help="Show changes without writing.")
+    p_score.add_argument(
+        "--only-created-date",
+        type=_parse_iso_date,
+        default="",
+        help="Only score rows with this created_date (YYYY-MM-DD), useful for ingest automation.",
+    )
     p_score.add_argument(
         "--overwrite-risk",
         action="store_true",

@@ -291,7 +291,7 @@ class PipelineCliTests(unittest.TestCase):
         )
         self.assertEqual(risk, "high")
 
-    def test_score_updates_fit_score_and_risk(self) -> None:
+    def test_score_updates_fit_score_and_fills_blank_risk(self) -> None:
         argv = [
             "--active", str(self.active), "--archive", str(self.archive),
             "add", "--source", "Texas ESBD", "--buyer", "Harris County",
@@ -311,6 +311,64 @@ class PipelineCliTests(unittest.TestCase):
         self.assertNotEqual(rows_after[0]["fit_score"], "")
         self.assertNotEqual(rows_after[0]["risk_level"], "")
         self.assertIn(rows_after[0]["risk_level"], ("low", "medium", "high"))
+
+    def test_score_preserves_existing_risk_level_by_default(self) -> None:
+        argv = [
+            "--active", str(self.active), "--archive", str(self.archive),
+            "add", "--source", "SAM.gov", "--buyer", "Air Force",
+            "--solicitation-number", "FA-100",
+            "--title", "Twin mattresses, box spring, bed frame, cot, dormitory",
+            "--primary-products", "mattresses, box spring, bed frame",
+            "--commodity-terms", "mattress, bedding",
+            "--risk-level", "high",
+        ]
+        self._run(*argv)
+
+        rc, _, err = self._run("--active", str(self.active), "--archive", str(self.archive), "score")
+        self.assertEqual(rc, 0, err)
+        _, rows_after = _read_csv(self.active)
+        self.assertEqual(rows_after[0]["fit_score"], "100")
+        self.assertEqual(rows_after[0]["risk_level"], "high")
+
+    def test_score_overwrite_risk_flag_replaces_existing_risk_level(self) -> None:
+        argv = [
+            "--active", str(self.active), "--archive", str(self.archive),
+            "add", "--source", "SAM.gov", "--buyer", "Air Force",
+            "--solicitation-number", "FA-101",
+            "--title", "Twin mattresses, box spring, bed frame, cot, dormitory",
+            "--primary-products", "mattresses, box spring, bed frame",
+            "--commodity-terms", "mattress, bedding",
+            "--risk-level", "high",
+        ]
+        self._run(*argv)
+
+        rc, _, err = self._run(
+            "--active", str(self.active), "--archive", str(self.archive),
+            "score", "--overwrite-risk",
+        )
+        self.assertEqual(rc, 0, err)
+        _, rows_after = _read_csv(self.active)
+        self.assertEqual(rows_after[0]["fit_score"], "100")
+        self.assertEqual(rows_after[0]["risk_level"], "low")
+
+    def test_score_ignores_operator_notes(self) -> None:
+        argv = [
+            "--active", str(self.active), "--archive", str(self.archive),
+            "add", "--source", "SAM.gov", "--buyer", "Air Force",
+            "--solicitation-number", "FA-102",
+            "--title", "Mattresses",
+            "--notes", (
+                "Procurement caution: SAM registration pending, aircraft base access, "
+                "liquidated damages, nationwide delivery, overseas delivery."
+            ),
+        ]
+        self._run(*argv)
+
+        rc, _, err = self._run("--active", str(self.active), "--archive", str(self.archive), "score")
+        self.assertEqual(rc, 0, err)
+        _, rows_after = _read_csv(self.active)
+        self.assertEqual(rows_after[0]["fit_score"], "50")
+        self.assertEqual(rows_after[0]["risk_level"], "medium")
 
     def test_score_dry_run_does_not_mutate(self) -> None:
         argv = [

@@ -11,7 +11,7 @@ Subcommands:
     list             Print the active pipeline sorted by due_date (blank dates last).
     add              Append a new opportunity row.
     summary          Counts by status, source, and risk_level.
-    score            Recompute fit_score and risk_level from text columns.
+    score            Recompute fit_score; fill blank risk_level unless told to overwrite.
     move-to-archive  Move a row from active to archive.
 
 Stdlib only. No third-party dependencies.
@@ -374,15 +374,16 @@ def cmd_score(args: argparse.Namespace) -> int:
     active = Path(args.active)
     _, rows = read_rows(active)
 
-    updates: list[tuple[dict, int, str, int, str]] = []
+    updates: list[tuple[dict, int, str, str, str]] = []
     for row in rows:
         text_blob = " ".join(
             row.get(field, "") or ""
-            for field in ("title", "primary_products", "commodity_terms", "notes")
+            for field in ("title", "primary_products", "commodity_terms")
         )
-        new_score, new_risk, _detail = score_text(text_blob)
+        new_score, suggested_risk, _detail = score_text(text_blob)
         old_score = row.get("fit_score") or ""
         old_risk = row.get("risk_level") or ""
+        new_risk = suggested_risk if args.overwrite_risk or not old_risk else old_risk
         if str(new_score) != old_score or new_risk != old_risk:
             updates.append((row, new_score, new_risk, old_score, old_risk))
 
@@ -517,9 +518,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_sum = sub.add_parser("summary", help="Counts by status, source, and risk_level.")
     p_sum.set_defaults(func=cmd_summary)
 
-    p_score = sub.add_parser("score", help="Recompute fit_score and risk_level from text columns.")
+    p_score = sub.add_parser("score", help="Recompute fit_score; fill blank risk_level unless told to overwrite.")
     p_score.set_defaults(func=cmd_score)
     p_score.add_argument("--dry-run", action="store_true", help="Show changes without writing.")
+    p_score.add_argument(
+        "--overwrite-risk",
+        action="store_true",
+        help="Also replace existing risk_level values with the scorer's suggestion.",
+    )
 
     p_arc = sub.add_parser("move-to-archive", help="Move a row from active to archive.")
     p_arc.set_defaults(func=cmd_move_to_archive)

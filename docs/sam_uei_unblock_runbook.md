@@ -7,15 +7,17 @@
 
 > **Why this matters now.** The funnel is already catching genuine federal mattress fits (USCG Base Boston `37010PR260000078`; JBSA `FA301626Q0151`). UEI assignment removed the first hard blocker, but federal offers still generally require the full SAM entity registration to be active.
 
-## 0. Current SAM.gov status (updated 2026-06-24)
+## 0. Current SAM.gov status (updated 2026-06-25)
 
 - **UEI assigned:** `XF73FG8CVMX1`
 - **SAM entity display:** `CONTINENTAL SILVERLINE PRODUCTS, L.P.`
 - **Entity registration type:** All Awards
+- **Business / Business Types / Reps & Certs / Points of Contact:** Complete.
 - **Taxpayer Information:** submitted to IRS verification; SAM shows "May Require Review; Avg. 2-5 Days."
-- **Financial Information:** still in progress.
+- **Financial Information (EFT/banking):** **the last open section — this is the resume point.** Complete it per **§6** below.
+- **CAGE code:** auto-requested by SAM/DLA during registration; may take a few business days to assign (a registration cannot go Active without it).
 - **Saved-search notifications:** enabled for NAICS `337910` Active, PSC `7210` Active, and keyword `mattress` Active.
-- **Do not treat as bid-ready yet:** wait until SAM shows the entity registration active / complete.
+- **Do not treat as bid-ready yet:** wait until SAM shows the entity registration **Active**.
 
 ---
 
@@ -85,7 +87,73 @@ Because the entity is a formed TX LLC/corporation, its formation record is publi
 
 ---
 
-## 6. Sources
+## 6. Finish the Financial / EFT section (the last step) → Active
+
+This is the **resume point** as of 2026-06-25. Everything else is Complete; the
+Financial Information section is what's left, after which the registration is
+submitted and works toward **Active**. Banking entry is **operator-only** — the
+values below are not stored in this repo (PII rule); have them in hand before
+you start.
+
+### 7a. Have these ready (from operator records — do NOT commit)
+| Item | Notes |
+|---|---|
+| **ABA routing number** | 9-digit routing for the business bank account |
+| **Account number** | Business **checking** (or savings) account in the **legal entity name** (`CONTINENTAL SILVERLINE PRODUCTS, L.P.`) |
+| **Account type** | Checking or Savings |
+| **ACH / EFT bank contact** | The bank's ACH dept U.S. phone + email (SAM's EFT block asks for an ACH point of contact) |
+| **Remittance name + address** | Where paper remittance would go if EFT fails — the L.P.'s name + Houston street address (no P.O. box) |
+| **EIN + exact legal name** | Must match the IRS letter for the TIN match already in progress |
+
+### 7b. Steps
+1. Sign in at <https://sam.gov> → **Workspace → Entity Management** → open the
+   `CONTINENTAL SILVERLINE PRODUCTS, L.P.` registration → **Financial Information**.
+2. **Electronic Funds Transfer (EFT):** enter **ABA routing number**, **account
+   number**, and **account type**. Double-check digits — a transposed routing/
+   account number means federal payments fail.
+3. **ACH / Automated Clearing House contact:** enter the bank's ACH dept U.S.
+   phone and email (or the company's accounts-receivable contact if SAM accepts
+   that). Fax is optional.
+4. **Remittance address:** enter the L.P.'s remittance name + street address.
+5. **Accounts Receivable POC** (if prompted in this section): the L.P.'s AR
+   contact — name, address, phone, email.
+6. **Review → Submit** the entire registration.
+
+### 7c. What happens after submit (and what "done" looks like)
+1. Registration moves to **Submitted / Processing**.
+2. **IRS TIN match** must clear (the 2–5 day item already pending) — legal name
+   + EIN must match IRS records exactly, or it bounces back as "needs review."
+3. **CAGE code** is assigned by DLA (a few business days). The registration
+   **cannot go Active without it** — this is the most common "why is it still
+   not Active?" cause; it's normal, just wait.
+4. When all three clear, SAM status flips to **Active** with an expiration date
+   (~12 months; SAM requires **annual renewal**). **Only then is the entity
+   award-eligible** — i.e., a federal offer can actually be submitted.
+
+### 7d. Common Financial-section delay/rejection traps
+- **TIN/name mismatch** with the IRS — the #1 Active blocker. The name on SAM
+  must match the EIN letter character-for-character.
+- **Bank account not in the legal entity's name** — use the L.P.'s account, not
+  a personal or DBA-only account.
+- **Routing/account typo** — silently breaks payment, not registration; verify
+  against a voided check or bank letter.
+- **Expecting instant Active after submit** — CAGE + TIN match add days. Don't
+  read "Submitted" as a failure.
+
+### 7e. The moment it goes Active — do these
+- Flip the **SAM.gov row in [`active_registrations.md`](active_registrations.md)**
+  from `🟡 UEI assigned, registration in progress` to `✅ active`, and record the
+  **CAGE code** + registration expiration date (tell me; I'll do the doc PR).
+- **Re-evaluate live federal fits** in `leads/review/_lead_radar.csv` (VA/VHA,
+  Bureau of Prisons, Army/DoD barracks) — these become submittable.
+- Note: **JBSA `FA301626Q0151`** (due **2026-07-01**) is almost certainly too
+  soon — the UEI/registration work positions for the **next** recurring federal
+  mattress bid, not this one. (The overseas `FA568226QA053` was already a
+  structural no-bid, archived 2026-06-25.)
+
+---
+
+## 7. Sources
 
 - SAM.gov Entity Validation: <https://sam.gov/entity-registration> · <https://sam.gov/alerts/entity-validation-0>
 - SAM.gov Entity Registration Checklist (PDF): <https://sam.gov/sites/default/files/2024-11/entity-checklist.pdf>

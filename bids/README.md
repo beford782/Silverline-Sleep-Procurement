@@ -75,10 +75,10 @@ python tools/pipeline.py list
 # Review active-work priorities
 python tools/dashboard.py
 
-# Counts by status, source, risk_level
+# Counts by status, source, product risk, and procurement gate fields
 python tools/pipeline.py summary
 
-# Recompute fit_score and risk_level from text columns
+# Recompute fit_score; fill blank risk_level unless explicitly overwriting
 python tools/pipeline.py score --dry-run
 python tools/pipeline.py score   # apply
 

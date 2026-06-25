@@ -10,7 +10,7 @@ header defined in templates/opportunity_tracker.csv.
 Subcommands:
     list             Print the active pipeline sorted by due_date (blank dates last).
     add              Append a new opportunity row.
-    summary          Counts by status, source, and risk_level.
+    summary          Counts by status, source, risk_level, and procurement_risk.
     score            Recompute fit_score; fill blank risk_level unless told to overwrite.
     move-to-archive  Move a row from active to archive.
 
@@ -59,12 +59,17 @@ CANONICAL_HEADER = [
     "created_date",
     "last_reviewed",
     "notes",
+    "procurement_risk",
+    "gate_status",
+    "compliance_blocker",
 ]
 
 DATE_FIELDS = ("posted_date", "question_deadline", "due_date", "created_date", "last_reviewed")
 
 STATUS_VALUES = ("watching", "drafting", "submitted", "awarded", "lost", "no-bid", "cancelled")
 RISK_LEVEL_VALUES = ("low", "medium", "high")
+PROCUREMENT_RISK_VALUES = ("low", "medium", "high", "blocker")
+GATE_STATUS_VALUES = ("triage", "blocked", "bid_ready", "drafting", "submitted", "closed")
 
 # Keyword vocabularies used by the `score` subcommand. Kept transparent
 # and tunable here — no ML.
@@ -159,13 +164,19 @@ def _validate_fit_score(value: int | None) -> None:
 
 
 def read_rows(path: Path) -> tuple[list[str], list[dict]]:
-    """Return (header, rows) for a pipeline CSV. Header must match CANONICAL_HEADER."""
+    """Return (header, rows) for a pipeline CSV.
+
+    Older pipeline CSVs may be missing newly appended optional columns.
+    Those are accepted and normalized to blank values in memory; unknown
+    or reordered columns still fail because that can corrupt operator data.
+    """
     if not path.exists():
         raise FileNotFoundError(f"pipeline file not found: {path}")
     with path.open("r", encoding="utf-8", newline="") as fh:
         reader = csv.DictReader(fh)
         header = list(reader.fieldnames or [])
-        if header != CANONICAL_HEADER:
+        expected_prefix = CANONICAL_HEADER[:len(header)]
+        if header != expected_prefix:
             raise ValueError(
                 f"{path}: header drifted from canonical.\n"
                 f"  got:      {header}\n"
@@ -213,7 +224,17 @@ def cmd_list(args: argparse.Namespace) -> int:
         print(f"(no rows in {active})")
         return 0
 
-    cols = ("opportunity_id", "status", "due_date", "fit_score", "risk_level", "buyer", "title")
+    cols = (
+        "opportunity_id",
+        "status",
+        "due_date",
+        "fit_score",
+        "risk_level",
+        "procurement_risk",
+        "gate_status",
+        "buyer",
+        "title",
+    )
     widths = {c: max(len(c), max((len(r.get(c, "")) for r in rows), default=0)) for c in cols}
     header_line = "  ".join(c.ljust(widths[c]) for c in cols)
     sep_line = "  ".join("-" * widths[c] for c in cols)
@@ -241,6 +262,18 @@ def cmd_add(args: argparse.Namespace) -> int:
     if args.risk_level and args.risk_level not in RISK_LEVEL_VALUES:
         print(
             f"error: risk_level {args.risk_level!r} not in {list(RISK_LEVEL_VALUES)}",
+            file=sys.stderr,
+        )
+        return 1
+    if args.procurement_risk and args.procurement_risk not in PROCUREMENT_RISK_VALUES:
+        print(
+            f"error: procurement_risk {args.procurement_risk!r} not in {list(PROCUREMENT_RISK_VALUES)}",
+            file=sys.stderr,
+        )
+        return 1
+    if args.gate_status and args.gate_status not in GATE_STATUS_VALUES:
+        print(
+            f"error: gate_status {args.gate_status!r} not in {list(GATE_STATUS_VALUES)}",
             file=sys.stderr,
         )
         return 1
@@ -308,6 +341,9 @@ def cmd_add(args: argparse.Namespace) -> int:
         "created_date": args.created_date or today,
         "last_reviewed": args.last_reviewed or today,
         "notes": args.notes or "",
+        "procurement_risk": args.procurement_risk or "",
+        "gate_status": args.gate_status or "",
+        "compliance_blocker": args.compliance_blocker or "",
     })
 
     if existing_idx is not None:
@@ -343,6 +379,8 @@ def cmd_summary(args: argparse.Namespace) -> int:
     print_counter("status", "status")
     print_counter("source", "source")
     print_counter("risk_level", "risk_level")
+    print_counter("procurement_risk", "procurement_risk")
+    print_counter("gate_status", "gate_status")
     return 0
 
 
@@ -508,6 +546,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_add.add_argument("--commodity-terms", default="")
     p_add.add_argument("--fit-score", type=int, default=None)
     p_add.add_argument("--risk-level", default="")
+    p_add.add_argument("--procurement-risk", default="")
+    p_add.add_argument("--gate-status", default="")
+    p_add.add_argument("--compliance-blocker", default="")
     p_add.add_argument("--next-action", default="")
     p_add.add_argument("--owner", default="")
     p_add.add_argument("--created-date", default="")

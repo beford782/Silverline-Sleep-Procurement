@@ -56,7 +56,17 @@ deliberately readable so they can be tuned to the institutional
 mattress vocabulary you actually see in solicitations.
 
 `fit_score` is numeric (`0` to `100`). `risk_level` is one of `low`,
-`medium`, or `high`.
+`medium`, or `high` and describes product/spec fit risk. Procurement
+readiness is tracked separately:
+
+- `procurement_risk`: `low`, `medium`, `high`, or `blocker`
+- `gate_status`: `triage`, `blocked`, `bid_ready`, `drafting`, `submitted`, or `closed`
+- `compliance_blocker`: semicolon-separated blocker tokens such as
+  `sam_registration_pending`, `portal_access_pending`, or `specs_pending`
+
+A strong product fit can still be blocked from bidding. For example,
+`fit_score=100` with `procurement_risk=blocker` means the opportunity is
+relevant, but a procurement gate must be cleared before bid work proceeds.
 
 ### Capture upstream leads (Lead Radar)
 

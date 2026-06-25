@@ -131,6 +131,12 @@ class DashboardTests(unittest.TestCase):
             [
                 _row("needs-score", fit_score="", risk_level=""),
                 _row("high-risk", fit_score="0", risk_level="high"),
+                _row(
+                    "blocked",
+                    risk_level="low",
+                    procurement_risk="blocker",
+                    compliance_blocker="sam_registration_pending",
+                ),
             ],
             today=date(2026, 6, 2),
             days=14,
@@ -143,6 +149,23 @@ class DashboardTests(unittest.TestCase):
         self.assertIn("needs-score", body)
         self.assertIn("High risk", body)
         self.assertIn("high-risk", body)
+        self.assertIn("blocked", body)
+        self.assertIn("sam_registration_pending", body)
+
+    def test_render_summary_counts_procurement_risk_and_gate_status(self) -> None:
+        body = dashboard.render_dashboard(
+            [_row("blocked", procurement_risk="blocker", gate_status="blocked")],
+            today=date(2026, 6, 2),
+            days=14,
+            stale_days=14,
+            draft_dir=self.draft_dir,
+            active_dir=self.active_dir,
+            show="summary",
+        )
+        self.assertIn("By procurement_risk", body)
+        self.assertIn("blocker: 1", body)
+        self.assertIn("By gate_status", body)
+        self.assertIn("blocked: 1", body)
 
     def test_render_drafts_ready_to_promote(self) -> None:
         (self.draft_dir / "ready-one_draft.md").write_text("# Ready\n", encoding="utf-8")

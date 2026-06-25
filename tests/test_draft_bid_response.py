@@ -155,6 +155,14 @@ class PureFunctionTests(unittest.TestCase):
         self.assertEqual(dbr.decision_suggestion(_opportunity(risk_level="low")), "bid")
         self.assertEqual(dbr.decision_suggestion(_opportunity(risk_level="medium")), "evaluate")
         self.assertEqual(dbr.decision_suggestion(_opportunity(risk_level="high")), "no-bid candidate")
+        self.assertEqual(
+            dbr.decision_suggestion(_opportunity(risk_level="low", procurement_risk="blocker")),
+            "blocked pending procurement gate",
+        )
+        self.assertEqual(
+            dbr.decision_suggestion(_opportunity(risk_level="low", procurement_risk="high")),
+            "evaluate procurement blocker",
+        )
         self.assertIn("TBD", dbr.decision_suggestion(_opportunity(risk_level="")))
 
     def test_past_performance_detection(self) -> None:
@@ -211,6 +219,9 @@ class CliTests(unittest.TestCase):
         self.assertIn("# Dormitory mattresses pilot", body)
         self.assertIn("Acme Mattress Co", body)
         self.assertIn("dormitory mattress", body)
+        self.assertIn("| Procurement risk |", body)
+        self.assertIn("| Gate status |", body)
+        self.assertIn("| Compliance blocker |", body)
         # Provenance line is rendered
         self.assertIn("Draft generated 2026-05-14", body)
         # Decision suggestion lands in section 7

@@ -106,9 +106,15 @@ def _needs_scoring(rows: list[dict]) -> list[str]:
 def _high_risk(rows: list[dict]) -> list[str]:
     out = []
     for row in rows:
-        if (row.get("risk_level") or "").strip().lower() == "high":
+        product_risk = (row.get("risk_level") or "").strip().lower()
+        procurement_risk = (row.get("procurement_risk") or "").strip().lower()
+        if product_risk == "high" or procurement_risk in {"high", "blocker"}:
             fit = (row.get("fit_score") or "-").strip()
-            out.append(f"fit {fit} - {_label(row)}{_owner_suffix(row)}")
+            blocker = (row.get("compliance_blocker") or "").strip()
+            risk_bits = [f"product {product_risk or '-'}", f"procurement {procurement_risk or '-'}"]
+            if blocker:
+                risk_bits.append(f"blocker {blocker}")
+            out.append(f"fit {fit}; {', '.join(risk_bits)} - {_label(row)}{_owner_suffix(row)}")
     return sorted(out)
 
 
@@ -156,6 +162,12 @@ def render_dashboard(
         summary.append("")
         summary.append("By risk_level:")
         summary.extend(_counter_lines(rows, "risk_level"))
+        summary.append("")
+        summary.append("By procurement_risk:")
+        summary.extend(_counter_lines(rows, "procurement_risk"))
+        summary.append("")
+        summary.append("By gate_status:")
+        summary.extend(_counter_lines(rows, "gate_status"))
         summary.append("")
         summary.append("By source:")
         summary.extend(_counter_lines(rows, "source"))

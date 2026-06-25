@@ -266,6 +266,11 @@ def has_past_performance(profile: dict) -> bool:
 
 
 def decision_suggestion(opportunity: dict) -> str:
+    procurement_risk = (opportunity.get("procurement_risk") or "").lower()
+    if procurement_risk == "blocker":
+        return "blocked pending procurement gate"
+    if procurement_risk == "high":
+        return "evaluate procurement blocker"
     risk = (opportunity.get("risk_level") or "").lower()
     if risk == "low":
         return "bid"
@@ -297,6 +302,9 @@ def render_draft(
     title = opportunity.get("title") or "(untitled)"
     fit_score = opportunity.get("fit_score") or "—"
     risk_level = opportunity.get("risk_level") or "—"
+    procurement_risk = opportunity.get("procurement_risk") or "—"
+    gate_status = opportunity.get("gate_status") or "—"
+    compliance_blocker = opportunity.get("compliance_blocker") or "—"
     estimated_value = opportunity.get("estimated_value") or "—"
     est_value_display = f"${estimated_value}" if estimated_value and estimated_value != "—" else "—"
 
@@ -332,6 +340,9 @@ def render_draft(
     lines.append(f"| Vendor | [{vendor_name}]({profile_md_rel}) |")
     lines.append(f"| Owner | {opportunity.get('owner') or '—'} |")
     lines.append(f"| Fit score | {fit_score} ({risk_level}) |")
+    lines.append(f"| Procurement risk | {procurement_risk} |")
+    lines.append(f"| Gate status | {gate_status} |")
+    lines.append(f"| Compliance blocker | {compliance_blocker} |")
     lines.append(f"| Estimated value | {est_value_display} |")
     lines.append("")
 
@@ -420,7 +431,8 @@ def render_draft(
     lines.append("## 7. Decision")
     lines.append("")
     lines.append(f"- **Suggested:** {decision_suggestion(opportunity)} "
-                 f"(based on risk_level = {risk_level or '—'})")
+                 f"(based on procurement_risk = {procurement_risk or '—'}, "
+                 f"risk_level = {risk_level or '—'})")
     lines.append("- **Reason:** _Operator: fill in._")
     lines.append("- **Next action:** _Operator: owner — task — due date._")
     lines.append("")

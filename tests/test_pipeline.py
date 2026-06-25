@@ -77,6 +77,28 @@ class HeaderParityTests(unittest.TestCase):
         self.assertEqual(active_header, pipeline.CANONICAL_HEADER)
         self.assertEqual(archive_header, pipeline.CANONICAL_HEADER)
 
+    def test_read_rows_accepts_legacy_header_and_fills_new_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "legacy.csv"
+            legacy_header = pipeline.CANONICAL_HEADER[:-3]
+            with path.open("w", encoding="utf-8", newline="") as fh:
+                writer = csv.DictWriter(fh, fieldnames=legacy_header, lineterminator="\n")
+                writer.writeheader()
+                writer.writerow({
+                    "opportunity_id": "legacy-one",
+                    "status": "watching",
+                    "source": "Legacy",
+                    "buyer": "Buyer",
+                    "title": "Mattresses",
+                })
+
+            header, rows = pipeline.read_rows(path)
+        self.assertEqual(header, legacy_header)
+        self.assertEqual(rows[0]["opportunity_id"], "legacy-one")
+        self.assertEqual(rows[0]["procurement_risk"], "")
+        self.assertEqual(rows[0]["gate_status"], "")
+        self.assertEqual(rows[0]["compliance_blocker"], "")
+
 
 class PipelineCliTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -170,6 +192,28 @@ class PipelineCliTests(unittest.TestCase):
         self.assertIn("risk_level", err)
         _, rows = _read_csv(self.active)
         self.assertEqual(rows, [])
+
+    def test_procurement_gate_fields_are_validated_and_written(self) -> None:
+        rc, _, err = self._run(*self._base_add_args(
+            procurement_risk="blocker",
+            gate_status="blocked",
+            compliance_blocker="sam_registration_pending; specs_pending",
+        ))
+        self.assertEqual(rc, 0, err)
+        _, rows = _read_csv(self.active)
+        self.assertEqual(rows[0]["procurement_risk"], "blocker")
+        self.assertEqual(rows[0]["gate_status"], "blocked")
+        self.assertEqual(rows[0]["compliance_blocker"], "sam_registration_pending; specs_pending")
+
+    def test_invalid_procurement_risk_is_rejected(self) -> None:
+        rc, _, err = self._run(*self._base_add_args(procurement_risk="maybe"))
+        self.assertEqual(rc, 1)
+        self.assertIn("procurement_risk", err)
+
+    def test_invalid_gate_status_is_rejected(self) -> None:
+        rc, _, err = self._run(*self._base_add_args(gate_status="maybe"))
+        self.assertEqual(rc, 1)
+        self.assertIn("gate_status", err)
 
     def test_invalid_fit_score_is_rejected(self) -> None:
         rc, _, err = self._run(*self._base_add_args(fit_score="101"))

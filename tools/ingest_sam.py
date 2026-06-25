@@ -75,6 +75,15 @@ DEFAULT_LIMIT = 50
 DEFAULT_TIMEOUT_S = 30
 
 
+def _empty_payload(limit: int, offset: int) -> dict:
+    return {
+        "totalRecords": 0,
+        "limit": limit,
+        "offset": offset,
+        "opportunitiesData": [],
+    }
+
+
 def _parse_iso_date(value: str) -> str:
     """Accept YYYY-MM-DD and pass through."""
     try:
@@ -315,6 +324,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--dry-run", action="store_true", help="Show what would be added; do not write.")
     parser.add_argument("--fixture", default=None, help="Read response JSON from a file instead of the live API (testing).")
+    parser.add_argument(
+        "--allow-throttled-empty",
+        action="store_true",
+        help=(
+            "Treat SAM.gov HTTP 429 quota throttling as an empty result and exit 0. "
+            "Use this for unattended scheduled runs; default behavior still fails."
+        ),
+    )
     args = parser.parse_args(argv)
 
     today = datetime.now().date().isoformat()
@@ -367,18 +384,19 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 payload = fetch_page(url)
             except urllib.error.HTTPError as exc:
+                body = exc.read().decode("utf-8", errors="replace")[:500]
                 if exc.code == 404:
                     # SAM.gov returns 404 with "No Data found" semantics
                     # per its public docs; treat as zero results, not as
                     # an error.
-                    payload = {
-                        "totalRecords": 0,
-                        "limit": args.limit,
-                        "offset": offset,
-                        "opportunitiesData": [],
-                    }
+                    payload = _empty_payload(args.limit, offset)
+                elif exc.code == 429 and args.allow_throttled_empty:
+                    print(
+                        f"warning: HTTP 429 from SAM.gov; treating as empty scheduled result: {body}",
+                        file=sys.stderr,
+                    )
+                    payload = _empty_payload(args.limit, offset)
                 else:
-                    body = exc.read().decode("utf-8", errors="replace")[:500]
                     print(f"error: HTTP {exc.code} from SAM.gov: {body}", file=sys.stderr)
                     return 1
             except urllib.error.URLError as exc:

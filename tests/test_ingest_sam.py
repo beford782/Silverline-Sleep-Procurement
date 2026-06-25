@@ -479,6 +479,57 @@ class CliTests(unittest.TestCase):
         rows = _read_csv(self.active)
         self.assertEqual(rows, [])
 
+    def test_http_429_errors_by_default(self) -> None:
+        import urllib.error
+
+        def raise_429(*_a, **_kw):
+            raise urllib.error.HTTPError(
+                url="https://api.sam.gov/opportunities/v2/search",
+                code=429,
+                msg="Too Many Requests",
+                hdrs=None,
+                fp=io.BytesIO(b'{"code":"900804","message":"Message throttled out"}'),
+            )
+
+        with mock.patch("urllib.request.urlopen", side_effect=raise_429), \
+             mock.patch.dict(os.environ, {"SAM_API_KEY": "fakekey"}, clear=False):
+            rc, _, err = self._run(
+                "--posted-from", "2026-05-01",
+                "--posted-to", "2026-05-14",
+                "--title", "mattress",
+                "--active", str(self.active),
+            )
+        self.assertEqual(rc, 1)
+        self.assertIn("HTTP 429", err)
+        self.assertEqual(_read_csv(self.active), [])
+
+    def test_http_429_can_be_treated_as_empty_for_scheduled_runs(self) -> None:
+        import urllib.error
+
+        def raise_429(*_a, **_kw):
+            raise urllib.error.HTTPError(
+                url="https://api.sam.gov/opportunities/v2/search",
+                code=429,
+                msg="Too Many Requests",
+                hdrs=None,
+                fp=io.BytesIO(b'{"code":"900804","message":"Message throttled out"}'),
+            )
+
+        with mock.patch("urllib.request.urlopen", side_effect=raise_429), \
+             mock.patch.dict(os.environ, {"SAM_API_KEY": "fakekey"}, clear=False):
+            rc, out, err = self._run(
+                "--posted-from", "2026-05-01",
+                "--posted-to", "2026-05-14",
+                "--title", "mattress",
+                "--active", str(self.active),
+                "--allow-throttled-empty",
+            )
+        self.assertEqual(rc, 0, err)
+        self.assertIn("HTTP 429", err)
+        self.assertIn("fetched: 0", out)
+        self.assertIn("no new rows", out)
+        self.assertEqual(_read_csv(self.active), [])
+
 
 if __name__ == "__main__":
     unittest.main()

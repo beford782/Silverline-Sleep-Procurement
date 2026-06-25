@@ -53,7 +53,8 @@ jobs:
           python tools/ingest_sam.py \
             --title "mattress" \
             --posted-from "$POSTED_FROM" \
-            --posted-to "$POSTED_TO"
+            --posted-to "$POSTED_TO" \
+            --allow-throttled-empty
 
       - name: Re-score active pipeline
         run: python tools/pipeline.py score

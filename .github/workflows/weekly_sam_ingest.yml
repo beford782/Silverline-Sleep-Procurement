@@ -56,10 +56,24 @@ jobs:
             --posted-to "$POSTED_TO" \
             --allow-throttled-empty
 
+      - name: Detect whether SAM ingest changed active pipeline
+        id: ingest_diff
+        run: |
+          if git diff --quiet -- bids/active/_pipeline.csv; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "SAM ingest added no active pipeline rows."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "SAM ingest changed active pipeline - will score and open a triage PR if checks pass."
+            git --no-pager diff --stat -- bids/active/_pipeline.csv
+          fi
+
       - name: Re-score active pipeline
+        if: steps.ingest_diff.outputs.changed == 'true'
         run: python tools/pipeline.py score
 
       - name: Run repository checks before PR creation
+        if: steps.ingest_diff.outputs.changed == 'true'
         run: |
           python -m compileall -q tools tests
           python -m unittest discover -s tests

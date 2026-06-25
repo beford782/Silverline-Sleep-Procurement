@@ -387,10 +387,13 @@ def parse_message(msg: dict, today: str) -> dict | None:
         "portal_url": url,
         "posted_date": posted,
         "due_date": due_date,
-        "next_action": "Triage: open portal link, run pipeline.py score, decide bid/no-bid",
+        "next_action": "Triage: verify portal details, confirm specs, then decide bid/no-bid",
         "created_date": today,
         "last_reviewed": today,
         "notes": f"Auto-ingested from {source} email alert; verify details on the portal",
+        "procurement_risk": "medium",
+        "gate_status": "triage",
+        "compliance_blocker": "portal_verification_pending; specs_pending",
     })
     # Honor a pre-extracted solicitation number (e.g. IonWave "Bid Number").
     soln = (msg.get("solicitation_number") or "").strip()

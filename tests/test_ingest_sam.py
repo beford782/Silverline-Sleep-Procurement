@@ -53,6 +53,9 @@ class RecordMappingTests(unittest.TestCase):
         self.assertEqual(row["created_date"], "2026-05-14")
         self.assertEqual(row["last_reviewed"], "2026-05-14")
         self.assertEqual(row["notes"], "Solicitation")
+        self.assertEqual(row["procurement_risk"], "blocker")
+        self.assertEqual(row["gate_status"], "blocked")
+        self.assertEqual(row["compliance_blocker"], "sam_registration_pending; specs_pending")
         # opportunity_id is slugified and stable
         self.assertEqual(
             row["opportunity_id"],

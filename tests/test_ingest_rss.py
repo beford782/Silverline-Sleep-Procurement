@@ -61,8 +61,13 @@ class IngestTests(unittest.TestCase):
         new_rows, leads, dupes, rejected = ingest_rss.ingest(
             self._entries(RSS, "Bonfire: Harris County"), [], TODAY)
         active_titles = {r["title"] for r in new_rows}
+        active_by_title = {r["title"]: r for r in new_rows}
         lead_titles = {lead["title"]: lead for lead in leads}
         self.assertIn("Dormitory Mattresses and Bunk Beds", active_titles)  # ACCEPT -> active
+        dorm = active_by_title["Dormitory Mattresses and Bunk Beds"]
+        self.assertEqual(dorm["procurement_risk"], "medium")
+        self.assertEqual(dorm["gate_status"], "triage")
+        self.assertEqual(dorm["compliance_blocker"], "source_verification_pending; specs_pending")
         # REVIEW broad furniture -> Lead Radar, NOT the active pipeline.
         self.assertNotIn("Office Furniture Catalog (IDIQ)", active_titles)
         self.assertIn("Office Furniture Catalog (IDIQ)", lead_titles)

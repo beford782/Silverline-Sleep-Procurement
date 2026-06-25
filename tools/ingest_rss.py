@@ -171,10 +171,13 @@ def entry_to_row(entry: dict, source: str, today: str) -> dict:
         "title": title,
         "portal_url": url,
         "posted_date": entry.get("date") or today,
-        "next_action": "Triage: open link, run pipeline.py score, decide bid/no-bid",
+        "next_action": "Triage: verify source details, confirm specs, then decide bid/no-bid",
         "created_date": today,
         "last_reviewed": today,
         "notes": f"Auto-ingested from {source} feed; verify details at the source",
+        "procurement_risk": "medium",
+        "gate_status": "triage",
+        "compliance_blocker": "source_verification_pending; specs_pending",
     })
     return row
 

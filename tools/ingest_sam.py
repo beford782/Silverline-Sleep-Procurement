@@ -230,10 +230,16 @@ def record_to_row(record: dict, today: str) -> dict:
         "due_date": _normalize_due_date(record.get("responseDeadLine") or ""),
         "delivery_location": _extract_place_of_performance(record.get("placeOfPerformance")),
         "commodity_terms": _extract_commodity_terms(record),
-        "next_action": "Triage: read solicitation, run pipeline.py score, decide bid/no-bid",
+        "next_action": (
+            "Triage: clear procurement blockers, read solicitation attachments, "
+            "confirm specs, then decide bid/no-bid"
+        ),
         "created_date": today,
         "last_reviewed": today,
         "notes": (record.get("type") or "").strip(),
+        "procurement_risk": "blocker",
+        "gate_status": "blocked",
+        "compliance_blocker": "sam_registration_pending; specs_pending",
     })
     return row
 

@@ -175,7 +175,7 @@ The query bank above is tuned for state/local/co-op portals. **Federal-direct de
 **Repeatable monitoring recipe (free; no BidNet/HigherGov paywall needed):**
 1. SAM.gov → **Search → Contract Opportunities**.
 2. Filters: **NAICS `337910`** (Mattress Manufacturing) and/or **PSC `7210`** (Household Furnishings); **Status = Active** only; optionally add **NAICS `337127`** (institutional furniture) and **PSC `7105`** to widen.
-3. **Save the search and create an email alert** (requires a free SAM.gov login) so new federal mattress/bed solicitations arrive without manual sweeps.
+3. **Save the search and create an email alert** (requires a free SAM.gov login) so new federal mattress/bed solicitations arrive without manual sweeps. Baseline saved-search notifications were enabled 2026-06-24 for **NAICS 337910 Active**, **PSC 7210 Active**, and **keyword mattress Active**.
 4. Recurring buyers to also alert by name: **VA / VHA (multiple VISNs)**, **DOJ Bureau of Prisons (FCIs)**, **Army MICC / AETC base contracting (barracks & billeting)**.
 
 > Note for automated agents: SAM.gov and HigherGov opportunity lists are **JS-rendered and not reliably web-search-indexed** — a live open-opportunity list cannot be enumerated via `WebFetch`/`WebSearch`. The authoritative live list requires the interactive SAM.gov saved search above (operator task).

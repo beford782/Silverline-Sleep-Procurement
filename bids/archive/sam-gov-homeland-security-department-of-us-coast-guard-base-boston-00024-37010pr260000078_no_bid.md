@@ -20,22 +20,25 @@ weekly automated SAM.gov ingest (PR #44).
 
 ## 2. Disqualifying factors
 
-- **Primary reason:** Cannot submit a federal offer. SAM.gov / UEI
-  registration is paused pending incorporation / legal-start-year
-  documentation, so there is no active registration to bid under.
+- **Primary reason:** Cannot submit a federal offer yet. UEI
+  `XF73FG8CVMX1` is assigned, but the full SAM.gov All Awards entity
+  registration is not active; taxpayer information is still under IRS
+  review and Financial/EFT information remains in progress.
 - **Contributing reason:** Response due 2026-06-25, a same-day
   turnaround from the triage date — not feasible even if registration
   were complete.
 
 ## 3. What would change a future bid/no-bid call
 
-- Completing the SAM.gov / UEI registration. Once an active UEI is
-  issued, federal mattress solicitations in this NAICS/PSC band become
-  bid-eligible and should be pursued, not archived.
+- Completing the full SAM.gov All Awards registration so the entity
+  status is Active. Once SAM is active, federal mattress solicitations
+  in this NAICS/PSC band become bid-eligible and should be pursued, not
+  archived.
 
 ## 4. Lessons captured
 
 - The automated funnel is working: it caught a real federal mattress
   bid (NAICS 337910) — not a false positive.
 - Live federal mattress demand reinforces the urgency of finishing the
-  paused UEI/SAM registration; each blocked fit is forgone pipeline.
+  remaining SAM registration steps; each blocked fit is forgone
+  pipeline.

@@ -14,6 +14,7 @@
 - **Entity registration type:** All Awards
 - **Taxpayer Information:** submitted to IRS verification; SAM shows "May Require Review; Avg. 2-5 Days."
 - **Financial Information:** still in progress.
+- **Saved-search notifications:** enabled for NAICS `337910` Active, PSC `7210` Active, and keyword `mattress` Active.
 - **Do not treat as bid-ready yet:** wait until SAM shows the entity registration active / complete.
 
 ---
@@ -78,7 +79,7 @@ Because the entity is a formed TX LLC/corporation, its formation record is publi
 1. **Complete the full entity registration** (required to *receive awards*, not just to hold a UEI):
    - Add **NAICS `337910`** (Mattress Mfg) and `337127` (Institutional Furniture); **PSC `7210`** / `7105`.
    - Complete **Reps & Certs**, points of contact, and **banking/EFT (CAGE)** info.
-2. **Set the SAM.gov saved-search alert** for NAICS 337910 / PSC 7210 (Active) — see the Federal direct lane in [`wild_opportunity_discovery_strategy.md`](wild_opportunity_discovery_strategy.md).
+2. **Maintain and monitor SAM.gov saved-search alerts** for NAICS 337910 / PSC 7210 / keyword mattress (Active) — see the Federal direct lane in [`wild_opportunity_discovery_strategy.md`](wild_opportunity_discovery_strategy.md).
 3. **Resume the UEI-gated registrations**: Choice Partners / HCDE, and re-check any other source that required a UEI.
 4. **Re-evaluate the live federal fits**: the recurring federal channels are tracked in `leads/review/_lead_radar.csv` (VA/VHA, Bureau of Prisons, Army/DoD barracks). The JBSA `FA301626Q0151` row (due **2026-07-01**) is almost certainly too soon for validation to clear — treat the UEI work as positioning for the **next** recurring federal mattress bid, not this one.
 

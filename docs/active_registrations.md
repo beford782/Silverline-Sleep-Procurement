@@ -16,7 +16,7 @@
 
 | Buyer / vehicle | Platform | Status | Account ID | Commodity setup | Notes |
 |---|---|---|---|---|---|
-| **SAM.gov** (all federal contracts) | SAM.gov | 🟡 **UEI assigned, registration in progress** | UEI **XF73FG8CVMX1** | NAICS 337910/337127; PSC 7210/7105 | Legal name **CONTINENTAL SILVERLINE PRODUCTS, L.P.** Taxpayer info submitted (IRS match 2–5 days); **Financial/EFT banking still to enter**. Not award-eligible until **Active**. Runbook: [`sam_uei_unblock_runbook.md`](sam_uei_unblock_runbook.md) |
+| **SAM.gov** (all federal contracts) | SAM.gov | 🟡 **UEI assigned, registration in progress** | UEI **XF73FG8CVMX1** | NAICS 337910/337127; PSC 7210/7105 | Legal name **CONTINENTAL SILVERLINE PRODUCTS, L.P.** Taxpayer info submitted (IRS match 2–5 days); **Financial/EFT banking still to enter**. Saved-search notifications are ON for **NAICS 337910 Active**, **PSC 7210 Active**, and **keyword mattress Active**. Not award-eligible until **Active**. Runbook: [`sam_uei_unblock_runbook.md`](sam_uei_unblock_runbook.md) |
 
 ## Texas — state & home market
 
@@ -79,7 +79,7 @@
 - **Keep it current:** when a new registration completes (or a portal issues a vendor number), update the matching row here **and** the source's Lead Radar note so the two stay in sync.
 
 ### Open registration tasks (next up)
-1. **Finish SAM.gov** Financial/EFT → registration Active (then set NAICS 337910/PSC 7210 saved-search alert).
+1. **Finish SAM.gov** Financial/EFT → registration Active; NAICS 337910 / PSC 7210 / keyword mattress saved-search alerts are already enabled.
 2. **Resume Choice Partners / HCDE** (UEI now available).
 3. **BuyBoard** vendor application (position for contract #767, dormitory furniture).
 4. **New Mexico** — add the Euna/Bonfire NM-SPD registration to complete NM coverage.

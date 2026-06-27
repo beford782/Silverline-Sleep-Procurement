@@ -77,20 +77,34 @@ jobs:
           run_sweep --title "box spring"
           run_sweep --title "bunk"
 
-      - name: Detect whether SAM ingest changed active pipeline
+      - name: Detect whether SAM ingest changed active pipeline or Lead Radar
         id: ingest_diff
         run: |
-          if git diff --quiet -- bids/active/_pipeline.csv; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "SAM ingest added no active pipeline rows."
+          active_changed=false
+          leads_changed=false
+          git diff --quiet -- bids/active/_pipeline.csv || active_changed=true
+          git diff --quiet -- leads/review/_lead_radar.csv || leads_changed=true
+
+          changed=false
+          if [ "$active_changed" = "true" ] || [ "$leads_changed" = "true" ]; then
+            changed=true
+          fi
+
+          {
+            echo "active_changed=$active_changed"
+            echo "leads_changed=$leads_changed"
+            echo "changed=$changed"
+          } >> "$GITHUB_OUTPUT"
+
+          if [ "$changed" = "true" ]; then
+            echo "SAM ingest changed CSV(s) before scoring."
+            git --no-pager diff --stat -- bids/active/_pipeline.csv leads/review/_lead_radar.csv
           else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "SAM ingest changed active pipeline - will score and open a triage PR if checks pass."
-            git --no-pager diff --stat -- bids/active/_pipeline.csv
+            echo "SAM ingest added no active or Lead Radar rows."
           fi
 
       - name: Re-score active pipeline
-        if: steps.ingest_diff.outputs.changed == 'true'
+        if: steps.ingest_diff.outputs.active_changed == 'true'
         env:
           POSTED_TO: ${{ steps.window.outputs.posted_to }}
         run: python tools/pipeline.py score --only-created-date "$POSTED_TO"
@@ -115,16 +129,41 @@ jobs:
           python tools/portal_csv_mapping.py tests/fixtures/esbd_export_sample.csv \
             --source "Texas ESBD"
 
-      - name: Detect whether active pipeline changed
+      - name: Detect whether active pipeline or Lead Radar changed
         id: diff
         run: |
-          if git diff --quiet -- bids/active/_pipeline.csv; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "Active pipeline unchanged - no PR will be opened."
+          active_changed=false
+          leads_changed=false
+          git diff --quiet -- bids/active/_pipeline.csv || active_changed=true
+          git diff --quiet -- leads/review/_lead_radar.csv || leads_changed=true
+
+          changed=false
+          if [ "$active_changed" = "true" ] || [ "$leads_changed" = "true" ]; then
+            changed=true
+          fi
+
+          if [ "$active_changed" = "true" ] && [ "$leads_changed" = "true" ]; then
+            scope="active bids + Lead Radar"
+          elif [ "$active_changed" = "true" ]; then
+            scope="active bids"
+          elif [ "$leads_changed" = "true" ]; then
+            scope="Lead Radar"
           else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "Active pipeline has changes - will open PR."
-            git --no-pager diff --stat -- bids/active/_pipeline.csv
+            scope="none"
+          fi
+
+          {
+            echo "active_changed=$active_changed"
+            echo "leads_changed=$leads_changed"
+            echo "changed=$changed"
+            echo "scope=$scope"
+          } >> "$GITHUB_OUTPUT"
+
+          if [ "$changed" = "true" ]; then
+            echo "Changes detected ($scope) - will open PR."
+            git --no-pager diff --stat -- bids/active/_pipeline.csv leads/review/_lead_radar.csv
+          else
+            echo "No active-pipeline or Lead Radar changes - no PR will be opened."
           fi
 
       - name: Open PR with new rows
@@ -135,33 +174,37 @@ jobs:
           POSTED_TO: ${{ steps.window.outputs.posted_to }}
           EVENT_NAME: ${{ github.event_name }}
           RUN_NUMBER: ${{ github.run_number }}
+          SCOPE: ${{ steps.diff.outputs.scope }}
         run: |
           BRANCH="auto/sam-ingest-${POSTED_TO}-${RUN_NUMBER}"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git checkout -b "$BRANCH"
-          git add bids/active/_pipeline.csv
-          git commit -m "Twice-weekly SAM.gov ingest: posted ${POSTED_FROM}..${POSTED_TO}"
+          git add bids/active/_pipeline.csv leads/review/_lead_radar.csv
+          git commit -m "Twice-weekly SAM.gov ingest (${SCOPE}): posted ${POSTED_FROM}..${POSTED_TO}"
           git push -u origin "$BRANCH"
 
           cat > /tmp/pr_body.md <<'EOF'
           Automated twice-weekly SAM.gov mattress ingest. **Human triage required before merge.**
 
-          Posted-date window: `__POSTED_FROM__` to `__POSTED_TO__` (inclusive, today minus 7 days, UTC).
+          **This run updated: __SCOPE__.** Posted-date window: `__POSTED_FROM__` to `__POSTED_TO__` (inclusive, today minus 7 days, UTC).
+
+          Relevance-gated: `ACCEPT` -> active bids, `REVIEW` -> Lead Radar (`leads/review/_lead_radar.csv`), `REJECT` dropped.
 
           ## Reviewer checklist
 
-          1. Open `bids/active/_pipeline.csv` and review each new row.
-          2. For rows that are out-of-scope, past-due, or false-positive (aircraft / concrete / inspection-services / refurbishment / overseas), archive with:
+          1. **Active bids** (`bids/active/_pipeline.csv`): review each new row.
+          2. **Lead Radar** (`leads/review/_lead_radar.csv`): review each new broad/ambiguous federal signal — NOT a confirmed bid. Only with a confirmed product fit, promote with `python tools/lead_radar.py promote <lead-id> --confirmed-products "<...>"`.
+          3. For active rows that are out-of-scope, past-due, or false-positive, archive with:
 
              ```
              python tools/pipeline.py move-to-archive <opportunity-id> \
                --status no-bid --next-action "No-bid archived" --note "<reason>"
              ```
 
-             then amend this PR.
-          3. For rows worth pursuing: refine `next_action`, assign an `owner`, and merge.
-          4. If everything is out of scope, archive all new rows and close this PR without merging.
+             then amend this PR. For dead Lead Radar rows, use `python tools/lead_radar.py archive <lead-id> --status no-fit --note "<reason>"`.
+          4. For rows worth pursuing: refine `next_action`, assign an `owner`, and merge.
+          5. If everything is out of scope, archive all new rows and close this PR without merging.
 
           ## CI note
 
@@ -175,6 +218,7 @@ jobs:
           Triggered by: `__EVENT_NAME__` (run #__RUN_NUMBER__).
           EOF
 
+          sed -i "s|__SCOPE__|${SCOPE}|g" /tmp/pr_body.md
           sed -i "s|__POSTED_FROM__|${POSTED_FROM}|g" /tmp/pr_body.md
           sed -i "s|__POSTED_TO__|${POSTED_TO}|g" /tmp/pr_body.md
           sed -i "s|__EVENT_NAME__|${EVENT_NAME}|g" /tmp/pr_body.md

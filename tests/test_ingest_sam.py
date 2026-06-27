@@ -94,7 +94,7 @@ class RecordMappingTests(unittest.TestCase):
                 "status": "watching",
             }
         ]
-        new_rows, dupes, _ = ingest_sam.ingest(self.records, existing, today="2026-05-14")
+        new_rows, _leads, dupes, _ = ingest_sam.ingest(self.records, existing, today="2026-05-14")
         self.assertEqual(len(new_rows), 2)
         self.assertEqual(len(dupes), 1)
         self.assertEqual(dupes[0]["solicitation_number"], "15B30025R00000001")
@@ -102,9 +102,43 @@ class RecordMappingTests(unittest.TestCase):
     def test_ingest_dedupes_against_existing_opportunity_ids(self) -> None:
         first_row = ingest_sam.record_to_row(self.records[0], today="2026-05-14")
         existing = [first_row]
-        new_rows, dupes, _ = ingest_sam.ingest(self.records, existing, today="2026-05-14")
+        new_rows, _leads, dupes, _ = ingest_sam.ingest(self.records, existing, today="2026-05-14")
         self.assertEqual(len(new_rows), 2)
         self.assertEqual(len(dupes), 1)
+
+    def test_review_band_routes_to_lead_radar_not_active(self) -> None:
+        # A broad furniture record with no strong mattress term classifies as
+        # REVIEW and must route to Lead Radar, not pollute the active pipeline.
+        review_record = {
+            "noticeId": "n-review-1",
+            "solicitationNumber": "REVIEW-001",
+            "title": "Office and classroom furniture for school district",
+            "fullParentPathName": "GENERAL SERVICES ADMINISTRATION",
+            "naicsCode": "337127",
+            "postedDate": "2026-05-10",
+        }
+        new_rows, leads, dupes, rejected = ingest_sam.ingest(
+            [review_record], [], today="2026-05-14"
+        )
+        self.assertEqual(len(new_rows), 0)
+        self.assertEqual(len(leads), 1)
+        self.assertEqual(leads[0]["solicitation_number"], "REVIEW-001")
+
+    def test_review_target_active_keeps_legacy_behavior(self) -> None:
+        review_record = {
+            "noticeId": "n-review-2",
+            "solicitationNumber": "REVIEW-002",
+            "title": "Office and classroom furniture for school district",
+            "fullParentPathName": "GENERAL SERVICES ADMINISTRATION",
+            "naicsCode": "337127",
+            "postedDate": "2026-05-10",
+        }
+        new_rows, leads, _dupes, _rej = ingest_sam.ingest(
+            [review_record], [], today="2026-05-14", review_target="active"
+        )
+        self.assertEqual(len(leads), 0)
+        self.assertEqual(len(new_rows), 1)
+        self.assertIn("HUMAN", new_rows[0]["next_action"])
 
 
 class SearchUrlTests(unittest.TestCase):

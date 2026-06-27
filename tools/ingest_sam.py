@@ -68,6 +68,7 @@ from pipeline import (  # noqa: E402
     slugify,
 )
 import relevance  # noqa: E402
+import lead_radar  # noqa: E402
 
 
 SAM_SEARCH_URL = "https://api.sam.gov/opportunities/v2/search"
@@ -262,19 +263,38 @@ def ingest(
     existing_rows: list[dict],
     today: str,
     home_states: frozenset[str] = relevance.HOME_STATES_DEFAULT,
-) -> tuple[list[dict], list[dict], list[dict]]:
-    """Partition incoming records into (new_rows, dupes, rejected).
+    existing_leads: list[dict] | None = None,
+    review_target: str = "leads",
+) -> tuple[list[dict], list[dict], list[dict], list[dict]]:
+    """Partition incoming records into (new_rows, leads, dupes, rejected).
 
     Each record is gated by the central mattress-relevance classifier:
-    REJECT records go to `rejected` (never written); REVIEW records are
-    kept but flagged in next_action for human confirmation; ACCEPT records
-    are kept normally. `dupes` are rows already in the pipeline by
-    opportunity_id or solicitation_number.
+      REJECT -> rejected (never written).
+      REVIEW -> routed per `review_target` (default 'leads'): a broad/ambiguous
+                federal signal goes to Lead Radar instead of polluting the
+                strict active bid pipeline (mirrors the email/RSS channels).
+                'active' keeps the legacy behavior (a HUMAN-flagged watching
+                row in new_rows); 'reject-log' drops it.
+      ACCEPT -> kept as a normal active-pipeline row (new_rows).
+    leads: REVIEW rows mapped onto the Lead Radar schema.
+    dupes: rows already tracked — active/archive for ACCEPT; Lead Radar +
+           active/archive for leads.
     """
+    existing_leads = existing_leads or []
     ids, sols = existing_ids(existing_rows)
+    # Lead dedup spans existing Lead Radar rows AND active/archive, so a broad
+    # signal already tracked (as a lead or a live bid) is not re-added.
+    lead_ids: set[str] = set()
+    for r in existing_leads:
+        lead_ids |= lead_radar.lead_match_keys(r)
+    for r in existing_rows:
+        lead_ids |= lead_radar.lead_match_keys(r)
+
     new_rows: list[dict] = []
+    leads: list[dict] = []
     dupes: list[dict] = []
     rejected: list[dict] = []
+    lead_seen: set[str] = set()
     for record in records:
         row = record_to_row(record, today)
         text = "\n".join(p for p in (row["title"], row["commodity_terms"],
@@ -287,6 +307,20 @@ def ingest(
             rejected.append(row)
             continue
         if verdict.decision == "REVIEW":
+            if review_target == "reject-log":
+                row["next_action"] = "HUMAN: confirm mattress scope — " + "; ".join(verdict.reasons[:2])
+                rejected.append(row)
+                continue
+            if review_target == "leads":
+                lead = lead_radar.build_lead_row(row, verdict, today)
+                keys = lead_radar.lead_match_keys(lead)
+                if keys & lead_ids or keys & lead_seen:
+                    dupes.append(row)
+                    continue
+                lead_seen |= keys
+                leads.append(lead)
+                continue
+            # review_target == "active": legacy fall-through, flagged for human.
             row["next_action"] = "HUMAN: confirm mattress scope — " + "; ".join(verdict.reasons[:2])
         sol_no = row["solicitation_number"]
         if row["opportunity_id"] in ids or (sol_no and sol_no in sols):
@@ -296,7 +330,7 @@ def ingest(
         if sol_no:
             sols.add(sol_no)
         new_rows.append(row)
-    return new_rows, dupes, rejected
+    return new_rows, leads, dupes, rejected
 
 
 def _read_existing_or_empty(active_path: Path) -> list[dict]:
@@ -335,6 +369,17 @@ def main(argv: list[str] | None = None) -> int:
             f"Default: {DEFAULT_ARCHIVE.relative_to(REPO_ROOT)}"
         ),
     )
+    parser.add_argument(
+        "--leads",
+        default=str(lead_radar.DEFAULT_REVIEW),
+        help=f"Lead Radar CSV for REVIEW-band rows (default: {lead_radar.DEFAULT_REVIEW.relative_to(REPO_ROOT)})",
+    )
+    parser.add_argument(
+        "--review-target",
+        choices=("leads", "active", "reject-log"),
+        default="leads",
+        help="Where REVIEW-band rows go: leads (Lead Radar, default), active (legacy), or reject-log (drop).",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Show what would be added; do not write.")
     parser.add_argument("--fixture", default=None, help="Read response JSON from a file instead of the live API (testing).")
     parser.add_argument(
@@ -355,6 +400,11 @@ def main(argv: list[str] | None = None) -> int:
     # Dedup against both pipelines so previously-closed opportunities (e.g.
     # archived no-bids) do not get re-ingested into the active pipeline.
     existing_rows = existing_active + existing_archive
+
+    leads_path = Path(args.leads)
+    existing_leads: list[dict] = []
+    if leads_path.exists():
+        _, existing_leads = lead_radar.read_lead_rows(leads_path)
 
     if args.fixture:
         with open(args.fixture, "r", encoding="utf-8") as fh:
@@ -430,7 +480,10 @@ def main(argv: list[str] | None = None) -> int:
     for payload in payloads:
         records.extend(payload.get("opportunitiesData") or [])
 
-    new_rows, dupes, rejected = ingest(records, existing_rows, today)
+    new_rows, leads, dupes, rejected = ingest(
+        records, existing_rows, today,
+        existing_leads=existing_leads, review_target=args.review_target,
+    )
 
     # Attribute each dupe to active vs archive so the operator can tell
     # "already tracking it" from "previously closed, ignore."
@@ -444,24 +497,32 @@ def main(argv: list[str] | None = None) -> int:
     n_active_dupes = len(dupes) - n_archive_dupes
 
     print(f"SAM.gov fetched: {len(records)} record(s)")
-    print(f"  new:    {len(new_rows)}")
+    print(f"  new:    {len(new_rows)} (active bid pipeline)")
+    print(f"  leads:  {len(leads)} (routed to Lead Radar for human triage)")
     print(f"  dupes:  {len(dupes)} ({n_active_dupes} active, {n_archive_dupes} archive)")
     print(f"  rejected: {len(rejected)} (not mattress-relevant)")
     if new_rows:
         for r in new_rows:
             print(f"  + {r['opportunity_id']} :: {r['title']}")
+    if leads:
+        for r in leads:
+            print(f"  ~ {r['lead_id']} :: {r['title']} (Lead Radar)")
 
     if args.dry_run:
         print("(--dry-run: no files written)")
         return 0
-    if not new_rows:
+    if not new_rows and not leads:
         print("(no new rows to write)")
         return 0
 
-    # Write target is active only; archive rows were consulted for dedup
+    # Active write target is active only; archive rows were consulted for dedup
     # but must never be echoed back into the active pipeline.
-    write_rows_atomic(active_path, existing_active + new_rows)
-    print(f"wrote {len(new_rows)} new row(s) to {active_path}")
+    if new_rows:
+        write_rows_atomic(active_path, existing_active + new_rows)
+        print(f"wrote {len(new_rows)} new active row(s) to {active_path}")
+    if leads:
+        lead_radar.write_lead_rows_atomic(leads_path, existing_leads + leads)
+        print(f"wrote {len(leads)} new Lead Radar row(s) to {leads_path}")
     return 0
 
 

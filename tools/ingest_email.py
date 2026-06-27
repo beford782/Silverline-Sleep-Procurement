@@ -31,6 +31,13 @@ AUTHENTICATION (production / GitHub Action):
   OAuth2 refresh token:
     GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN
 
+  --provider imap — read a Gmail (or any IMAP) mailbox over IMAP4-TLS using a
+  self-issued app password. No Azure/Workspace admin, no OAuth consent screen,
+  no token expiry — the most robust unattended path for a solo operator:
+    GMAIL_ADDRESS, GMAIL_APP_PASSWORD
+  Requires 2-Step Verification on the account and IMAP enabled in Gmail
+  settings. Opens the mailbox read-only (never marks alerts seen).
+
   All of these are secrets — NEVER commit them. The mailbox identity comes
   from the credentials, so this works against the business alert inbox
   without that account being "connected" anywhere else. See
@@ -75,7 +82,9 @@ from __future__ import annotations
 
 import argparse
 import base64
+import email
 import hashlib
+import imaplib
 import json
 import os
 import re
@@ -85,6 +94,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
+from email.header import decode_header, make_header
 from pathlib import Path
 from typing import Iterable
 
@@ -714,6 +724,97 @@ def _require_env(names: list[str]) -> list[str]:
     return vals  # type: ignore[return-value]
 
 
+# --------------------------------------------------------------------------
+# IMAP client (stdlib imaplib; app-password auth — no OAuth, no admin)
+# --------------------------------------------------------------------------
+def _imap_decode_header(value: str) -> str:
+    """Decode RFC 2047 encoded-word headers (=?UTF-8?B?..?=) to plain text."""
+    if not value:
+        return ""
+    try:
+        return str(make_header(decode_header(value)))
+    except Exception:
+        return value
+
+
+def _imap_text_body(msg: "email.message.Message") -> str:
+    """Best-effort body: prefer text/plain, fall back to stripped text/html.
+
+    Skips attachments and honors each part's declared charset.
+    """
+    plain = ""
+    html = ""
+    parts = msg.walk() if msg.is_multipart() else [msg]
+    for part in parts:
+        if part.is_multipart():
+            continue
+        if "attachment" in (part.get("Content-Disposition") or "").lower():
+            continue
+        ctype = (part.get_content_type() or "").lower()
+        if ctype not in ("text/plain", "text/html"):
+            continue
+        payload = part.get_payload(decode=True)
+        if payload is None:
+            continue
+        text = payload.decode(part.get_content_charset() or "utf-8", errors="replace")
+        if ctype == "text/plain" and not plain:
+            plain = text
+        elif ctype == "text/html" and not html:
+            html = text
+    return plain or _strip_html(html)
+
+
+def normalize_imap_message(raw: bytes) -> dict:
+    """Map a raw RFC822 message onto the tool's normalized message dict.
+
+    Same {id, sender, subject, date, body} shape as the Graph/Gmail providers,
+    so the unwrap/split/relevance chain downstream is provider-agnostic.
+    """
+    msg = email.message_from_bytes(raw)
+    return {
+        "id": (msg.get("Message-ID") or "").strip(),
+        "sender": _imap_decode_header(msg.get("From") or ""),
+        "subject": _imap_decode_header(msg.get("Subject") or ""),
+        "date": (msg.get("Date") or "").strip(),
+        "body": _imap_text_body(msg),
+    }
+
+
+def fetch_imap_messages(address: str, app_password: str, *, since_date: str,
+                        folder: str = "INBOX", max_messages: int = DEFAULT_MAX_MESSAGES,
+                        host: str = "imap.gmail.com", port: int = 993) -> list[dict]:
+    """Fetch recent messages over IMAP4 (TLS) using app-password auth.
+
+    No admin and no OAuth: a self-issued app password + stdlib imaplib. Opens the
+    mailbox READ-ONLY (never marks alerts seen) and returns the same normalized
+    message dicts as the Graph/Gmail providers. `since_date` is IMAP
+    'DD-Mon-YYYY' (e.g. '01-Jun-2026').
+    """
+    out: list[dict] = []
+    imap = imaplib.IMAP4_SSL(host, port)
+    try:
+        imap.login(address, app_password)
+        imap.select(folder, readonly=True)
+        status, data = imap.search(None, "SINCE", since_date)
+        if status != "OK":
+            return out
+        nums = (data[0] or b"").split()
+        # Newest first, capped at max_messages.
+        for num in reversed(nums[-max_messages:]):
+            status, msg_data = imap.fetch(num, "(RFC822)")
+            if status != "OK" or not msg_data:
+                continue
+            raw = next((p[1] for p in msg_data if isinstance(p, tuple) and p[1]), None)
+            if raw:
+                out.append(normalize_imap_message(raw))
+    finally:
+        try:
+            imap.logout()
+        except Exception:
+            pass
+    return out
+
+
 def _load_messages(args, today: str) -> list[dict]:
     if args.fixture:
         with open(args.fixture, "r", encoding="utf-8") as fh:
@@ -721,6 +822,15 @@ def _load_messages(args, today: str) -> list[dict]:
         if not isinstance(data, list):
             raise ValueError("fixture must be a JSON list of message objects")
         return data
+
+    if args.provider == "imap":
+        address, app_password = _require_env(["GMAIL_ADDRESS", "GMAIL_APP_PASSWORD"])
+        since_date = (datetime.fromisoformat(today) - timedelta(days=args.since_days)).strftime("%d-%b-%Y")
+        return fetch_imap_messages(
+            address, app_password, since_date=since_date,
+            folder=args.imap_folder, max_messages=args.max_messages,
+            host=args.imap_host,
+        )
 
     if args.provider == "graph":
         tenant, client_id, client_secret, mailbox = _require_env(
@@ -767,7 +877,19 @@ def _run_check(args, today: str) -> int:
     """Stepwise connectivity diagnostics for first-time credential setup."""
     print(f"Connectivity check - provider: {args.provider}")
     try:
-        if args.provider == "graph":
+        if args.provider == "imap":
+            address, app_password = _require_env(["GMAIL_ADDRESS", "GMAIL_APP_PASSWORD"])
+            since_date = (datetime.fromisoformat(today) - timedelta(days=args.since_days)).strftime("%d-%b-%Y")
+            print(f"  mailbox: {address}  host: {args.imap_host}  folder: {args.imap_folder}  "
+                  f"window: {args.since_days}d (SINCE {since_date})")
+            print("  [1/3] connecting + login (app password) ...", end=" ")
+            messages = fetch_imap_messages(
+                address, app_password, since_date=since_date,
+                folder=args.imap_folder, max_messages=args.max_messages,
+                host=args.imap_host,
+            )
+            print("OK")
+        elif args.provider == "graph":
             tenant, client_id, client_secret, mailbox = _require_env(
                 ["GRAPH_TENANT_ID", "GRAPH_CLIENT_ID", "GRAPH_CLIENT_SECRET", "GRAPH_MAILBOX"]
             )
@@ -803,6 +925,10 @@ def _run_check(args, today: str) -> int:
     except urllib.error.URLError as exc:
         print(f"FAILED\n  network error: {exc}")
         return 1
+    except (imaplib.IMAP4.error, OSError) as exc:
+        print(f"FAILED\n  IMAP error: {exc}\n  hint: check GMAIL_ADDRESS / GMAIL_APP_PASSWORD, "
+              f"that IMAP is enabled (Gmail settings) and 2-Step Verification is on.")
+        return 1
     except RuntimeError as exc:
         print(f"FAILED\n  {exc}")
         return 1
@@ -820,14 +946,19 @@ def _run_check(args, today: str) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--provider", choices=("graph", "gmail"), default="graph",
-                        help="Mailbox backend: 'graph' (Outlook/M365, default) or 'gmail'. "
-                             "Ignored when --fixture is given.")
+    parser.add_argument("--provider", choices=("graph", "gmail", "imap"), default="graph",
+                        help="Mailbox backend: 'graph' (Outlook/M365, default), 'gmail' (REST/OAuth), "
+                             "or 'imap' (Gmail app-password, no admin). Ignored when --fixture is given.")
     parser.add_argument("--since-days", type=int, default=DEFAULT_SINCE_DAYS,
-                        help=f"[graph] Look back this many days (default {DEFAULT_SINCE_DAYS}).")
+                        help=f"[graph/imap] Look back this many days (default {DEFAULT_SINCE_DAYS}).")
     parser.add_argument("--graph-folder", default=None,
                         help="[graph] Restrict to a mail folder by display name (e.g. "
                              "'Procurement Alerts'). Default: search the whole mailbox.")
+    parser.add_argument("--imap-folder", default="INBOX",
+                        help="[imap] Mailbox/label to read; Gmail labels appear as folders "
+                             "(e.g. 'Procurement/Alerts'). Default: INBOX.")
+    parser.add_argument("--imap-host", default="imap.gmail.com",
+                        help="[imap] IMAP host (default imap.gmail.com).")
     parser.add_argument("--query", default=DEFAULT_QUERY,
                         help=f"[gmail] Gmail search query for alert emails (default: {DEFAULT_QUERY!r})")
     parser.add_argument("--max-messages", type=int, default=DEFAULT_MAX_MESSAGES,

@@ -14,34 +14,64 @@ This replaces the *manual* weekly portal walk for the email-notification
 sources. Submission stays manual; the tool only adds `watching` rows to
 triage.
 
-## Recommended path - Power Automate digest (no Azure admin)
+## LIVE PATH (recommended, 2026-06-27): Gmail App-Password IMAP
 
-Current operator decision (2026-06-24): use Microsoft Power Automate instead
-of the scheduled Microsoft Graph workflow. Portal alerts remain in Outlook
-under the `Procurement Alerts` folder, and a scheduled Power Automate flow sends
-a digest to `beford@silverlinesleep.com`.
+This is the current operating design — "Silverline Awareness Bridge" (see
+[`awareness_system_design.md`](awareness_system_design.md)). It needs **no Azure
+admin and no OAuth token** that can expire: the daily workflow
+`.github/workflows/daily_email_ingest.yml` reads a Gmail mailbox over IMAP with a
+self-issued **app password**, relevance-gates each alert, opens a triage PR, and
+**emails Blake** a digest. Graph + Gmail-OAuth (sections below) are dormant
+fallbacks only.
 
-Power Automate flow target:
+### Go-live checklist (one-time, ~1 hour, no admin)
 
-- **Trigger:** scheduled recurrence, Monday and Thursday.
-- **Action:** Office 365 Outlook **Get emails (V3)**.
-- **Folder:** `Procurement Alerts`.
-- **Fetch Only Unread Messages:** `No`.
-- **Top:** `50`.
-- **Action:** Office 365 Outlook **Send an email (V2)**.
-- **To:** `beford@silverlinesleep.com`.
-- **Subject:** `Procurement Alerts digest - @{formatDateTime(utcNow(),'yyyy-MM-dd')}`.
-- **Body:** ideally one combined digest containing sender, subject, received
-  date, and body preview/link for each message. A one-email-per-alert flow is
-  acceptable temporarily while the combined digest expression is tuned.
+1. **Gmail App Password.** On **blake.e.ford@gmail.com** → Google Account →
+   Security → enable **2-Step Verification** → **App passwords** → app "Mail" →
+   copy the 16-char value. Confirm IMAP is on (Gmail Settings → Forwarding and
+   POP/IMAP → **Enable IMAP**).
+2. **Gmail label + filter.** Create a label **`Procurement/Alerts`**. Add a
+   Gmail filter matching the portal sender domains *and* `subject:[PROC-ALERT]`
+   → **Apply label** `Procurement/Alerts`, **Never send to Spam**. (This is the
+   `--imap-folder` the workflow reads.)
+3. **Point editable portals at Gmail.** On each portal whose notification
+   address can be changed, set it to **blake.e.ford@gmail.com** and confirm the
+   mattress/bedding commodity codes (NIGP 205, NAICS 337910) are selected.
+4. **Business-only portals → Power Automate bridge.** For portals locked to
+   `beford@silverlinesleep.com`, do **not** use an Outlook auto-forward rule
+   (M365 blocks external auto-forwarding without admin). Instead, at
+   **flow.microsoft.com** (signed in as the business account): keep an Outlook
+   rule filing portal senders into a `Procurement Alerts` folder, then build an
+   **Automated cloud flow**: trigger **"When a new email arrives in a folder
+   (V3)"** → that folder → action **"Send an email (V2)"** to
+   **blake.e.ford@gmail.com**, subject `[PROC-ALERT] <original subject>`, body
+   that prints `From: <original sender>` and `Subject: <original subject>` on
+   their own lines followed by the original body (so `unwrap_forwarded()`
+   recovers the real portal sender). **Standard connectors only** — no
+   premium/HTTP, so no admin license.
+5. **Dead-man's-switch.** Create one free [healthchecks.io](https://healthchecks.io)
+   check (period: 1 day, grace: 1 day); copy its **ping URL**.
+6. **GitHub secrets** (Settings → Secrets and variables → Actions):
+   - `GMAIL_ADDRESS` = blake.e.ford@gmail.com
+   - `GMAIL_APP_PASSWORD` = the 16-char value from step 1
+   - `NOTIFY_EMAIL_TO` = where to email you (optional; defaults to `GMAIL_ADDRESS`)
+   - `HEALTHCHECK_URL` = the ping URL from step 5 (optional)
+7. **Validate.** Actions → **Daily email-alert ingest (IMAP)** → **Run
+   workflow**. Confirm it succeeds and, if there were new alerts, that a digest
+   email arrives. Diagnose creds with:
+   `GMAIL_ADDRESS=... GMAIL_APP_PASSWORD=... python tools/ingest_email.py --provider imap --imap-folder "Procurement/Alerts" --check`
 
-Save and test the flow after configuration. Confirm that messages already in
-`Procurement Alerts` are included because the flow is intentionally not limited
-to unread mail.
+Once steps 1, 6, and (3 and/or 4) are done, the channel is live — the workflow
+runs daily and emails you any fit.
 
-The scheduled GitHub Graph workflow is intentionally paused and available only
-as a manual fallback. Do not chase Azure Graph secrets unless that strategy is
-explicitly reopened.
+---
+
+### Dormant fallback A - Power Automate digest to the business mailbox
+
+(Pre-2026-06-27 stopgap, superseded by the live path above.) A scheduled Power
+Automate flow that sends a digest of the `Procurement Alerts` folder to
+`beford@silverlinesleep.com`. Kept only as a manual reference; it does not feed
+the pipeline on its own.
 
 ## Previous path - route alerts to Gmail (disabled)
 

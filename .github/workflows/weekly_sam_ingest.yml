@@ -45,17 +45,37 @@ jobs:
           echo "posted_to=$POSTED_TO" >> "$GITHUB_OUTPUT"
           echo "Window: $POSTED_FROM .. $POSTED_TO"
 
-      - name: Run SAM.gov ingest (live API)
+      - name: Run SAM.gov ingest sweeps (live API)
         env:
           SAM_API_KEY: ${{ secrets.SAM_API_KEY }}
           POSTED_FROM: ${{ steps.window.outputs.posted_from }}
           POSTED_TO: ${{ steps.window.outputs.posted_to }}
         run: |
-          python tools/ingest_sam.py \
-            --title "mattress" \
-            --posted-from "$POSTED_FROM" \
-            --posted-to "$POSTED_TO" \
-            --allow-throttled-empty
+          # Broadened recall. A single title="mattress" sweep misses bedding/bed
+          # buys whose titles never contain "mattress" (the Bernalillo-class
+          # recall gap). Sweep by title AND by procurement classification:
+          #   - NAICS 337910 = Mattress Manufacturing
+          #   - PSC 7210 = Household Furnishings (bedding/linens/mattresses)
+          #   - PSC 7105 = Household Furniture (beds/bunks/dormitory)
+          # Each pass reads, dedups against, and rewrites the pipeline CSV, so
+          # opportunities matched by more than one query are de-duplicated
+          # automatically; relevance.py filters any off-target noise the broader
+          # queries pull in. Passes share the posted-date window.
+          run_sweep() {
+            echo "::group::SAM sweep: $*"
+            python tools/ingest_sam.py "$@" \
+              --posted-from "$POSTED_FROM" \
+              --posted-to "$POSTED_TO" \
+              --allow-throttled-empty
+            echo "::endgroup::"
+          }
+          run_sweep --title "mattress"
+          run_sweep --naics-code 337910
+          run_sweep --psc 7210
+          run_sweep --psc 7105
+          run_sweep --title "bedding"
+          run_sweep --title "box spring"
+          run_sweep --title "bunk"
 
       - name: Detect whether SAM ingest changed active pipeline
         id: ingest_diff

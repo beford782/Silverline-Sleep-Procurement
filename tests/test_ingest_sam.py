@@ -141,9 +141,22 @@ class SearchUrlTests(unittest.TestCase):
         self.assertNotIn("title=", url)
         self.assertNotIn("q=", url)
         self.assertNotIn("ncode=", url)
+        self.assertNotIn("ccode=", url)
         self.assertNotIn("ptype=", url)
         self.assertNotIn("rdlfrom=", url)
         self.assertNotIn("rdlto=", url)
+
+    def test_search_url_includes_psc_classification_code(self) -> None:
+        # PSC sweeps (e.g. 7210 household furnishings, 7105 furniture) catch
+        # bedding/furniture solicitations whose titles never say "mattress".
+        url = ingest_sam.build_search_url(
+            api_key="K",
+            posted_from="2026-05-01",
+            posted_to="2026-05-14",
+            classification_code="7210",
+        )
+        # PSC goes as `ccode` on the request side per the SAM.gov v2 docs.
+        self.assertIn("ccode=7210", url)
 
     def test_search_url_includes_response_deadline_filters(self) -> None:
         url = ingest_sam.build_search_url(

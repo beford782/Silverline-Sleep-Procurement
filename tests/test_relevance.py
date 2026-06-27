@@ -76,8 +76,56 @@ class RejectTests(unittest.TestCase):
     def test_air_mattress_rejected(self) -> None:
         self.assertEqual(relevance.classify("Inflatable air mattress consumer goods").decision, "REJECT")
 
-    def test_recycling_rejected(self) -> None:
-        self.assertEqual(relevance.classify("Mattress recycling services contract").decision, "REJECT")
+    def test_recycling_without_strong_signal_rejected(self) -> None:
+        # A pure recycling/disposal services buy with no strong mattress term
+        # is still a hard no.
+        self.assertEqual(
+            relevance.classify("Recycling services contract for the county").decision,
+            "REJECT",
+        )
+
+    def test_aviation_buyer_without_mattress_rejected(self) -> None:
+        # "aviation" with no strong mattress signal still rejects.
+        v = relevance.classify("Aviation ground support equipment", buyer="DLA Aviation")
+        self.assertEqual(v.decision, "REJECT")
+
+
+class ContextExcludeDemotionTests(unittest.TestCase):
+    """Context-excludes (aviation/disposal/reupholster) must NOT silently kill a
+    real mattress bid; with a strong signal present they demote to REVIEW."""
+
+    def test_dla_aviation_mattress_demoted_not_rejected(self) -> None:
+        # The reported false-negative: buyer name "DLA Aviation" used to trigger
+        # the `aviation` hard-exclude and kill a genuine mattress solicitation.
+        v = relevance.classify(
+            "Twin mattresses and pillow-top mattress sets",
+            buyer="DLA Aviation Richmond",
+        )
+        self.assertEqual(v.decision, "REVIEW")
+        self.assertIn("aviation", v.matched_exclude)
+
+    def test_mattress_supply_with_disposal_demoted_not_rejected(self) -> None:
+        # A supply contract that also disposes of old units is a real fit.
+        v = relevance.classify("Correctional mattress supply and mattress disposal")
+        self.assertEqual(v.decision, "REVIEW")
+
+
+class AntiLigatureTests(unittest.TestCase):
+    """Anti-ligature is a premium correctional/behavioral-health feature, a
+    positive signal — not a penalty."""
+
+    def test_anti_ligature_mattress_accepts(self) -> None:
+        v = relevance.classify("Anti-ligature mattresses for behavioral health unit")
+        self.assertEqual(v.decision, "ACCEPT")
+        self.assertIn("anti-ligature", v.context)
+        # No longer penalized as a soft-exclude.
+        self.assertNotIn("anti-ligature", v.matched_exclude)
+
+    def test_anti_ligature_without_mattress_still_rejects(self) -> None:
+        # Anti-ligature is context, not an include: bathroom fixtures with no
+        # mattress/bedding term are still not our bid.
+        v = relevance.classify("Anti-ligature bathroom fixtures and grab bars")
+        self.assertEqual(v.decision, "REJECT")
 
 
 class WordBoundaryTests(unittest.TestCase):

@@ -115,6 +115,14 @@ class MainDryRunTests(unittest.TestCase):
         self.assertIn("PIPELINE FAILED", out)
         self.assertIn("https://gh/run/9", out)
 
+    def test_watchdog_mode_dry_run(self) -> None:
+        rc, out = self._run("--watchdog", "--window", "7",
+                            "--run-url", "https://gh/run/12", "--dry-run")
+        self.assertEqual(rc, 0)
+        self.assertIn("WATCHDOG", out)
+        self.assertIn("7 runs with ZERO", out)
+        self.assertIn("https://gh/run/12", out)
+
 
 if __name__ == "__main__":
     unittest.main()

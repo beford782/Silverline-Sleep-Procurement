@@ -107,6 +107,23 @@ def build_failure_email(date: str, run_url: str) -> tuple[str, str]:
     return subject, body
 
 
+def build_watchdog_email(window: int, run_url: str) -> tuple[str, str]:
+    """Return (subject, body) for a zero-message (silent-pipe) alert."""
+    subject = f"[Silverline] WATCHDOG - {window} runs with ZERO alerts (pipe may be broken)"
+    body = (
+        f"The last {window} daily email-ingest runs all fetched ZERO messages from the "
+        "Procurement/Alerts label.\n\n"
+        "Portals normally send some mail even in a quiet mattress market, so a sustained "
+        "zero usually means the pipe is broken - the Power Automate flow stopped, the Gmail "
+        "filter/label was renamed, or a portal dropped your notification contact.\n\n"
+        + (f"Watchdog run: {run_url}\n\n" if run_url else "")
+        + "What to do: (1) send yourself a test email with subject [PROC-ALERT] and confirm it "
+        "lands under the Procurement/Alerts label; (2) check the 'Procurement alerts to Gmail' "
+        "flow is still On at make.powerautomate.com.\n"
+    )
+    return subject, body
+
+
 def send_email(*, host: str, port: int, address: str, app_password: str,
                to_addr: str, subject: str, body: str) -> None:
     """Send a plain-text email over SMTP-SSL. Raises on failure."""
@@ -132,7 +149,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--pr-url", default="", help="Triage PR URL to include in the email.")
     parser.add_argument("--failure", action="store_true",
                         help="Send a 'pipeline failed' alert instead of a digest (for the workflow's if:failure step).")
-    parser.add_argument("--run-url", default="", help="Failed run URL to include in a --failure alert.")
+    parser.add_argument("--run-url", default="", help="Failed/watchdog run URL to include in the alert.")
+    parser.add_argument("--watchdog", action="store_true",
+                        help="Send a 'zero alerts / silent pipe' alert (for the watchdog workflow).")
+    parser.add_argument("--window", type=int, default=0,
+                        help="Number of consecutive zero-fetch runs, for a --watchdog alert.")
     parser.add_argument("--to", default=None,
                         help="Recipient (default: NOTIFY_EMAIL_TO env, else GMAIL_ADDRESS).")
     parser.add_argument("--smtp-host", default="smtp.gmail.com")
@@ -143,7 +164,9 @@ def main(argv: list[str] | None = None) -> int:
 
     created_date = args.created_date or datetime.now().date().isoformat()
 
-    if args.failure:
+    if args.watchdog:
+        subject, body = build_watchdog_email(args.window, args.run_url)
+    elif args.failure:
         subject, body = build_failure_email(created_date, args.run_url)
     else:
         active_rows = pipeline.read_rows(Path(args.active))[1] if Path(args.active).exists() else []

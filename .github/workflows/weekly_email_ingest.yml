@@ -20,6 +20,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   ingest:
@@ -213,4 +214,36 @@ jobs:
             echo "Email ingest opened a PR for human triage (scope: ${{ steps.diff.outputs.scope }})."
           else
             echo "Email ingest ran clean - no new rows, no PR."
+          fi
+
+      # A failed run is the silent-miss failure mode: the run goes red but nobody
+      # is watching the Actions tab. Surface it as a GitHub issue so a missed
+      # alert window is visible. Create-or-comment de-dupes.
+      - name: Alert on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW: ${{ github.workflow }}
+        run: |
+          TITLE="Ingest failure: ${WORKFLOW}"
+          TODAY=$(date -u +%F)
+          {
+            echo "The ingest workflow **${WORKFLOW}** FAILED on ${TODAY}."
+            echo
+            echo "- Failed run: ${RUN_URL}"
+            echo "- Impact: an email-alert sweep did not complete, so new mattress/bedding opportunities in this window may have been missed."
+            echo
+            echo "## What to do"
+            echo "1. Open the failed run above and read the first red step."
+            echo "2. Common causes: missing/expired Microsoft Graph secret(s), mailbox access, or a code error."
+            echo "3. Fix the cause, then use \"Re-run all jobs\" on that run."
+          } > /tmp/fail.md
+          ISSUE_NUMBER=$(gh issue list --state open --search "\"${TITLE}\" in:title" --json number,title \
+            --jq ".[] | select(.title == \"${TITLE}\") | .number" | head -n 1)
+          if [ -z "$ISSUE_NUMBER" ]; then
+            gh issue create --title "$TITLE" --body-file /tmp/fail.md
+          else
+            gh issue comment "$ISSUE_NUMBER" --body-file /tmp/fail.md
           fi

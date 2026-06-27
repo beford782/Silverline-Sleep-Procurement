@@ -462,5 +462,81 @@ class CheckModeTests(unittest.TestCase):
             self.assertIn(code, ingest_email._HTTP_HINTS)
 
 
+class ImapProviderTests(unittest.TestCase):
+    """The IMAP provider (Gmail app-password path) must produce the same
+    normalized message dicts as Graph/Gmail so the parser chain is unchanged."""
+
+    def _raw(self, *, subject: str, sender: str, plain: str = "", html: str = "",
+             msgid: str = "<m1@mail>", date: str = "Mon, 15 Jun 2026 09:00:00 -0500") -> bytes:
+        import email.message
+        m = email.message.EmailMessage()
+        m["Message-ID"] = msgid
+        m["From"] = sender
+        m["Subject"] = subject
+        m["Date"] = date
+        if plain:
+            m.set_content(plain)
+        if html:
+            if plain:
+                m.add_alternative(html, subtype="html")
+            else:
+                m.set_content(html, subtype="html")
+        return bytes(m)
+
+    def test_normalize_maps_canonical_fields(self) -> None:
+        raw = self._raw(
+            subject="New Opportunity: Dormitory Mattresses",
+            sender="City Purchasing <notifications@gobonfire.com>",
+            plain="Project: Dormitory Mattresses\nView: https://city.bonfirehub.com/opportunities/5\n",
+        )
+        out = ingest_email.normalize_imap_message(raw)
+        self.assertEqual(out["id"], "<m1@mail>")
+        self.assertEqual(out["sender"], "City Purchasing <notifications@gobonfire.com>")
+        self.assertEqual(out["subject"], "New Opportunity: Dormitory Mattresses")
+        self.assertIn("2026", out["date"])
+        self.assertIn("Dormitory Mattresses", out["body"])
+
+    def test_normalize_decodes_rfc2047_subject(self) -> None:
+        raw = self._raw(
+            subject="=?UTF-8?Q?Correctional_Mattresses_=E2=80=94_RFB?=",
+            sender="bids@example.gov",
+            plain="See attached.",
+        )
+        out = ingest_email.normalize_imap_message(raw)
+        self.assertEqual(out["subject"], "Correctional Mattresses — RFB")
+
+    def test_normalize_prefers_plain_over_html(self) -> None:
+        raw = self._raw(
+            subject="Bid",
+            sender="a@b.com",
+            plain="PLAIN BODY mattress",
+            html="<p>HTML BODY mattress</p>",
+        )
+        out = ingest_email.normalize_imap_message(raw)
+        self.assertIn("PLAIN BODY", out["body"])
+        self.assertNotIn("<p>", out["body"])
+
+    def test_normalize_html_only_is_stripped(self) -> None:
+        raw = self._raw(
+            subject="Bid",
+            sender="a@b.com",
+            html="<html><body><p>Inmate <b>mattress</b> RFQ</p></body></html>",
+        )
+        out = ingest_email.normalize_imap_message(raw)
+        self.assertIn("mattress", out["body"])
+        self.assertNotIn("<b>", out["body"])
+
+    def test_normalized_imap_message_feeds_relevance_chain(self) -> None:
+        raw = self._raw(
+            subject="Invitation for Bid: Correctional Mattresses",
+            sender="City Purchasing <notifications@gobonfire.com>",
+            plain="Jail mattresses for the county detention center. View the opportunity online.",
+        )
+        msg = ingest_email.normalize_imap_message(raw)
+        new_rows, _leads, _dupes, _skipped, _rejected = ingest_email.ingest([msg], [], TODAY)
+        self.assertEqual(len(new_rows), 1)
+        self.assertEqual(new_rows[0]["source"], "Bonfire")
+
+
 if __name__ == "__main__":
     unittest.main()

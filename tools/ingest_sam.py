@@ -265,6 +265,7 @@ def ingest(
     home_states: frozenset[str] = relevance.HOME_STATES_DEFAULT,
     existing_leads: list[dict] | None = None,
     review_target: str = "leads",
+    existing_lead_archive: list[dict] | None = None,
 ) -> tuple[list[dict], list[dict], list[dict], list[dict]]:
     """Partition incoming records into (new_rows, leads, dupes, rejected).
 
@@ -282,10 +283,13 @@ def ingest(
     """
     existing_leads = existing_leads or []
     ids, sols = existing_ids(existing_rows)
-    # Lead dedup spans existing Lead Radar rows AND active/archive, so a broad
-    # signal already tracked (as a lead or a live bid) is not re-added.
+    # Lead dedup spans existing Lead Radar rows, the Lead Radar ARCHIVE (so a
+    # human-triaged dead lead is not re-ingested every sweep), AND active/archive
+    # pipeline rows, so a broad signal already tracked is not re-added.
     lead_ids: set[str] = set()
     for r in existing_leads:
+        lead_ids |= lead_radar.lead_match_keys(r)
+    for r in (existing_lead_archive or []):
         lead_ids |= lead_radar.lead_match_keys(r)
     for r in existing_rows:
         lead_ids |= lead_radar.lead_match_keys(r)
@@ -375,6 +379,11 @@ def main(argv: list[str] | None = None) -> int:
         help=f"Lead Radar CSV for REVIEW-band rows (default: {lead_radar.DEFAULT_REVIEW.relative_to(REPO_ROOT)})",
     )
     parser.add_argument(
+        "--lead-archive",
+        default=str(lead_radar.DEFAULT_ARCHIVE),
+        help=f"Lead Radar archive consulted for dedup only; never written (default: {lead_radar.DEFAULT_ARCHIVE.relative_to(REPO_ROOT)})",
+    )
+    parser.add_argument(
         "--review-target",
         choices=("leads", "active", "reject-log"),
         default="leads",
@@ -405,6 +414,10 @@ def main(argv: list[str] | None = None) -> int:
     existing_leads: list[dict] = []
     if leads_path.exists():
         _, existing_leads = lead_radar.read_lead_rows(leads_path)
+    lead_archive_path = Path(args.lead_archive)
+    existing_lead_archive: list[dict] = []
+    if lead_archive_path.exists():
+        _, existing_lead_archive = lead_radar.read_lead_rows(lead_archive_path)
 
     if args.fixture:
         with open(args.fixture, "r", encoding="utf-8") as fh:
@@ -483,6 +496,7 @@ def main(argv: list[str] | None = None) -> int:
     new_rows, leads, dupes, rejected = ingest(
         records, existing_rows, today,
         existing_leads=existing_leads, review_target=args.review_target,
+        existing_lead_archive=existing_lead_archive,
     )
 
     # Attribute each dupe to active vs archive so the operator can tell

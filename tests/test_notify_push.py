@@ -108,6 +108,13 @@ class MainDryRunTests(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertIn("nothing new", out)
 
+    def test_failure_mode_dry_run(self) -> None:
+        rc, out = self._run("--failure", "--run-url", "https://gh/run/9",
+                            "--created-date", "2026-06-27", "--dry-run")
+        self.assertEqual(rc, 0)
+        self.assertIn("PIPELINE FAILED", out)
+        self.assertIn("https://gh/run/9", out)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -14,9 +14,12 @@ Decision bands:
   REVIEW — ambiguous: furniture/bedding-adjacent wording with no explicit
            mattress term (a human must confirm scope on the portal). This
            is the correct home for broad furniture co-op digests.
-  REJECT — a hard-exclude family (concrete/scour mattress, aircraft, air
-           mattress, recycling/disposal, reupholster/refinish), or no
-           include signal at all (e.g. a registration-confirmation email).
+  REJECT — an unambiguous hard-exclude family (concrete/scour mattress, air
+           mattress), a context-exclude (aircraft/aviation, recycling/disposal,
+           reupholster/refinish) with NO strong mattress signal, or no include
+           signal at all (e.g. a registration-confirmation email). A
+           context-exclude that co-occurs with a strong mattress term is demoted
+           to REVIEW, not rejected (so "DLA Aviation ... mattresses" survives).
 
 Matching is whole-word / phrase based (regex word boundaries), NOT substring
 counting — so "cot" no longer matches "Scott" and "foundation" no longer
@@ -71,14 +74,31 @@ CONTEXT = [
     "hospital", "medical", "med-surg", "nursing home", "long-term care",
     "behavioral health", "university", "college", "school district",
     "housing authority",
+    # Anti-ligature / ligature-resistant is a PREMIUM correctional &
+    # behavioral-health mattress feature, not a disqualifier — it signals
+    # exactly the institutional buyer we want. (Previously mis-filed under
+    # SOFT_EXCLUDE, which penalized our best-fit bids.)
+    "anti-ligature", "ligature resistant", "ligature-resistant",
 ]
 
-# Hard kill — unambiguous false-positive families seen in real ingests.
+# Hard kill — UNAMBIGUOUS false-positive families. These reject regardless of
+# any mattress signal: a "concrete mattress" (erosion mat) or "air mattress"
+# is never our product.
 HARD_EXCLUDE = [
     "concrete mattress", "articulated concrete", "concrete block mattress",
     "scour", "erosion control", "gabion",
-    "aircraft", "aviation",
     "air mattress", "inflatable mattress", "air bed",
+]
+
+# Context-exclude — wrong-service/wrong-product terms that COLLIDE with real
+# mattress buys. They hard-reject ONLY when there is no STRONG mattress signal;
+# when a strong term is present they demote ACCEPT -> REVIEW (a human confirms)
+# instead of silently killing the lead. Examples: "aviation" collides with the
+# real buyer "DLA Aviation"; "mattress disposal"/"recycling services" and
+# "reupholster" are real-but-wrong-service buys worth a human glance (a supply
+# contract that also disposes of old units is a genuine fit).
+CONTEXT_EXCLUDE = [
+    "aircraft", "aviation",
     "mattress recycling", "mattress disposal", "recycling services",
     "reupholster", "reupholstery", "refinish",
 ]
@@ -87,7 +107,6 @@ HARD_EXCLUDE = [
 SOFT_EXCLUDE = [
     "office furniture", "school furniture", "classroom furniture",
     "desks", "filing cabinet", "lockers", "office supplies",
-    "anti-ligature", "ligature resistant", "ligature-resistant",
     "overseas", "foreign",
 ]
 
@@ -144,6 +163,7 @@ _STRONG = _compile(STRONG_INCLUDE)
 _WEAK = _compile(WEAK_INCLUDE)
 _CONTEXT = _compile(CONTEXT)
 _HARD = _compile(HARD_EXCLUDE)
+_CONTEXT_EXCLUDE = _compile(CONTEXT_EXCLUDE)
 _SOFT = _compile(SOFT_EXCLUDE)
 _PROC = _compile(PROCUREMENT_CUES)
 _STATE_NAME_RE = re.compile(
@@ -204,6 +224,16 @@ def classify(text: str, buyer: str = "", source: str = "",
     weak = _hits(blob, _WEAK)
     context = _hits(blob, _CONTEXT)
     soft = _hits(blob, _SOFT)
+    ctx_exclude = _hits(blob, _CONTEXT_EXCLUDE)
+
+    # Context-excludes (aviation/disposal/reupholster) kill ONLY when there is
+    # no strong mattress signal. With a strong term present they are demoted to
+    # REVIEW below instead of silently rejecting a real bid (the "DLA Aviation
+    # ... mattresses" false-negative).
+    if ctx_exclude and not strong:
+        return Verdict("REJECT", 5, matched_exclude=ctx_exclude,
+                       reasons=[f"context-exclude (no strong mattress signal): "
+                                f"{', '.join(ctx_exclude)}"])
 
     if not strong and not weak:
         return Verdict("REJECT", 0, reasons=["no mattress/bedding signal"])
@@ -223,6 +253,17 @@ def classify(text: str, buyer: str = "", source: str = "",
         if context:
             reasons.append(f"institutional context: {', '.join(context)}")
 
+    # A context-exclude alongside a strong mattress term (e.g. buyer "DLA
+    # Aviation" on a mattress solicitation, or a supply contract that also
+    # disposes of old units) is demoted to REVIEW for a human glance — never
+    # silently rejected.
+    if ctx_exclude:
+        if decision == "ACCEPT":
+            decision = "REVIEW"
+            conf = _clamp(min(conf, 55), 25, 60)
+        reasons.append(f"context-exclude with mattress signal -> review: "
+                       f"{', '.join(ctx_exclude)}")
+
     states = detect_states(blob)
     in_region = states & home_states
     out_region = states - home_states
@@ -238,7 +279,7 @@ def classify(text: str, buyer: str = "", source: str = "",
         reasons.append("no procurement cue (web source — could be news/catalog)")
 
     return Verdict(decision, conf, matched_include=strong + weak,
-                   matched_exclude=soft, context=context,
+                   matched_exclude=soft + ctx_exclude, context=context,
                    states=sorted(states), reasons=reasons)
 
 

@@ -108,15 +108,17 @@ def build_search_url(
     offset: int = 0,
     naics_code: str | None = None,
     notice_type: str | None = None,
+    classification_code: str | None = None,
     response_deadline_after: str | None = None,
     response_deadline_before: str | None = None,
 ) -> str:
     """Compose the SAM.gov search URL with safely encoded params.
 
     Parameter names match the documented SAM.gov v2 search API: `title`,
-    `ncode`, `ptype`, `rdlfrom`, `rdlto`. There is no documented
+    `ncode`, `ccode`, `ptype`, `rdlfrom`, `rdlto`. There is no documented
     free-text keyword param; use `title` for keyword-style matching
-    against opportunity titles.
+    against opportunity titles, or `ccode` (PSC) / `ncode` (NAICS) to
+    sweep by procurement classification regardless of title wording.
     """
     params: dict[str, str] = {
         "api_key": api_key,
@@ -132,6 +134,10 @@ def build_search_url(
         # field being `naicsCode`. Both names are accepted by the API;
         # we use the documented request-side name.
         params["ncode"] = naics_code
+    if classification_code:
+        # SAM.gov v2 uses `ccode` for the PSC / classification code on the
+        # request side (the response field is `classificationCode`).
+        params["ccode"] = classification_code
     if notice_type:
         params["ptype"] = notice_type
     if response_deadline_after:
@@ -306,6 +312,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--posted-from", required=True, type=_parse_iso_date, help="YYYY-MM-DD (inclusive); max 1-year range per SAM.gov")
     parser.add_argument("--posted-to", required=True, type=_parse_iso_date, help="YYYY-MM-DD (inclusive); max 1-year range per SAM.gov")
     parser.add_argument("--naics-code", default=None, help="NAICS code, e.g. 337910 for mattress manufacturing (sent as 'ncode')")
+    parser.add_argument("--psc", default=None, help="PSC / classification code, e.g. 7210 (household furnishings) or 7105 (household furniture) (sent as 'ccode')")
     parser.add_argument("--notice-type", default=None, help="Procurement type code: o=Solicitation, k=Combined Synopsis/Solicitation, r=Sources Sought, p=Pre-solicitation, a=Award, etc. (sent as 'ptype')")
     parser.add_argument("--response-deadline-after", type=_parse_iso_date, default=None,
                         help="Filter to opportunities with response deadline on or after YYYY-MM-DD (sent as 'rdlfrom'). "
@@ -384,6 +391,7 @@ def main(argv: list[str] | None = None) -> int:
                 offset=offset,
                 naics_code=args.naics_code,
                 notice_type=args.notice_type,
+                classification_code=args.psc,
                 response_deadline_after=rdl_after,
                 response_deadline_before=args.response_deadline_before,
             )

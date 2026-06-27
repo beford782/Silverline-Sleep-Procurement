@@ -47,7 +47,7 @@
 | **Louisiana OSP** | LaGov Supplier Self-Service | ✅ complete (2026-06-20) | — | mattress, bedding, dorm, correctional, FF&E | LaPAC notifications |
 | **Mississippi DFA** | MAGIC Supplier Self-Service | ✅ complete (2026-06-20) | — | mattress, dorm furniture, bedding, FF&E | Bid the FY26-27 "Furniture–Cafeteria/Dormitory" contract |
 | **Arkansas OSP** | ARBuy (Periscope/BSO) | ✅ complete (2026-06-21) | — | mattress, bedding, beds, correctional/dorm | AR Division of Correction, universities |
-| **New Mexico GSD/SPD** | eProNM/JAGGAER + Euna/Bonfire | 🟡 partial (2026-06-21) | — | mattress, bedding, dorm, FF&E | eProNM done; **also register Euna Supplier Network (NM-SPD Bonfire portal)** to be complete. Runbook: [`nm_spd_euna_bonfire_registration_runbook.md`](nm_spd_euna_bonfire_registration_runbook.md) |
+| **New Mexico GSD/SPD** | eProNM/JAGGAER + Euna/Bonfire | 🟡 partial (2026-06-21) | — | mattress, bedding, dorm, FF&E | eProNM done; **also register Euna Supplier Network (NM-SPD Bonfire portal)** to be complete. **Time-sensitive: Euna/NM-SPD go-live 2026-06-29** (eProNM through 2026-06-22) — register before then. Runbook: [`nm_spd_euna_bonfire_registration_runbook.md`](nm_spd_euna_bonfire_registration_runbook.md) |
 
 ## Counties / local (jails, detention)
 

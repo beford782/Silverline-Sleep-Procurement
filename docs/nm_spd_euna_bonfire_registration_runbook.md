@@ -32,14 +32,18 @@
 | Legacy portal (being retired) | eProNM (SciQuest/JAGGAER): `https://bids.sciquest.com/apps/Router/PublicEvent?CustomerOrg=StateOfNewMexico` — already registered (2026-06-21) |
 | Lead Radar row | `new-mexico-spd-sciquest-portal` (status `watching`) |
 
-> **Cutover-date caveat (do not assume).** The repo records the migration window
-> inconsistently: `sources/procurement_sources.json` notes eProNM running through
-> ~**2026-06-22** with Euna/NM-SPD becoming the exclusive posting portal at go-live, while
-> the Lead Radar note records an exclusive go-live of **2026-09-01**. Treat both as
-> *approximate*. The point of this registration is to be **on the NM-SPD portal's alert list
-> before** whichever cutover is real — register now and you're covered either way. If the
-> portal page states a current go-live date, trust the page over this doc and tell me so I
-> update the records.
+> **Cutover dates (verified 2026-06-26 against the NM SPD "New eProcurement Platform"
+> announcement on `generalservices.state.nm.us`):**
+> - **eProNM (SciQuest/JAGGAER)** accepts supplier registration and bid responses **through
+>   2026-06-22**.
+> - **2026-06-29 go-live** — after this date **all new solicitations are posted exclusively
+>   in the Euna/Bonfire NM-SPD Procurement Portal**, and you must be registered there to bid
+>   on any new NM opportunity.
+>
+> **This is time-sensitive, not just positioning.** With go-live on **2026-06-29**, completing
+> this registration is what keeps NM coverage live after eProNM stops carrying new bids — do it
+> before the 29th. (A prior Lead Radar note said 2026-09-01; that was wrong and has been
+> corrected to 2026-06-29.)
 
 ---
 
@@ -158,6 +162,6 @@ correctional supplies, detention bedding, hospital bed, patient bed, FF&E
 ### Scope note
 Docs only. No code, `configs/feeds.json`, CSV, or pipeline changes in this file. URLs are
 from the committed `sources/procurement_sources.json` registry and the Lead Radar row; the
-eProNM→Euna cutover dates are recorded inconsistently in the repo and are flagged above as
-"confirm on the live portal." PII (`[on file]`) stays out of version control; the UEI is
-public.
+eProNM→Euna cutover dates (eProNM through 2026-06-22; Euna/NM-SPD exclusive 2026-06-29) were
+verified 2026-06-26 against the NM SPD site. PII (`[on file]`) stays out of version control;
+the UEI is public.

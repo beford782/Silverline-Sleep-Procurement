@@ -38,7 +38,7 @@ Confirmed result: SAM assigned UEI `XF73FG8CVMX1` for `CONTINENTAL SILVERLINE PR
 
 ## 2. If SAM asks again: TX SOS formation record
 
-Because the entity is a formed TX LLC/corporation, its formation record is public. Two ways to obtain an acceptable document:
+Because the entity is a formed **TX limited partnership (L.P.)**, its formation record is public. (Legal name/entity type per [`company_identity.md`](company_identity.md): **CONTINENTAL SILVERLINE PRODUCTS, L.P.** — not an LLC.) Two ways to obtain an acceptable document:
 
 **Option A — Free official printout (fastest).**
 - Texas Comptroller **Taxable Entity Search**: <https://mycpa.cpa.state.tx.us/coa/> — search the legal name; open the entity record.
@@ -46,7 +46,7 @@ Because the entity is a formed TX LLC/corporation, its formation record is publi
 - **Print/screenshot the RESULTS page** showing the legal name, the **registration/formation date** (the start year), and **Texas** as the jurisdiction. SAM requires the capture to show the **search result AND the page URL** — not a blank form.
 
 **Option B — Certified copy (most bulletproof).**
-- Order a **Certificate of Formation** copy or **Certificate of Fact – Status** from SOSDirect (small fee, ~$15). A stamped/sealed Articles of Incorporation/Organization is the EVS "gold standard" and covers legal name + start year + state in one document.
+- Order a **Certificate of Formation** copy or **Certificate of Fact – Status** from SOSDirect (small fee, ~$15). A stamped/sealed **Certificate of Formation** is the EVS "gold standard" and covers legal name + start year + state in one document. (An L.P. files a Certificate of Formation — it does **not** have "Articles of Incorporation/Organization.")
 
 > Use Option A first; fall back to Option B only if EVS rejects the printout.
 
@@ -57,7 +57,7 @@ Because the entity is a formed TX LLC/corporation, its formation record is publi
 1. Sign in at <https://sam.gov> with the Login.gov account → **Entity Management / Get Started**.
 2. In **Entity Validation**, if your entity isn't matched, choose **"I don't see my entity / my information is different"** to open an **incidental validation ticket**.
 3. Enter the four data points so each **exactly** matches your documents:
-   - **Legal business name** — match the EIN letter character-for-character, including (or excluding) the entity suffix ("LLC"/"Inc.") and punctuation.
+   - **Legal business name** — match the EIN letter character-for-character, including the entity suffix (here **`L.P.`** — *not* "LLC"/"Inc.") and punctuation.
    - **Physical address** — the street address on the bank/utility statement; **never a P.O. box**.
    - **Start year** — the formation/registration year on the TX SOS record.
    - **State of incorporation** — Texas.
@@ -71,7 +71,7 @@ Because the entity is a formed TX LLC/corporation, its formation record is publi
 - **P.O. box** as the physical address → rejected every time. Use a street address.
 - **Lease agreements** → rejected (private contracts, not public records).
 - **Blank/original applications or a W-9** → rejected; only **processed/certified** documents count.
-- **Any mismatch** between typed data and the documents (a different start year, an extra "LLC", an abbreviated street) → rejected. Make them identical.
+- **Any mismatch** between typed data and the documents (a different start year, the wrong suffix — e.g. typing "LLC" when the entity is an **"L.P."** — an abbreviated street) → rejected. Make them identical.
 - Document with **no certifying stamp/seal/URL** → rejected.
 
 ---

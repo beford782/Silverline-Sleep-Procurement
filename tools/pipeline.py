@@ -31,6 +31,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
+# relevance.py is the single source of truth for mattress fit scoring; it lives
+# alongside this module. Make it importable whether pipeline runs as a script
+# or is imported by another tool.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import relevance  # noqa: E402
+
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_ACTIVE = REPO_ROOT / "bids" / "active" / "_pipeline.csv"
@@ -71,64 +77,12 @@ RISK_LEVEL_VALUES = ("low", "medium", "high")
 PROCUREMENT_RISK_VALUES = ("low", "medium", "high", "blocker")
 GATE_STATUS_VALUES = ("triage", "blocked", "bid_ready", "drafting", "submitted", "closed")
 
-# Keyword vocabularies used by the `score` subcommand. Kept transparent
-# and tunable here — no ML.
-POSITIVE_KEYWORDS = (
-    "mattress",
-    "mattresses",
-    "bedding",
-    "box spring",
-    "foundation",
-    "bed frame",
-    "bunk",
-    "cot",
-    "dormitory",
-    "residence hall",
-    "correctional",
-    "jail",
-    "prison",
-    "detention",
-    "shelter",
-    "emergency",
-    "medical",
-    "healthcare",
-    "hospital",
-    "institutional furniture",
-    "ff&e",
-)
-
-CAUTION_KEYWORDS = (
-    "anti-ligature",
-    "removal",
-    "disposal",
-    "inside delivery",
-    "installation",
-    "nationwide",
-    "laundry",
-    "sheets",
-    "pillows",
-    "bunk beds",
-    "fixed price",
-    "multi-year",
-    "liquidated damages",
-    # Calibration from real SAM.gov ingest: these federal-data patterns
-    # were repeatedly producing false-positive mattress matches.
-    "aircraft",              # military aviation hardware, not bedding
-    "concrete",              # civil-engineering "concrete mattress" (erosion mat)
-    "inspection services",   # buyer wants an inspector, not a manufacturer
-    "refinish",              # furniture refurbishment, not new bedding
-    "reupholster",           # furniture refurbishment
-    "overseas",              # outside vendor service geography
-)
-
-# Strong-caution keywords force the row to high-risk regardless of score.
-STRONG_CAUTION = ("anti-ligature", "liquidated damages", "nationwide")
-
-# Weights tuned against real SAM.gov titles, which are typically terse
-# (1-2 keyword hits). At weight 25, one positive hit lands at the
-# medium-risk threshold; two hits land at the bottom of low.
-POSITIVE_WEIGHT = 25
-CAUTION_WEIGHT = 25
+# The `score` subcommand's fit scoring is delegated to relevance.classify
+# (see score_text), so the pipeline computes fit_score the same whole-word way
+# every ingest channel already does. The old substring keyword vocabularies
+# (POSITIVE_KEYWORDS/CAUTION_KEYWORDS/STRONG_CAUTION + weights) were retired:
+# they re-scored ingested rows with a `.count()` substring scorer that both
+# clobbered the relevance-derived score and false-fired on "foundation"/"cot".
 
 
 def slugify(text: str) -> str:
@@ -393,26 +347,33 @@ def cmd_summary(args: argparse.Namespace) -> int:
 
 
 def score_text(text: str) -> tuple[int, str, dict]:
-    """Return (clamped_score 0..100, risk_level, detail dict)."""
-    lowered = text.lower()
-    positive_hits = sum(lowered.count(kw) for kw in POSITIVE_KEYWORDS)
-    caution_hits = sum(lowered.count(kw) for kw in CAUTION_KEYWORDS)
-    strong_caution = any(kw in lowered for kw in STRONG_CAUTION)
+    """Return (fit_score 0..100, risk_level, detail dict).
 
-    raw = positive_hits * POSITIVE_WEIGHT - caution_hits * CAUTION_WEIGHT
-    score = max(0, min(100, raw))
+    Delegates to relevance.classify so the pipeline's fit_score is computed the
+    SAME whole-word way every ingest channel already assigns it — re-scoring an
+    ingested row no longer clobbers its relevance-derived score, and there are
+    no substring false-fires (the retired scorer's "foundation"/"cot"/"bunk").
+    relevance is the single source of truth for fit_score.
 
-    if strong_caution or score < 25:
-        risk = "high"
-    elif score < 75:
+    risk_level is a coarse triage band off the relevance decision:
+      ACCEPT with high confidence -> low; ACCEPT/REVIEW mid -> medium;
+      REJECT or very low confidence -> high.
+    """
+    verdict = relevance.classify(text)
+    score = verdict.confidence
+
+    if verdict.decision == "ACCEPT" and score >= 75:
+        risk = "low"
+    elif verdict.decision in ("ACCEPT", "REVIEW") and score >= 25:
         risk = "medium"
     else:
-        risk = "low"
+        risk = "high"
 
     return score, risk, {
-        "positive_hits": positive_hits,
-        "caution_hits": caution_hits,
-        "strong_caution": strong_caution,
+        "decision": verdict.decision,
+        "matched_include": verdict.matched_include,
+        "matched_exclude": verdict.matched_exclude,
+        "context": verdict.context,
     }
 
 

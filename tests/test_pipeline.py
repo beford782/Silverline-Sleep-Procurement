@@ -265,75 +265,63 @@ class PipelineCliTests(unittest.TestCase):
         self.assertIn("SAM.gov", out)
 
     def test_score_text_strong_fit_lands_low_risk(self) -> None:
+        # A clear, multi-term mattress title is a strong ACCEPT -> low risk.
         score, risk, detail = pipeline.score_text(
             "Twin dormitory mattresses, box spring foundation, bed frame for residence hall"
         )
-        # 7+ positive keyword hits at weight 25 clamps to 100.
-        self.assertEqual(score, 100)
+        self.assertGreaterEqual(score, 75)
         self.assertEqual(risk, "low")
-        self.assertEqual(detail["caution_hits"], 0)
+        self.assertEqual(detail["decision"], "ACCEPT")
 
-    def test_score_text_terse_federal_title_lands_medium(self) -> None:
-        # The kind of title SAM.gov actually returns: 1-2 keyword hits.
-        score, risk, _ = pipeline.score_text("BED MATTRESS")
-        # Single hit on "mattress" -> 25 -> medium band [25, 75).
-        self.assertEqual(score, 25)
-        self.assertEqual(risk, "medium")
+    def test_score_text_delegates_fit_score_to_relevance(self) -> None:
+        # fit_score is the relevance confidence, not the retired substring math:
+        # a plain "Mattresses" title is a strong ACCEPT/low, where the old
+        # scorer parked it at 50/medium.
+        score, risk, detail = pipeline.score_text("Mattresses")
+        self.assertGreaterEqual(score, 75)
+        self.assertEqual(risk, "low")
+        self.assertEqual(detail["decision"], "ACCEPT")
 
-        score2, risk2, _ = pipeline.score_text("Mattresses")
-        # Two hits ("mattress" and "mattresses") -> 50 -> medium.
-        self.assertEqual(score2, 50)
-        self.assertEqual(risk2, "medium")
+    def test_score_text_no_substring_false_fire(self) -> None:
+        # The retired scorer counted "cot" inside "Scott" and "foundation"
+        # inside "foundational"; whole-word relevance does not.
+        score, risk, detail = pipeline.score_text(
+            "Scott County foundational paving services"
+        )
+        self.assertEqual(score, 0)
+        self.assertEqual(risk, "high")
+        self.assertEqual(detail["decision"], "REJECT")
 
-    def test_score_text_strong_caution_forces_high(self) -> None:
+    def test_score_text_anti_ligature_not_penalized(self) -> None:
+        # anti-ligature is a premium correctional feature now -> ACCEPT/low,
+        # not the retired scorer's forced-high caution.
         score, risk, _ = pipeline.score_text(
             "Anti-ligature mattresses for behavioral health unit"
         )
-        # 2 positive (mattress, mattresses) - 1 caution (anti-ligature) = 25,
-        # but anti-ligature is STRONG_CAUTION → forced high regardless.
-        self.assertEqual(risk, "high")
+        self.assertGreaterEqual(score, 75)
+        self.assertEqual(risk, "low")
 
     def test_score_text_empty_input_is_high(self) -> None:
         score, risk, _ = pipeline.score_text("")
         self.assertEqual(score, 0)
         self.assertEqual(risk, "high")
 
-    def test_score_text_aircraft_caution_drops_to_high(self) -> None:
-        # Real SAM.gov example: "16--MATTRESS,AIRCRAFT" was a false-positive
-        # match for an institutional mattress vendor. The 'aircraft' caution
-        # offsets the single positive hit and parks it at high risk.
-        score, risk, detail = pipeline.score_text("16--MATTRESS,AIRCRAFT")
-        self.assertEqual(score, 0)  # 25 - 25 = 0
-        self.assertEqual(risk, "high")
-        self.assertGreaterEqual(detail["caution_hits"], 1)
-
-    def test_score_text_concrete_caution_drops_to_high(self) -> None:
-        # USACE "Casting Articulated Concrete Mattress" is an erosion-control
-        # mat for waterways, not bedding. Concrete caution should catch it.
-        score, risk, _ = pipeline.score_text(
+    def test_score_text_unambiguous_exclude_is_high(self) -> None:
+        # "Articulated concrete mattress" (erosion mat) is an unambiguous
+        # hard-exclude -> REJECT/high.
+        score, risk, detail = pipeline.score_text(
             "2026 Casting Articulated Concrete Mattress"
         )
-        self.assertEqual(score, 0)
+        self.assertLess(score, 25)
         self.assertEqual(risk, "high")
+        self.assertEqual(detail["decision"], "REJECT")
 
-    def test_score_text_inspection_services_caution(self) -> None:
-        # VA wanted an inspector, not a manufacturer. We still surface as
-        # medium because the hospital + mattress keywords compete with the
-        # caution — operator triage is the right outcome.
-        score, risk, _ = pipeline.score_text(
-            "Hospital Grade Mattress Inspection Services"
-        )
-        # mattress + hospital positive = 50; inspection services caution = -25.
-        self.assertEqual(score, 25)
+    def test_score_text_context_collision_demoted_to_medium(self) -> None:
+        # "aircraft" alongside a strong mattress term demotes to REVIEW (medium)
+        # instead of silently rejecting — the DLA Aviation false-negative fix.
+        score, risk, detail = pipeline.score_text("16--MATTRESS,AIRCRAFT")
         self.assertEqual(risk, "medium")
-
-    def test_score_text_refurbishment_cautions(self) -> None:
-        # Army Chinhae refurbishment row — refinish + reupholster cautions
-        # plus an "overseas" geographic caution wipe out the positive hits.
-        score, risk, _ = pipeline.score_text(
-            "Repair, refinish, and reupholster furniture, sterilize mattresses overseas"
-        )
-        self.assertEqual(risk, "high")
+        self.assertEqual(detail["decision"], "REVIEW")
 
     def test_score_updates_fit_score_and_fills_blank_risk(self) -> None:
         argv = [
@@ -371,7 +359,7 @@ class PipelineCliTests(unittest.TestCase):
         rc, _, err = self._run("--active", str(self.active), "--archive", str(self.archive), "score")
         self.assertEqual(rc, 0, err)
         _, rows_after = _read_csv(self.active)
-        self.assertEqual(rows_after[0]["fit_score"], "100")
+        self.assertEqual(rows_after[0]["fit_score"], "95")
         self.assertEqual(rows_after[0]["risk_level"], "high")
 
     def test_score_overwrite_risk_flag_replaces_existing_risk_level(self) -> None:
@@ -392,7 +380,7 @@ class PipelineCliTests(unittest.TestCase):
         )
         self.assertEqual(rc, 0, err)
         _, rows_after = _read_csv(self.active)
-        self.assertEqual(rows_after[0]["fit_score"], "100")
+        self.assertEqual(rows_after[0]["fit_score"], "95")
         self.assertEqual(rows_after[0]["risk_level"], "low")
 
     def test_score_ignores_operator_notes(self) -> None:
@@ -411,8 +399,8 @@ class PipelineCliTests(unittest.TestCase):
         rc, _, err = self._run("--active", str(self.active), "--archive", str(self.archive), "score")
         self.assertEqual(rc, 0, err)
         _, rows_after = _read_csv(self.active)
-        self.assertEqual(rows_after[0]["fit_score"], "50")
-        self.assertEqual(rows_after[0]["risk_level"], "medium")
+        self.assertEqual(rows_after[0]["fit_score"], "80")
+        self.assertEqual(rows_after[0]["risk_level"], "low")
 
     def test_score_only_created_date_limits_updates(self) -> None:
         old_row = self._base_add_args(
@@ -440,8 +428,8 @@ class PipelineCliTests(unittest.TestCase):
         self.assertEqual(by_id["old-row"]["fit_score"], "")
         self.assertEqual(by_id["old-row"]["risk_level"], "")
         self.assertEqual(by_id["old-row"]["last_reviewed"], "2026-06-24")
-        self.assertEqual(by_id["new-row"]["fit_score"], "50")
-        self.assertEqual(by_id["new-row"]["risk_level"], "medium")
+        self.assertEqual(by_id["new-row"]["fit_score"], "80")
+        self.assertEqual(by_id["new-row"]["risk_level"], "low")
 
     def test_score_dry_run_does_not_mutate(self) -> None:
         argv = [

@@ -50,10 +50,11 @@ Flags worth knowing:
 - `--dry-run` (on `score`) — print the would-be changes and exit
   without touching the CSV.
 
-The scoring vocabularies live at the top of `tools/pipeline.py`
-(`POSITIVE_KEYWORDS`, `CAUTION_KEYWORDS`, `STRONG_CAUTION`) and are
-deliberately readable so they can be tuned to the institutional
-mattress vocabulary you actually see in solicitations.
+The `score` subcommand delegates `fit_score` to `relevance.classify`
+(`tools/relevance.py`), so the pipeline scores a row the same whole-word
+way every ingest channel does — re-scoring never clobbers the
+relevance-derived score, and there are no substring false-fires. The
+tunable mattress vocabulary lives in `relevance.py`.
 
 `fit_score` is numeric (`0` to `100`). `risk_level` is one of `low`,
 `medium`, or `high` and describes product/spec fit risk. Procurement

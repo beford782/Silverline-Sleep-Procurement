@@ -92,6 +92,21 @@ def build_email(accepts: list[dict], leads: list[dict], pr_url: str, date: str
     return subject, "\n".join(lines)
 
 
+def build_failure_email(date: str, run_url: str) -> tuple[str, str]:
+    """Return (subject, body) for a pipeline-failure alert."""
+    subject = f"[Silverline] PIPELINE FAILED - {date}"
+    body = (
+        f"The daily email-alert ingest FAILED on {date}.\n\n"
+        "This means a sweep did not complete, so new mattress/bedding "
+        "opportunities in this window may have been missed.\n\n"
+        + (f"Failed run: {run_url}\n\n" if run_url else "")
+        + "What to do: open the run above, read the first red step (common causes: "
+        "a bad GMAIL_APP_PASSWORD, the Procurement/Alerts label missing, or a code "
+        "error), fix it, then re-run.\n"
+    )
+    return subject, body
+
+
 def send_email(*, host: str, port: int, address: str, app_password: str,
                to_addr: str, subject: str, body: str) -> None:
     """Send a plain-text email over SMTP-SSL. Raises on failure."""
@@ -115,6 +130,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--created-date", default=None,
                         help="Notify about rows created on this date (default: today, UTC-naive).")
     parser.add_argument("--pr-url", default="", help="Triage PR URL to include in the email.")
+    parser.add_argument("--failure", action="store_true",
+                        help="Send a 'pipeline failed' alert instead of a digest (for the workflow's if:failure step).")
+    parser.add_argument("--run-url", default="", help="Failed run URL to include in a --failure alert.")
     parser.add_argument("--to", default=None,
                         help="Recipient (default: NOTIFY_EMAIL_TO env, else GMAIL_ADDRESS).")
     parser.add_argument("--smtp-host", default="smtp.gmail.com")
@@ -125,29 +143,34 @@ def main(argv: list[str] | None = None) -> int:
 
     created_date = args.created_date or datetime.now().date().isoformat()
 
-    active_rows = pipeline.read_rows(Path(args.active))[1] if Path(args.active).exists() else []
-    lead_rows = lead_radar.read_lead_rows(Path(args.leads))[1] if Path(args.leads).exists() else []
-    accepts, leads = select_new_rows(active_rows, lead_rows, created_date)
-
-    if not accepts and not leads:
-        print(f"notify: nothing new for {created_date}; no email sent.")
-        return 0
-
-    subject, body = build_email(accepts, leads, args.pr_url, created_date)
+    if args.failure:
+        subject, body = build_failure_email(created_date, args.run_url)
+    else:
+        active_rows = pipeline.read_rows(Path(args.active))[1] if Path(args.active).exists() else []
+        lead_rows = lead_radar.read_lead_rows(Path(args.leads))[1] if Path(args.leads).exists() else []
+        accepts, leads = select_new_rows(active_rows, lead_rows, created_date)
+        if not accepts and not leads:
+            print(f"notify: nothing new for {created_date}; no email sent.")
+            return 0
+        subject, body = build_email(accepts, leads, args.pr_url, created_date)
 
     if args.dry_run:
         print(f"--- DRY RUN (no email sent) ---\nTo: <recipient>\nSubject: {subject}\n\n{body}")
         return 0
 
+    return _deliver(args, subject, body)
+
+
+def _deliver(args, subject: str, body: str) -> int:
+    """Send via Gmail SMTP, non-fatally. A missing secret or send error warns
+    and returns 0 so a notify problem never fails the ingest job."""
     address = os.environ.get("GMAIL_ADDRESS", "")
     app_password = os.environ.get("GMAIL_APP_PASSWORD", "")
     to_addr = args.to or os.environ.get("NOTIFY_EMAIL_TO") or address
     if not address or not app_password or not to_addr:
-        # Non-fatal: never fail the ingest job over a missing notify secret.
         print("notify: WARNING - GMAIL_ADDRESS / GMAIL_APP_PASSWORD / recipient not set; "
               "skipping email (this did not fail the run).", file=sys.stderr)
         return 0
-
     try:
         send_email(host=args.smtp_host, port=args.smtp_port, address=address,
                    app_password=app_password, to_addr=to_addr, subject=subject, body=body)

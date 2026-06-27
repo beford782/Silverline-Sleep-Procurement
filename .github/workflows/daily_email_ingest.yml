@@ -1,0 +1,202 @@
+name: Daily email-alert ingest (IMAP)
+
+# The live awareness path (see docs/awareness_system_design.md). Reads portal
+# commodity-alert emails from a Gmail mailbox over IMAP using a self-issued app
+# password (no Azure/Workspace admin, no OAuth token expiry), runs them through
+# the central mattress-relevance filter, opens a triage PR for new rows, and
+# EMAILS Blake a digest so a fit reaches him without watching GitHub.
+#
+# Required repo secrets (Settings -> Secrets and variables -> Actions):
+#   GMAIL_ADDRESS, GMAIL_APP_PASSWORD   - the mailbox + 16-char app password
+# Optional:
+#   NOTIFY_EMAIL_TO   - where to email Blake (default: GMAIL_ADDRESS, i.e. self)
+#   HEALTHCHECK_URL   - healthchecks.io ping URL (dead-man's-switch)
+# Never commit these. See docs/email_ingest_setup.md for the one-time setup.
+
+on:
+  schedule:
+    # Daily at 14:00 UTC = 09:00 Houston CDT / 08:00 CST.
+    - cron: '0 14 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  ingest:
+    name: IMAP ingest, score, PR + email if new rows
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Verify Gmail app-password secrets are present
+        env:
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          missing=""
+          [ -z "$GMAIL_ADDRESS" ] && missing="$missing GMAIL_ADDRESS"
+          [ -z "$GMAIL_APP_PASSWORD" ] && missing="$missing GMAIL_APP_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repo secret(s):$missing. Add them at Settings -> Secrets and variables -> Actions (see docs/email_ingest_setup.md), then re-run."
+            exit 1
+          fi
+          echo "Gmail app-password secrets present."
+
+      - name: Run email-alert ingest (Gmail IMAP, app password)
+        env:
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          # 7-day window (not 1) so a slipped/late cron self-heals; dedup keys
+          # keep the day-to-day overlap idempotent. Folder = the Gmail label the
+          # operator routes portal alerts into.
+          python tools/ingest_email.py --provider imap \
+            --imap-folder "Procurement/Alerts" --since-days 7
+
+      - name: Re-score active pipeline
+        id: ingest_diff
+        run: |
+          active_changed=false
+          leads_changed=false
+          git diff --quiet -- bids/active/_pipeline.csv || active_changed=true
+          git diff --quiet -- leads/review/_lead_radar.csv || leads_changed=true
+          changed=false
+          if [ "$active_changed" = "true" ] || [ "$leads_changed" = "true" ]; then changed=true; fi
+          {
+            echo "active_changed=$active_changed"
+            echo "leads_changed=$leads_changed"
+            echo "changed=$changed"
+          } >> "$GITHUB_OUTPUT"
+          if [ "$active_changed" = "true" ]; then
+            python tools/pipeline.py score --only-created-date "$(date -u +%F)"
+          fi
+
+      - name: Run repository checks before PR creation
+        if: steps.ingest_diff.outputs.changed == 'true'
+        run: |
+          python -m compileall -q tools tests
+          python -m unittest discover -s tests
+          python tools/validate_vendor_profile.py vendor-profiles/continental_silverline.profile.json
+          python tools/workflow_check.py
+          python tools/dashboard.py --show summary
+
+      - name: Open PR with new rows
+        id: pr
+        if: steps.ingest_diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_NUMBER: ${{ github.run_number }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          TODAY=$(date -u +%F)
+          # Recompute scope here so the PR body reflects the final state.
+          scope="Lead Radar"
+          git diff --quiet -- bids/active/_pipeline.csv || scope="active bids"
+          if ! git diff --quiet -- bids/active/_pipeline.csv && ! git diff --quiet -- leads/review/_lead_radar.csv; then
+            scope="active bids + Lead Radar"
+          fi
+          BRANCH="auto/email-imap-${TODAY}-${RUN_NUMBER}"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git checkout -b "$BRANCH"
+          git add bids/active/_pipeline.csv leads/review/_lead_radar.csv
+          git commit -m "Daily IMAP email-alert ingest (${scope}): ${TODAY}"
+          git push -u origin "$BRANCH"
+
+          cat > /tmp/pr_body.md <<'EOF'
+          Automated daily portal email-alert ingest via Gmail IMAP (app password). **Human triage required before merge.**
+
+          Source: commodity/NIGP alert emails routed to the `Procurement/Alerts` label (Bonfire, IonWave, DemandStar, BidNet, BuyBoard, cooperatives, Texas ESBD, NM-SPD). No scraping. Relevance-gated: `ACCEPT` -> active bids, `REVIEW` -> Lead Radar, `REJECT` dropped.
+
+          ## Reviewer checklist
+          1. **Active bids** (`bids/active/_pipeline.csv`): review each new row; verify title, due date, and link against the portal.
+          2. **Lead Radar** (`leads/review/_lead_radar.csv`): broad/ambiguous signals, NOT confirmed bids. Promote only with a confirmed product fit: `python tools/lead_radar.py promote <lead-id> --confirmed-products "<...>"`.
+          3. Archive out-of-scope active rows with `python tools/pipeline.py move-to-archive <id> --status no-bid --next-action "No-bid archived" --note "<reason>"`; dead leads with `python tools/lead_radar.py archive <lead-id> --status no-fit --note "<reason>"`.
+
+          ## CI note
+          Commits authored by `GITHUB_TOKEN` do not trigger PR-event workflows. Push a follow-up commit or use "Re-run all checks".
+          EOF
+
+          PR_URL=$(gh pr create \
+            --title "Daily IMAP email-alert ingest (${scope}): ${TODAY}" \
+            --body-file /tmp/pr_body.md --base main --head "$BRANCH")
+          echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
+          echo "Opened $PR_URL"
+
+      - name: Email Blake a digest of new fits
+        if: steps.ingest_diff.outputs.changed == 'true'
+        env:
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          NOTIFY_EMAIL_TO: ${{ secrets.NOTIFY_EMAIL_TO }}
+        run: |
+          python tools/notify_push.py \
+            --created-date "$(date -u +%F)" \
+            --pr-url "${{ steps.pr.outputs.pr_url }}"
+
+      - name: Ping healthcheck (dead-man's-switch)
+        if: success()
+        env:
+          HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL }}
+        run: |
+          if [ -n "$HEALTHCHECK_URL" ]; then
+            curl -fsS --retry 3 --max-time 20 "$HEALTHCHECK_URL" >/dev/null && echo "healthcheck pinged."
+          else
+            echo "HEALTHCHECK_URL not set; skipping dead-man's-switch ping."
+          fi
+
+      - name: Summary
+        run: |
+          if [ "${{ steps.ingest_diff.outputs.changed }}" = "true" ]; then
+            echo "IMAP ingest opened a PR and emailed the digest."
+          else
+            echo "IMAP ingest ran clean - no new rows, no PR, no email."
+          fi
+
+      # Failure is the silent-miss mode. Make it loud BOTH ways: email Blake
+      # directly (his chosen channel) and open/comment a GitHub issue.
+      - name: Alert on failure (email + issue)
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW: ${{ github.workflow }}
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          NOTIFY_EMAIL_TO: ${{ secrets.NOTIFY_EMAIL_TO }}
+        run: |
+          # Email (non-fatal; no-op if creds are the thing that's missing).
+          python tools/notify_push.py --failure --run-url "$RUN_URL" || true
+          # GitHub issue (create-or-comment de-dupes).
+          TITLE="Ingest failure: ${WORKFLOW}"
+          TODAY=$(date -u +%F)
+          {
+            echo "The daily IMAP email-alert ingest **${WORKFLOW}** FAILED on ${TODAY}."
+            echo
+            echo "- Failed run: ${RUN_URL}"
+            echo "- Impact: an email-alert sweep did not complete; new opportunities in this window may have been missed."
+            echo
+            echo "## What to do"
+            echo "1. Open the failed run and read the first red step."
+            echo "2. Common causes: a bad/expired GMAIL_APP_PASSWORD, the Procurement/Alerts Gmail label missing or renamed, IMAP disabled, or a code error."
+            echo "3. Fix the cause, then use \"Re-run all jobs\"."
+          } > /tmp/fail.md
+          ISSUE_NUMBER=$(gh issue list --state open --search "\"${TITLE}\" in:title" --json number,title \
+            --jq ".[] | select(.title == \"${TITLE}\") | .number" | head -n 1)
+          if [ -z "$ISSUE_NUMBER" ]; then
+            gh issue create --title "$TITLE" --body-file /tmp/fail.md
+          else
+            gh issue comment "$ISSUE_NUMBER" --body-file /tmp/fail.md
+          fi

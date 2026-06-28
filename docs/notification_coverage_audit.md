@@ -1,6 +1,6 @@
 # Notification Coverage Audit - are alerts actually reaching us?
 
-- **For:** Blake / Continental Silverline Products, L.P.
+- **For:** Blake / Continental Silverline Products, LLC
 - **Date:** 2026-06-27
 - **Question:** of every portal/co-op/agency we registered with, which ones actually
   deliver opportunity notifications to us, and how do we verify it?

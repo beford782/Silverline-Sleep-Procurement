@@ -34,29 +34,30 @@
 |---|---|---|---|
 | [~] | **SAM.gov** | **VERIFIED 2026-06-28: registration displays `CONTINENTAL SILVERLINE PRODUCTS, L.P.` (wrong), status Work-In-Progress, UEI `XF73FG8CVMX1`, no CAGE, no banking entered.** **Do NOT complete banking. Do NOT cite UEI `XF73FG8CVMX1`.** Next step (drafted): file an FSD ticket (fsd.gov / 866-606-8220) — see [`sam_fsd_entity_correction_ticket.md`](sam_fsd_entity_correction_ticket.md) — to ask whether the legal name on this UEI can be corrected to the LLC, or whether a fresh entity validation / new UEI is required. Either way, register/finish as the **LLC** under its own EIN. | Blake + accountant |
 
-## TIER 2 — Payment-capable portals (correct name **and** resubmit LLC W-9/EIN)
-*Claude can't do these — they require the EIN/W-9.*
-| ☐ | Portal | ID on file | Who |
-|---|---|---|---|
-| [ ] | **Oklahoma OMES** Supplier Portal | Reg ID 0000018606 | Blake |
-| [ ] | **Louisiana OSP / LaGov** SUS (also fixes LSU/LaPAC downstream) | — | Blake |
-| [ ] | **Mississippi DFA / MAGIC** SUS | — | Blake |
-| [ ] | **Arkansas OSP / ARBuy** (Periscope/BSO) | — | Blake |
-| [ ] | **New Orleans / Orleans Parish** (BRASS-Infor) | Supplier 13390 | Blake |
-| [ ] | **East Baton Rouge** / Central Bidding | Vendor 1099 (reconcile dup email) | Blake |
-| [ ] | **Bexar County** (Infor) | Supplier 17427 | Blake |
+## TIER 2 — Payment-capable portals (verify taxpayer name reads LLC)
+*Claude can't edit these — they hold the EIN/W-9; the operator verifies. The W-9/EIN on file is already
+the LLC's, so the realistic check is "does the legal/taxpayer name read LLC (not L.P.)?"*
+| ☐ | Portal | ID on file | Who | 2026-06-28 result |
+|---|---|---|---|---|
+| [ ] | **Oklahoma OMES** Supplier Portal | Reg ID 0000018606 | Blake | NOT checked — assumed clean for now |
+| [ ] | **Louisiana OSP / LaGov** SUS (also fixes LSU/LaPAC downstream) | — | Blake | NOT checked — assumed clean for now |
+| [ ] | **Mississippi DFA / MAGIC** SUS | — | Blake | NOT checked — assumed clean for now |
+| [ ] | **Arkansas OSP / ARBuy** (Periscope/BSO) | — | Blake | NOT checked — assumed clean for now |
+| [~] | **New Orleans / Orleans Parish** (BRASS-Infor) | Supplier 13390 | Blake + accountant | **Checked: no L.P.** (name "Continental Silverline", W-9 on file). **BUT Business Type = "Corporation"** — the Infor dropdown has NO "LLC" option (choices: Corporation / Not For Profit / Sole Proprietorship / Foreign Corporation / Public Agency). Correct value depends on the W-9's tax classification: single-member disregarded LLC → "Sole Proprietorship"; corp election → "Corporation". **ACCOUNTANT to confirm against the W-9 before changing.** |
+| [x] | **East Baton Rouge** / Central Bidding | Vendor 1099 | Blake | **VERIFIED clean: Company Name = "CONTINENTAL SILVERLINE PRODUCTS LLC" (explicit LLC, no L.P.); email already = silverlinesleep.com (legacy restonichouston dup-email concern RESOLVED).** |
+| [x] | **Bexar County** (Infor) | Supplier 17427 | Blake | **Verified good by operator 2026-06-28 — no L.P.** |
 
 ## TIER 3 — Name-only portal edits (you log in, Claude edits)
 *These have no EIN/W-9 field — once you're logged in, Claude changes the legal name.*
 | ☐ | Portal | Platform | Notes |
 |---|---|---|---|
 | [x] | **NM-SPD Euna/Bonfire tenant** | Euna/Bonfire | **VERIFIED 2026-06-28: no L.P. anywhere — Euna Supplier Network is a single network account; Business Profile reads "Continental Silverline LLC" and propagates to all tenants incl. NM-SPD. The old "submitted as L.P." note was a leftover from the wrong-entity session. Keywords (bedding/mattress/mattresses) + UNSPSC mattress codes (56.10.15.08, 42.19.18.10) set. Minor open watch: whether NM-SPD needs an explicit per-tenant "follow" beyond network membership.** |
-| [ ] | **City of Houston** | Beacon Bid | Home city — NOT yet checked |
+| [x] | **City of Houston** | Beacon Bid | **VERIFIED 2026-06-28: no L.P.** Company Name = "Continental Silverline"; no W-9/entity-type field; contact email correct (silverlinesleep.com). |
 | [x] | **TIPS** (Region 8) | IonWave | **VERIFIED 2026-06-28: no L.P.** Org Type = "Limited Liability Company"; Trade Name "Continental Silverline", Legal Name blank; UEI field blank. IonWave uses ONE shared profile at `supplier.ionwave.net` (see note below). |
 | [x] | **EPIC6 / Region 6** | IonWave | **VERIFIED 2026-06-28 (via shared IonWave profile)** — same record as TIPS/Region 4; Org Type = LLC, no L.P. |
 | [x] | **Region 4 ESC / OMNIA** | IonWave | **VERIFIED 2026-06-28: no L.P.** Opened the identical `supplier.ionwave.net` profile as TIPS; Org Type = LLC. |
 | [x] | **E&I Cooperative** | JAGGAER | **VERIFIED 2026-06-28: no L.P.** Legal Company Name "Continental Silverline"; Legal Structure = Single-Member LLC. Shares JAGGAER Supplier Network profile supplierID 1011150392 (see note). |
-| [ ] | **Sourcewell** | Sourcewell portal | NOT yet checked (separate platform) |
+| [x] | **Sourcewell** | Sourcewell portal | **VERIFIED 2026-06-28: no L.P.** Legal Company Name = "Continental Silverline" (read-only). (Minor unrelated data quirks: DBA field reads "Texas"; address is a P.O. box — ignorable.) |
 | [x] | **El Paso County** | IonWave | **VERIFIED 2026-06-28 (via shared IonWave profile)** — Org Type = LLC, no L.P. |
 | [x] | **Tarrant County** | IonWave | **VERIFIED 2026-06-28 (via shared IonWave profile)** — Org Type = LLC, no L.P. |
 | [x] | **Dallas County / BidNet Direct** (six-state profile) | BidNet | **VERIFIED 2026-06-28: no L.P.** Org Name = brand "Silverline Sleep"; Business Structure = "LLC or LLP". One profile across all six states. Also fixed a stale org-contact email (restonichouston → silverlinesleep); alert routing already correct (user Preferences email = silverlinesleep). |

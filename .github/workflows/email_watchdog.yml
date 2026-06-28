@@ -1,0 +1,91 @@
+name: Email-ingest pipe watchdog
+
+# Weekly check that the email-alert pipe is actually delivering. The daily IMAP
+# ingest can keep running green while fetching NOTHING (Power Automate flow
+# stopped, Gmail filter/label renamed, a portal dropped the notification
+# contact). Portals normally send some mail even in a quiet mattress market, so
+# a run of consecutive ZERO-fetch days is a broken-pipe signal. When that
+# happens, email Blake AND open an issue so a silent pipe becomes loud.
+
+on:
+  schedule:
+    # Sundays 15:00 UTC.
+    - cron: '0 15 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watchdog:
+    name: Check the email pipe is delivering
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Gather recent fetched counts and decide
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          THRESHOLD=7
+          # Pull the 'email alerts fetched: N' line from each of the last
+          # THRESHOLD successful daily-ingest runs.
+          ids=$(gh run list --workflow daily_email_ingest.yml --status success \
+                  --limit "$THRESHOLD" --json databaseId --jq '.[].databaseId')
+          counts=""
+          for id in $ids; do
+            n=$(gh run view "$id" --log 2>/dev/null \
+                 | grep -oE 'email alerts fetched: [0-9]+' | grep -oE '[0-9]+' | head -n 1)
+            if [ -n "$n" ]; then counts="$counts $n"; fi
+          done
+          echo "Recent fetched counts:${counts:-(none)}"
+          python tools/email_watchdog.py --counts "$counts" --threshold "$THRESHOLD" >> "$GITHUB_OUTPUT"
+
+      - name: Alert if the pipe is silent
+        if: steps.check.outputs.alert == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          NOTIFY_EMAIL_TO: ${{ secrets.NOTIFY_EMAIL_TO }}
+          WINDOW: ${{ steps.check.outputs.window }}
+        run: |
+          # Email Blake (non-fatal) ...
+          python tools/notify_push.py --watchdog --window "$WINDOW" --run-url "$RUN_URL" || true
+          # ... and open/comment a GitHub issue.
+          TITLE="Email pipe silent: zero alerts in ${WINDOW} runs"
+          {
+            echo "The email-alert pipe has fetched **zero** messages across the last ${WINDOW} daily runs."
+            echo
+            echo "- Watchdog run: ${RUN_URL}"
+            echo "- Likely cause: the Power Automate flow stopped, the Gmail filter/label was renamed, or a portal dropped your notification contact. (A quiet mattress market still delivers some portal mail.)"
+            echo
+            echo "## What to do"
+            echo "1. Send yourself a test email with subject [PROC-ALERT] and confirm it lands under the Procurement/Alerts label."
+            echo "2. Check the 'Procurement alerts to Gmail' flow is still On at make.powerautomate.com."
+          } > /tmp/wd.md
+          ISSUE_NUMBER=$(gh issue list --state open --search "\"${TITLE}\" in:title" --json number,title \
+            --jq ".[] | select(.title == \"${TITLE}\") | .number" | head -n 1)
+          if [ -z "$ISSUE_NUMBER" ]; then
+            gh issue create --title "$TITLE" --body-file /tmp/wd.md
+          else
+            gh issue comment "$ISSUE_NUMBER" --body-file /tmp/wd.md
+          fi
+
+      - name: Summary
+        run: |
+          echo "Watchdog: alert=${{ steps.check.outputs.alert }} window=${{ steps.check.outputs.window }}"
+          if [ "${{ steps.check.outputs.alert }}" != "true" ]; then
+            echo "Pipe healthy (or not enough zero-runs to alarm)."
+          fi

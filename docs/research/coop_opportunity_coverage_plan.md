@@ -79,7 +79,7 @@ Concrete repo change for all of the above: create each alert at google.com/alert
 - **Re-bid dates are estimates, not confirmed.** Exact next-solicitation open dates for TIPS #230301, BuyBoard 767-25, Sourcewell #091423, Choice Partners 23/022MF, and the OMNIA masters are **not publicly published**. The 2027-2031 windows are derived from contract-expiry math and must be confirmed with each co-op (e.g., purchasing@hcde-texas.org for HCDE, UTSSCAINFO@mdanderson.org for UT) before relying on them.
 - **Email-intake dependency:** converting the email alerts into pipeline visibility assumes the pipeline can ingest a monitored inbox. If it currently only ingests RSS + SAM.gov API, the email-alert sources will land in an inbox a human still has to watch until an email-intake path is built.
 
-Relevant repo file for the automatable changes: `C:\Users\BlakeFord\Documents\GitHub\Silverline-Sleep-Procurement\configs\feeds.json`
+Relevant repo file for the automatable changes: `configs/feeds.json`
 
 ### Scope note
 Docs only. URLs/dates are agent-researched estimates - confirm re-bid dates with each co-op before relying on them.

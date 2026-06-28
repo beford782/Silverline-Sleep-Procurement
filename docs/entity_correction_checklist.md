@@ -32,7 +32,7 @@
 ## TIER 1 — Federal (STOP, then re-register)
 | ☐ | Record | What to change | Who |
 |---|---|---|---|
-| [ ] | **SAM.gov** | **Do NOT complete banking. Do NOT cite UEI `XF73FG8CVMX1`.** Open an FSD ticket (fsd.gov / 866-606-8220); register the **LLC fresh** under its own EIN → new UEI + CAGE. | Blake + accountant |
+| [~] | **SAM.gov** | **VERIFIED 2026-06-28: registration displays `CONTINENTAL SILVERLINE PRODUCTS, L.P.` (wrong), status Work-In-Progress, UEI `XF73FG8CVMX1`, no CAGE, no banking entered.** **Do NOT complete banking. Do NOT cite UEI `XF73FG8CVMX1`.** Next step (drafted): file an FSD ticket (fsd.gov / 866-606-8220) — see [`sam_fsd_entity_correction_ticket.md`](sam_fsd_entity_correction_ticket.md) — to ask whether the legal name on this UEI can be corrected to the LLC, or whether a fresh entity validation / new UEI is required. Either way, register/finish as the **LLC** under its own EIN. | Blake + accountant |
 
 ## TIER 2 — Payment-capable portals (correct name **and** resubmit LLC W-9/EIN)
 *Claude can't do these — they require the EIN/W-9.*
@@ -50,7 +50,7 @@
 *These have no EIN/W-9 field — once you're logged in, Claude changes the legal name.*
 | ☐ | Portal | Platform | Notes |
 |---|---|---|---|
-| [ ] | **NM-SPD Euna/Bonfire tenant** | Euna/Bonfire | Submitted as L.P. this session; verify vs the (correct) Euna parent profile |
+| [x] | **NM-SPD Euna/Bonfire tenant** | Euna/Bonfire | **VERIFIED 2026-06-28: no L.P. anywhere — Euna Supplier Network is a single network account; Business Profile reads "Continental Silverline LLC" and propagates to all tenants incl. NM-SPD. The old "submitted as L.P." note was a leftover from the wrong-entity session. Keywords (bedding/mattress/mattresses) + UNSPSC mattress codes (56.10.15.08, 42.19.18.10) set. Minor open watch: whether NM-SPD needs an explicit per-tenant "follow" beyond network membership.** |
 | [ ] | **City of Houston** | Beacon Bid | Home city |
 | [ ] | **TIPS** (Region 8) | IonWave | |
 | [ ] | **EPIC6 / Region 6** | IonWave | |

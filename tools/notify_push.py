@@ -68,13 +68,25 @@ def _demand_window_sort_key(r: dict) -> tuple:
     return (1, "") if not bw else (0, bw)
 
 
+def _win_sort_key(r: dict) -> tuple:
+    """Descending by win_score (blanks last); for sorting digest rows so the
+    best opportunities lead the email."""
+    raw = (r.get("win_score") or "").strip()
+    try:
+        return (0, -int(raw))
+    except ValueError:
+        return (1, 0)
+
+
 def _fmt_row(r: dict, id_field: str) -> str:
     title = r.get("title") or "(no title)"
     source = r.get("source") or "?"
     due = r.get("due_date") or "?"
     url = r.get("portal_url") or ""
     fit = r.get("fit_score") or "?"
-    line = f"  - {title}\n    source: {source} | due: {due} | fit: {fit}"
+    win = (r.get("win_score") or "").strip()
+    win_bit = f" | win: {win}" if win else ""
+    line = f"  - {title}\n    source: {source} | due: {due} | fit: {fit}{win_bit}"
     if url:
         line += f"\n    {url}"
     return line
@@ -115,12 +127,12 @@ def build_email(accepts: list[dict], leads: list[dict], pr_url: str, date: str,
 
     lines = [f"New procurement signals from the {date} ingest run.", ""]
     if accepts:
-        lines.append("== ACTIVE BID FITS (review + decide bid/no-bid) ==")
-        lines += [_fmt_row(r, "opportunity_id") for r in accepts]
+        lines.append("== ACTIVE BID FITS (review + decide bid/no-bid; ranked by win_score) ==")
+        lines += [_fmt_row(r, "opportunity_id") for r in sorted(accepts, key=_win_sort_key)]
         lines.append("")
     if leads:
         lines.append("== LEAD RADAR (broad/ambiguous - confirm product fit before bidding) ==")
-        lines += [_fmt_row(r, "lead_id") for r in leads]
+        lines += [_fmt_row(r, "lead_id") for r in sorted(leads, key=_win_sort_key)]
         lines.append("")
     if demand:
         lines.append("== DEMAND RADAR (pre-RFP construction signals — sales outreach, "

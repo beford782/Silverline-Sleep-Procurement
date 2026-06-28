@@ -46,6 +46,12 @@ jobs:
             python tools/pipeline.py summary
             echo '```'
             echo
+            echo "## Top opportunities by win_score (composite rank)"
+            echo
+            echo '```text'
+            python tools/win_score.py rank --source pipeline --top 10
+            echo '```'
+            echo
             echo "## Current Lead Radar"
             echo
             echo '```text'

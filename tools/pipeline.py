@@ -68,6 +68,8 @@ CANONICAL_HEADER = [
     "procurement_risk",
     "gate_status",
     "compliance_blocker",
+    "win_score",
+    "win_factors",
 ]
 
 DATE_FIELDS = ("posted_date", "question_deadline", "due_date", "created_date", "last_reviewed")
@@ -171,16 +173,36 @@ def write_rows_atomic(path: Path, rows: Iterable[dict]) -> None:
 # Subcommands
 # ---------------------------------------------------------------------
 
+def _win_score_int(row: dict) -> int | None:
+    """Parse a row's stored win_score to int, or None when blank/unparseable."""
+    raw = (row.get("win_score") or "").strip()
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        return None
+
+
 def cmd_list(args: argparse.Namespace) -> int:
     active = Path(args.active)
     _, rows = read_rows(active)
 
-    def sort_key(row: dict) -> tuple:
+    def due_sort_key(row: dict) -> tuple:
         due = row.get("due_date") or ""
         # Blanks last: prefix tuple with a flag so empty strings sort after.
         return (1, "") if not due else (0, due)
 
-    rows.sort(key=sort_key)
+    def win_sort_key(row: dict) -> tuple:
+        # win_score DESC (blanks last), due_date ASC tiebreak (blanks last).
+        ws = _win_score_int(row)
+        ws_key = (1, 0) if ws is None else (0, -ws)
+        return (ws_key, due_sort_key(row))
+
+    if getattr(args, "sort", "win") == "due":
+        rows.sort(key=due_sort_key)
+    else:
+        rows.sort(key=win_sort_key)
 
     if not rows:
         print(f"(no rows in {active})")
@@ -189,6 +211,7 @@ def cmd_list(args: argparse.Namespace) -> int:
     cols = (
         "opportunity_id",
         "status",
+        "win_score",
         "due_date",
         "fit_score",
         "risk_level",
@@ -422,6 +445,56 @@ def cmd_score(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_win_score(args: argparse.Namespace) -> int:
+    """Recompute the composite win_score (+ win_factors) for each row.
+
+    Mirrors cmd_score: relevance.classify stays the product-fit source; this
+    layers value/winnability/strategic factors on top via win_score.compute and
+    writes the two appended columns. Sort order (cmd_list/digest) then surfaces
+    the best opportunities first."""
+    import win_score  # local import keeps the module pair decoupled at load time
+
+    active = Path(args.active)
+    _, rows = read_rows(active)
+    today = datetime.now().date()
+
+    updates: list[tuple[dict, str, str, str, str]] = []
+    for row in rows:
+        if args.only_created_date and row.get("created_date") != args.only_created_date:
+            continue
+        score, factors = win_score.compute(row, today)
+        new_score = str(score)
+        new_factors = win_score.format_factors(factors)
+        old_score = row.get("win_score") or ""
+        old_factors = row.get("win_factors") or ""
+        if new_score != old_score or new_factors != old_factors:
+            updates.append((row, new_score, new_factors, old_score, old_factors))
+
+    if not updates:
+        print("win-score: no changes (all rows already in sync).")
+        return 0
+
+    print(f"win-score: {len(updates)} row(s) would change:")
+    for row, new_score, new_factors, old_score, _ in updates:
+        print(
+            f"  {row['opportunity_id']}: "
+            f"win_score {old_score or '-'} -> {new_score}  [{new_factors}]"
+        )
+
+    if args.dry_run:
+        print("(--dry-run: no files written)")
+        return 0
+
+    today_iso = today.isoformat()
+    for row, new_score, new_factors, _, _ in updates:
+        row["win_score"] = new_score
+        row["win_factors"] = new_factors
+        row["last_reviewed"] = today_iso
+    write_rows_atomic(active, rows)
+    print(f"win-score: wrote {active}")
+    return 0
+
+
 def cmd_move_to_archive(args: argparse.Namespace) -> int:
     active = Path(args.active)
     archive = Path(args.archive)
@@ -496,8 +569,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_list = sub.add_parser("list", help="Print active rows sorted by due_date.")
+    p_list = sub.add_parser("list", help="Print active rows ranked by win_score (or due_date).")
     p_list.set_defaults(func=cmd_list)
+    p_list.add_argument(
+        "--sort",
+        choices=("win", "due"),
+        default="win",
+        help="Sort key: win_score desc (default) or due_date asc.",
+    )
 
     p_add = sub.add_parser("add", help="Append a new opportunity row.")
     p_add.set_defaults(func=cmd_add)
@@ -543,6 +622,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--overwrite-risk",
         action="store_true",
         help="Also replace existing risk_level values with the scorer's suggestion.",
+    )
+
+    p_win = sub.add_parser("win-score", help="Recompute the composite win_score + win_factors.")
+    p_win.set_defaults(func=cmd_win_score)
+    p_win.add_argument("--dry-run", action="store_true", help="Show changes without writing.")
+    p_win.add_argument(
+        "--only-created-date",
+        type=_parse_iso_date,
+        default="",
+        help="Only score rows with this created_date (YYYY-MM-DD), useful for ingest automation.",
     )
 
     p_arc = sub.add_parser("move-to-archive", help="Move a row from active to archive.")

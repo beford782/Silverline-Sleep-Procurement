@@ -131,6 +131,32 @@ def _drafts_ready(rows: list[dict], draft_dir: Path, active_dir: Path) -> list[s
     return sorted(out)
 
 
+def _win_score_int(row: dict) -> int | None:
+    raw = (row.get("win_score") or "").strip()
+    try:
+        return int(raw)
+    except ValueError:
+        return None
+
+
+def _top_win_score(rows: list[dict], limit: int) -> list[str]:
+    """Best opportunities by win_score (desc), due_date asc tiebreak. Rows with
+    no win_score yet are listed after scored ones."""
+    def key(row: dict) -> tuple:
+        ws = _win_score_int(row)
+        ws_key = (1, 0) if ws is None else (0, -ws)
+        due = row.get("due_date") or ""
+        due_key = (1, "") if not due else (0, due)
+        return (ws_key, due_key, _label(row))
+
+    out = []
+    for row in sorted(rows, key=key)[:limit]:
+        ws = _win_score_int(row)
+        due = row.get("due_date") or "no-due"
+        out.append(f"win {ws if ws is not None else '-'}; due {due} - {_label(row)}{_owner_suffix(row)}")
+    return out
+
+
 def _counter_lines(rows: list[dict], key: str) -> list[str]:
     counter = Counter((row.get(key) or "(blank)") for row in rows)
     if not counter:
@@ -155,7 +181,14 @@ def render_dashboard(
     sections: list[str] = [f"Pipeline dashboard - {today.isoformat()}"]
 
     if show in ("all", "summary"):
+        scored = [r for r in rows if _win_score_int(r) is not None]
+        top = max((_win_score_int(r) for r in scored), default=None)
         summary = [f"active rows: {len(rows)}"]
+        summary.append(f"win_score: {len(scored)} scored"
+                       + (f", top {top}" if top is not None else ""))
+        summary.append("")
+        summary.append("Top opportunities by win_score:")
+        summary.extend(_top_win_score(rows, 10) or ["(none)"])
         summary.append("")
         summary.append("By status:")
         summary.extend(_counter_lines(rows, "status"))

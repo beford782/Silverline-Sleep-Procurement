@@ -3,13 +3,13 @@
 - **For:** Blake / Continental Silverline Products, LLC (Houston, TX)
 - **Date:** 2026-06-25
 - **Type:** Operator runbook (docs only). Two vendor registrations to complete by hand.
-- **Why now:** Both were UEI-gated. **SAM.gov UEI `XF73FG8CVMX1` is now assigned**, which unblocks the only field that was previously missing. Complete both while the UEI is fresh and the commodity setup matches the rest of the ledger.
+- **Why now / current gate:** Both were UEI-gated, and UEI `XF73FG8CVMX1` is **blocked** for bid/registration use because SAM displays the wrong nonexistent L.P. legal name. Proceed as the LLC **only if the UEI field can stay blank/optional**; otherwise pause until SAM/FSD confirms a valid LLC UEI. The commodity setup still matches the rest of the ledger.
 
 > **Both portals run the same IonWave registration engine**, so the steps are identical: a 9-page wizard
 > **Preliminary Info → Terms → Company Info → Addresses → Other Info → Commodity Codes → Classifications → Review → Complete**.
 > Fill the same values on both so coverage stays consistent with [`active_registrations.md`](active_registrations.md).
 
-> **PII rule:** values marked `[on file]` (CMBL/Vendor ID, EIN, phone, street address) are kept **out of version control** — pull them from your operator records / the CMBL profile when you fill the form. The **UEI is public** and is safe to type and to record here.
+> **PII rule:** values marked `[on file]` (CMBL/Vendor ID, EIN, phone, street address) are kept **out of version control** — pull them from your operator records / the CMBL profile when you fill the form. The UEI is public, but do **not** type UEI `XF73FG8CVMX1` into UEI-required registrations until SAM/FSD resolves the wrong-name WIP issue.
 
 ---
 
@@ -18,7 +18,7 @@
 | Item | Value / source |
 |---|---|
 | Legal name | **CONTINENTAL SILVERLINE PRODUCTS, LLC** (a Texas Limited Liability Company) |
-| SAM.gov UEI | **XF73FG8CVMX1** |
+| SAM.gov UEI | Leave blank if optional; otherwise wait for SAM/FSD to confirm a valid LLC UEI. |
 | DUNS | Deprecated by the federal government (2022). Leave blank if optional; the UEI replaces it. |
 | Main phone / Ext | `[on file]` |
 | Physical address | `[on file]` — Houston, TX (no P.O. box) |
@@ -35,7 +35,7 @@
 
 - **Registration URL:** `https://hcdeebid.ionwave.net/VendorRegistration.aspx` *(verified live 2026-06-25 — page heading "Preliminary Company Information")*
 - **Public RFP board (reference):** https://www.choicepartners.org/current-rfps
-- **Status going in:** Lead Radar `choice-partners-hcde-ffe-watch` — was *deferred → resume now*.
+- **Status going in:** Lead Radar `choice-partners-hcde-ffe-watch` — deferred if UEI is required; proceed only if the portal permits leaving UEI blank.
 - **Why:** Local Houston co-op (Harris County Dept. of Education). Good for bed frames / FF&E. Next **Furniture, Fixtures, Equipment (FFE)** cycle estimated advertise **2027-06-01** — register now to be on the alert list for that re-bid.
 
 ### Step-by-step
@@ -44,7 +44,7 @@
    - Company Name: `CONTINENTAL SILVERLINE PRODUCTS, LLC`
    - Main Phone / Ext: `[on file]`
    - International: leave unchecked
-   - **SAM.gov Unique Entity ID (UEI): `XF73FG8CVMX1`** ← the field that was blocking; now fillable
+   - **SAM.gov Unique Entity ID (UEI):** leave blank if optional; if required, wait for the valid LLC UEI after SAM/FSD resolution
    - DUNS: leave blank (deprecated)
 2. **Terms** — read and accept.
 3. **Company Info** — legal name as above; entity type **Limited Liability Company**; NAICS 337910 (+ 337127 if a second is allowed); website/catalog link if you have one.
@@ -55,7 +55,7 @@
 8. **Review → Complete** — submit. Record the vendor/registration number it issues.
 
 ### Known checkpoint (do not skip)
-The page accepts a **UEI-only** value; it does **not** validate against SAM "Active" status at registration time. If — and only if — the form blocks submission demanding an *active* SAM entity, stop and wait until SAM finishes (Financial/EFT banking is the last step). Otherwise proceed; this registration is positioning, not a live bid, so SAM-Active is not required to be on the alert list.
+This registration is positioning, not a live bid. **If the page accepts a blank/optional UEI, proceed** — SAM-Active is not required to be on the alert list. **If it requires a UEI, stop** until SAM/FSD confirms the valid LLC UEI; do **not** enter the wrong-named `XF73FG8CVMX1`.
 
 ---
 
@@ -68,7 +68,7 @@ The page accepts a **UEI-only** value; it does **not** validate against SAM "Act
 
 ### Step-by-step
 Identical IonWave wizard — use the **same values** as the HCDE steps above:
-- Page 1: Company Name, Main Phone, **UEI `XF73FG8CVMX1`**, DUNS blank.
+- Page 1: Company Name, Main Phone, **UEI blank if optional or valid LLC UEI once resolved**, DUNS blank.
 - Terms → Company Info (LLC / NAICS 337910) → Addresses (`[on file]`, no P.O. box) → Other Info (**notification email `beford@silverlinesleep.com`**, insurance) → **Commodity Codes** (table below) → Classifications (Small Business Yes, TX Resident Yes) → Review → Complete.
 - Record the vendor/registration number.
 
@@ -105,7 +105,7 @@ FF&E, furniture and related services, correctional supplies, cots
 
 1. **Capture each vendor/registration number** in your private tracker (and tell me — I'll record the IDs).
 2. **Update [`active_registrations.md`](active_registrations.md)** — flip the two co-op rows:
-   - Choice Partners / HCDE: `🟡 deferred → resume now` → `✅ complete (2026-06-25)`, add the issued account ID.
+   - Choice Partners / HCDE: `🟡 deferred` → `✅ complete (2026-06-25)`, add the issued account ID (only if registration actually completed without the blocked UEI).
    - BuyBoard: `⬜ target` → `✅ registered (2026-06-25)`, add the issued account ID.
 3. **Update the two Lead Radar rows** (`choice-partners-hcde-ffe-watch`, `buyboard-767-25`) `last_reviewed` + notes to record "registration complete, UEI on file, notifications → funnel," keeping both as `watching` (no product-fit bid → they stay watches, not pipeline).
 4. **Confirm the funnel sees a test alert** — once IonWave sends the first commodity notification to beford@silverlinesleep.com, verify it forwards and lands in Lead Radar (alerts are unwrapped by `tools/ingest_email.py`).

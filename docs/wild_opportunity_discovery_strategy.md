@@ -170,7 +170,7 @@ Vocabulary aligned to `tools/relevance.py` tiers. Append the guardrail negatives
 
 The query bank above is tuned for state/local/co-op portals. **Federal-direct demand is a separate, proven lane** that the 2026-06-24 scan confirmed is recurring and currently underserved: in a single week the funnel surfaced two genuine federal mattress fits (USCG Base Boston `37010PR260000078`; JBSA `FA301626Q0151`), and recurring federal buyers are now tracked in Lead Radar (VA/VHA, Bureau of Prisons, Army/DoD barracks).
 
-> **HARD GATE:** every federal-direct opportunity is **SAM-registration gated**. UEI `XF73FG8CVMX1` was assigned on 2026-06-24, but the full All Awards entity registration is still in progress: taxpayer information has been submitted for IRS verification and financial information remains unfinished. Do not treat federal fits as bid-ready until SAM shows the entity registration active/complete.
+> **HARD GATE:** every federal-direct opportunity is **SAM-registration gated**. UEI `XF73FG8CVMX1` is blocked because the SAM Work-In-Progress record was verified on 2026-06-28 as displaying the wrong nonexistent L.P. legal name, with no CAGE and no banking entered. Do not cite that UEI or treat federal fits as bid-ready until SAM/FSD confirms a valid LLC UEI/CAGE and the LLC registration is active.
 
 **Repeatable monitoring recipe (free; no BidNet/HigherGov paywall needed):**
 1. SAM.gov → **Search → Contract Opportunities**.

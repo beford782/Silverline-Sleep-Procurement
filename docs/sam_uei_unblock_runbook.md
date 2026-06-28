@@ -3,38 +3,37 @@
 - **For:** Blake / Continental Silverline Products, LLC (Houston, TX)
 - **Date:** 2026-06-24 (entity correction added 2026-06-27)
 
-> # 🛑 STOP — WRONG ENTITY. READ FIRST.
-> The existing SAM registration and UEI **`XF73FG8CVMX1` were created for "CONTINENTAL
-> SILVERLINE PRODUCTS, L.P." — an entity that DOES NOT EXIST.** The only real entity is
-> **CONTINENTAL SILVERLINE PRODUCTS, LLC** (a Texas LLC, SOS file 0802357166, with its own
-> EIN). See [`company_identity.md`](company_identity.md) and
-> [`research/entity_correction_plan_2026-06-27.md`](research/entity_correction_plan_2026-06-27.md).
+> # 🛑 STOP — WRONG LEGAL NAME IN SAM WIP. READ FIRST.
+> The current SAM Work-In-Progress registration displays **`CONTINENTAL SILVERLINE
+> PRODUCTS, L.P.`**, an entity name that does not exist. The only real entity is
+> **CONTINENTAL SILVERLINE PRODUCTS, LLC** (Texas LLC, SOS file 0802357166). See
+> [`entity_correction_briefing.md`](entity_correction_briefing.md),
+> [`entity_correction_checklist.md`](entity_correction_checklist.md), and
+> [`sam_fsd_entity_correction_ticket.md`](sam_fsd_entity_correction_ticket.md).
 >
-> - **DO NOT complete the Financial/EFT banking step (§6)** on the L.P. registration — it cements
->   the wrong taxpayer and creates federal payment/1099 exposure.
-> - **DO NOT cite UEI `XF73FG8CVMX1` on any federal bid.** It is permanent and bound to the L.P.;
->   it cannot be renamed to the LLC.
-> - **First action:** open a **Federal Service Desk** ticket (<https://www.fsd.gov> · 866-606-8220)
->   to confirm the path for *wrong legal name + wrong entity type + different EIN*. Expect a
->   **full new SAM registration for the LLC** (validated against the LLC's Certificate of Formation,
->   SOS file 0802357166, and its own EIN) issuing a **NEW UEI + new CAGE**. Let the L.P. registration
->   lapse.
-> - This may need an **accountant/attorney** (IRS taxpayer-name/EIN reconciliation, corrected W-9s),
->   not just a form change.
+> - **DO NOT complete the Financial/EFT banking step (§6)** on the wrong-named WIP record.
+> - **DO NOT cite UEI `XF73FG8CVMX1` on any federal bid** until SAM/FSD confirms whether
+>   that UEI can be corrected to the LLC or a fresh LLC validation/new UEI is required.
+> - **Do one path, not both in parallel:** either attempt one self-service LLC Entity
+>   Validation, or file the prepared FSD ticket asking whether the existing UEI can be
+>   corrected vs. superseded.
+> - EIN, taxpayer number, banking, and passwords are operator/accountant-only; never put
+>   those values in the repo or AI chat.
 >
-> **The mechanical steps below are reusable for the LLC's fresh registration** — but use the LLC's
-> legal name, EIN, and start year 2015 everywhere, and ignore any reference to the old L.P. UEI.
+> **The mechanical steps below are reusable only after the legal-name path is resolved** —
+> use the LLC's exact legal name, operator-held EIN, and start year 2015 everywhere.
 
-- **Goal (corrected):** Register **Continental Silverline Products, LLC** in SAM.gov from scratch under
-  its own EIN, so the LLC (not the defunct L.P.) becomes award-eligible.
+- **Goal (corrected):** make **Continental Silverline Products, LLC** award-eligible in SAM.gov
+  without activating or funding a wrong-named L.P. record.
 
 ## 0. Status (corrected 2026-06-27)
 
-- **L.P. registration:** WRONG ENTITY — do not finish or fund it. UEI `XF73FG8CVMX1` is the L.P.'s; abandon it.
-- **LLC registration:** NOT STARTED — needs a fresh SAM entity registration under the LLC's EIN (validate
-  via EVS against the LLC's TX Certificate of Formation / SOS file 0802357166, start year 2015).
+- **Current SAM WIP:** WRONG LEGAL NAME — verified 2026-06-28 as `CONTINENTAL SILVERLINE PRODUCTS, L.P.`,
+  status Work-In-Progress, UEI `XF73FG8CVMX1`, no CAGE, no banking entered.
+- **LLC path:** unresolved — ask FSD whether this UEI can be corrected through Entity Validation or
+  whether a fresh LLC validation/new UEI is required.
 - **Saved-search notifications** (NAICS `337910`, PSC `7210`, keyword `mattress`) can stay configured.
-- **Do not treat as bid-ready:** no federal bids until the **LLC** registration shows Active with a new UEI.
+- **Do not treat as bid-ready:** no federal bids until SAM shows the **LLC** as Active under a valid LLC UEI/CAGE.
 
 ---
 
@@ -50,6 +49,8 @@ The UEI was issued on 2026-06-24 after the entity validation/start-date blocker 
 | **State of incorporation** | ❌ **gap** | Same TX SOS record (shows TX) |
 
 Confirmed result: SAM assigned UEI `XF73FG8CVMX1` for `CONTINENTAL SILVERLINE PRODUCTS, LLC` at the Houston street address. The remaining work is the full registration checklist, especially IRS taxpayer verification and financial/payment information.
+
+Current correction note: a later live check on 2026-06-28 showed the WIP registration displays `CONTINENTAL SILVERLINE PRODUCTS, L.P.`, not the LLC. Treat UEI `XF73FG8CVMX1` as blocked until FSD/entity validation resolves whether it can be corrected or must be superseded.
 
 ---
 

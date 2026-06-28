@@ -1,7 +1,7 @@
 # New Mexico SPD — Euna / Bonfire Registration Runbook
 
 - **For:** Blake / Continental Silverline Products, LLC (Houston, TX)
-- **Date:** 2026-06-26
+- **Date:** 2026-06-26 (verified complete/correct 2026-06-28)
 - **Type:** Operator runbook (docs only). One vendor registration to complete by hand.
 - **Why now:** NM coverage is **partial**. The state's eProNM (SciQuest/JAGGAER) supplier
   registration is done, but New Mexico State Purchasing Division (SPD) is migrating its
@@ -9,6 +9,9 @@
   **SPD requires every supplier to register inside that NM-SPD portal — even suppliers who
   already hold a Euna/Bonfire account.** Completing this is what flips the NM row in
   [`active_registrations.md`](active_registrations.md) from `🟡 partial` to `✅ complete`.
+- **Status:** verified complete/correct on 2026-06-28. The Euna Supplier Network Business
+  Profile reads "Continental Silverline LLC," no "L.P." was found, and the profile propagates
+  to the NM-SPD Bonfire tenant. Keep this runbook as historical setup/verification guidance.
 
 > **Different engine from the co-op runbook.** Choice Partners / HCDE and BuyBoard run on
 > **IonWave** ([`coop_ionwave_registration_runbook.md`](coop_ionwave_registration_runbook.md)).
@@ -19,7 +22,8 @@
 
 > **PII rule:** values marked `[on file]` (CMBL/Vendor ID, EIN, phone, street address) are
 > kept **out of version control** — pull them from your operator records / the CMBL profile
-> when you fill the form. The **UEI is public** and is safe to type and to record here.
+> when you fill the form. The UEI is public, but if a future edit asks for SAM UEI, confirm
+> the SAM correction status before adding or changing it.
 
 ---
 
@@ -52,7 +56,7 @@
 | Item | Value / source |
 |---|---|
 | Legal name | **CONTINENTAL SILVERLINE PRODUCTS, LLC** (a Texas Limited Liability Company) |
-| SAM.gov UEI | **XF73FG8CVMX1** (public) |
+| SAM.gov UEI | If a future edit asks for SAM UEI, confirm the SAM correction status before adding or changing it. |
 | DUNS | Deprecated by the federal government (2022). Leave blank if optional; the UEI replaces it. |
 | Main phone / Ext | `[on file]` |
 | Physical address | `[on file]` — Houston, TX (**no P.O. box**) |
@@ -84,7 +88,7 @@
 3. **Complete the vendor / company profile.**
    - Legal name: `CONTINENTAL SILVERLINE PRODUCTS, LLC`
    - Entity type: **Limited Liability Company**
-   - **SAM.gov UEI: `XF73FG8CVMX1`**; DUNS: leave blank (deprecated).
+   - SAM.gov UEI: if prompted in a future edit, confirm the SAM correction status before adding or changing it; DUNS: leave blank (deprecated).
    - Address: `[on file]` (Houston, TX, **no P.O. box**); add remit/mailing if prompted.
    - Main phone: `[on file]`.
    - Primary contact email / **bid-notification email: `beford@silverlinesleep.com`**.

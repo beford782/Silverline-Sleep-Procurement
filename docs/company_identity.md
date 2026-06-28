@@ -30,14 +30,14 @@
 | **Texas SOS File Number** | **0802357166** (public) |
 | **Registered agent** | **C T Corporation System**, 1999 Bryan St, Ste 900, Dallas, TX 75201 (public) |
 | **Status** | Active (Right to Transact Business in TX: Active) |
-| **SAM.gov UEI** | **NONE valid yet.** UEI `XF73FG8CVMX1` belongs to the wrong (nonexistent) L.P. and its different EIN - do NOT use it. The LLC needs its OWN new SAM registration + new UEI (see the correction plan / `sam_uei_unblock_runbook.md`). |
+| **SAM.gov UEI** | **NONE valid for bids yet.** UEI `XF73FG8CVMX1` is attached to a SAM Work-In-Progress record that displays the wrong nonexistent L.P. name. Do **not** cite it on bids or complete SAM banking until the FSD / Entity Validation path resolves whether it can be corrected to the LLC or must be superseded. |
 | **DUNS** | Deprecated by the federal government (2022) - leave blank; the UEI replaces it. |
 | **Primary NAICS** | **337910** - Mattress Manufacturing |
 | **Secondary NAICS** | **337127** - Institutional (Public Building) Furniture Manufacturing |
 | **Federal PSC** | **7210** (Household Furnishings), **7105** (Household Furniture) |
 | **Notification email** | **beford@silverlinesleep.com** |
-| **EIN** | `[on file]` - keep out of version control; **differs from the old L.P.'s** |
-| **Texas Taxpayer Number** | `[on file]` - keep out of version control; **differs from the old L.P.'s** |
+| **EIN** | `[on file]` - keep out of version control; operator/accountant-only. Operator clarified the W-9/EIN records are already LLC-correct, so there is no known EIN / 1099 mismatch problem. |
+| **Texas Taxpayer Number** | `[on file]` - keep out of version control; operator/accountant-only. |
 | **Texas CMBL number** | `[on file]` |
 | **Main phone** | `[on file]` |
 | **Physical / remit address** | `[on file]` - Houston, TX (**no P.O. box** for SAM/EVS) |
@@ -57,14 +57,14 @@
 
 ## Where this must stay consistent
 
-- SAM.gov entity record (needs a fresh LLC registration) - Texas CMBL - state
+- SAM.gov entity record (pending FSD / Entity Validation resolution) - Texas CMBL - state
   portals (OK/LA/MS/AR/NM) - co-ops (TIPS, OMNIA, E&I, Sourcewell, etc.) - the
   capability statement (`vendor-profiles/`) - every registration runbook.
 - **The Euna Supplier Network business profile already reads "Continental
   Silverline LLC" and is CORRECT - do NOT change it.** (A prior note wrongly told
   the operator to change it to L.P.; that instruction is cancelled.)
-- **NM-SPD/Euna tenant** vendor record was submitted as "L.P." (2026-06-27) and
-  must be edited to the LLC.
+- **NM-SPD/Euna tenant** verified 2026-06-28: no L.P. anywhere, Business Profile reads
+  "Continental Silverline LLC," and there is nothing to fix.
 
 ---
 

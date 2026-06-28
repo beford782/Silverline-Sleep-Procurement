@@ -4,6 +4,8 @@
 - **Date:** 2026-06-27
 - **Source:** multi-agent scope (repo + online registrations + SAM/federal-impact research). The LLC is the ONLY real entity; L.P. was always a mistake (Blake-confirmed).
 
+> **SUPERSEDED UPDATE (2026-06-28):** Use [`../entity_correction_briefing.md`](../entity_correction_briefing.md) and [`../entity_correction_checklist.md`](../entity_correction_checklist.md) as the current authority. Operator clarified the W-9/EIN is already LLC-correct, so this is not a repo-wide wrong-EIN/payment-mismatch problem. SAM.gov was verified as a wrong-named Work-In-Progress record under UEI `XF73FG8CVMX1`; do not complete banking or cite the UEI until self-service Entity Validation or FSD resolves correction vs. fresh validation/new UEI. NM-SPD/Euna was verified correct on 2026-06-28; no tenant L.P. edit is needed.
+
 ---
 
 ## The error in one line
@@ -98,3 +100,4 @@ In plain language (per the SAM finding, medium confidence, sourced to GSA/FSD/EX
 ## What was nearly broken
 - **Euna Supplier Network parent profile was already CORRECT** ("Continental Silverline LLC"). The previously-logged follow-up (active_registrations.md task #4 and the company_identity.md note) instructed changing it **to** L.P.   " that instruction is itself the error. **Cancel it. Do NOT change the Euna profile to L.P.** Optionally refine the display to the exact "CONTINENTAL SILVERLINE PRODUCTS, LLC," but the entity is right.
 - **NM-SPD Bonfire tenant was submitted WRONG this session** (as L.P.). It is newly created and alert-only (no EIN-critical payment yet), so an **inline edit** to the LLC fixes it   " do it promptly so it does not propagate, and so it matches the (correct) Euna profile and the LLC/SAM identity.
+- **2026-06-28 superseding verification:** Euna Supplier Network / NM-SPD is correct; Business Profile reads "Continental Silverline LLC," no L.P. was found, and no tenant legal-name edit is needed.

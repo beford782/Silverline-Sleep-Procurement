@@ -1,6 +1,6 @@
 # Co-op IonWave Registration Runbook — Choice Partners (HCDE) + BuyBoard
 
-- **For:** Blake / Continental Silverline Products, L.P. (Houston, TX)
+- **For:** Blake / Continental Silverline Products, LLC (Houston, TX)
 - **Date:** 2026-06-25
 - **Type:** Operator runbook (docs only). Two vendor registrations to complete by hand.
 - **Why now:** Both were UEI-gated. **SAM.gov UEI `XF73FG8CVMX1` is now assigned**, which unblocks the only field that was previously missing. Complete both while the UEI is fresh and the commodity setup matches the rest of the ledger.
@@ -17,7 +17,7 @@
 
 | Item | Value / source |
 |---|---|
-| Legal name | **CONTINENTAL SILVERLINE PRODUCTS, L.P.** (a Limited Partnership — *not* LLC) |
+| Legal name | **CONTINENTAL SILVERLINE PRODUCTS, LLC** (a Texas Limited Liability Company) |
 | SAM.gov UEI | **XF73FG8CVMX1** |
 | DUNS | Deprecated by the federal government (2022). Leave blank if optional; the UEI replaces it. |
 | Main phone / Ext | `[on file]` |
@@ -41,13 +41,13 @@
 ### Step-by-step
 
 1. **Preliminary Company Information** (page 1)
-   - Company Name: `CONTINENTAL SILVERLINE PRODUCTS, L.P.`
+   - Company Name: `CONTINENTAL SILVERLINE PRODUCTS, LLC`
    - Main Phone / Ext: `[on file]`
    - International: leave unchecked
    - **SAM.gov Unique Entity ID (UEI): `XF73FG8CVMX1`** ← the field that was blocking; now fillable
    - DUNS: leave blank (deprecated)
 2. **Terms** — read and accept.
-3. **Company Info** — legal name as above; entity type **Limited Partnership**; NAICS 337910 (+ 337127 if a second is allowed); website/catalog link if you have one.
+3. **Company Info** — legal name as above; entity type **Limited Liability Company**; NAICS 337910 (+ 337127 if a second is allowed); website/catalog link if you have one.
 4. **Addresses** — physical address `[on file]` (Houston, TX, **no P.O. box**); add remit/mailing if prompted.
 5. **Other Info** — **set the notification/bid-alert email to `beford@silverlinesleep.com`.** Insurance carried: GL, auto, workers' comp, umbrella.
 6. **Commodity Codes** — select the full set in the table below.
@@ -69,7 +69,7 @@ The page accepts a **UEI-only** value; it does **not** validate against SAM "Act
 ### Step-by-step
 Identical IonWave wizard — use the **same values** as the HCDE steps above:
 - Page 1: Company Name, Main Phone, **UEI `XF73FG8CVMX1`**, DUNS blank.
-- Terms → Company Info (L.P. / NAICS 337910) → Addresses (`[on file]`, no P.O. box) → Other Info (**notification email `beford@silverlinesleep.com`**, insurance) → **Commodity Codes** (table below) → Classifications (Small Business Yes, TX Resident Yes) → Review → Complete.
+- Terms → Company Info (LLC / NAICS 337910) → Addresses (`[on file]`, no P.O. box) → Other Info (**notification email `beford@silverlinesleep.com`**, insurance) → **Commodity Codes** (table below) → Classifications (Small Business Yes, TX Resident Yes) → Review → Complete.
 - Record the vendor/registration number.
 
 ---

@@ -1,23 +1,40 @@
-# SAM.gov UEI Unblock Runbook — Continental Silverline
+# SAM.gov Registration Runbook — Continental Silverline Products, LLC
 
-- **For:** Blake / Continental Silverline (Houston, TX)
-- **Date:** 2026-06-24
-- **Type:** Operator runbook (docs only). No code, no CSV writes, no PII stored here.
-- **Goal:** Finish the full SAM.gov **Entity Registration** after the UEI was issued. This is the single highest-leverage federal unlock — see [`wild_opportunity_discovery_strategy.md`](wild_opportunity_discovery_strategy.md) §"Federal direct lane".
+- **For:** Blake / Continental Silverline Products, LLC (Houston, TX)
+- **Date:** 2026-06-24 (entity correction added 2026-06-27)
 
-> **Why this matters now.** The funnel is already catching genuine federal mattress fits (USCG Base Boston `37010PR260000078`; JBSA `FA301626Q0151`). UEI assignment removed the first hard blocker, but federal offers still generally require the full SAM entity registration to be active.
+> # 🛑 STOP — WRONG ENTITY. READ FIRST.
+> The existing SAM registration and UEI **`XF73FG8CVMX1` were created for "CONTINENTAL
+> SILVERLINE PRODUCTS, L.P." — an entity that DOES NOT EXIST.** The only real entity is
+> **CONTINENTAL SILVERLINE PRODUCTS, LLC** (a Texas LLC, SOS file 0802357166, with its own
+> EIN). See [`company_identity.md`](company_identity.md) and
+> [`research/entity_correction_plan_2026-06-27.md`](research/entity_correction_plan_2026-06-27.md).
+>
+> - **DO NOT complete the Financial/EFT banking step (§6)** on the L.P. registration — it cements
+>   the wrong taxpayer and creates federal payment/1099 exposure.
+> - **DO NOT cite UEI `XF73FG8CVMX1` on any federal bid.** It is permanent and bound to the L.P.;
+>   it cannot be renamed to the LLC.
+> - **First action:** open a **Federal Service Desk** ticket (<https://www.fsd.gov> · 866-606-8220)
+>   to confirm the path for *wrong legal name + wrong entity type + different EIN*. Expect a
+>   **full new SAM registration for the LLC** (validated against the LLC's Certificate of Formation,
+>   SOS file 0802357166, and its own EIN) issuing a **NEW UEI + new CAGE**. Let the L.P. registration
+>   lapse.
+> - This may need an **accountant/attorney** (IRS taxpayer-name/EIN reconciliation, corrected W-9s),
+>   not just a form change.
+>
+> **The mechanical steps below are reusable for the LLC's fresh registration** — but use the LLC's
+> legal name, EIN, and start year 2015 everywhere, and ignore any reference to the old L.P. UEI.
 
-## 0. Current SAM.gov status (updated 2026-06-25)
+- **Goal (corrected):** Register **Continental Silverline Products, LLC** in SAM.gov from scratch under
+  its own EIN, so the LLC (not the defunct L.P.) becomes award-eligible.
 
-- **UEI assigned:** `XF73FG8CVMX1`
-- **SAM entity display:** `CONTINENTAL SILVERLINE PRODUCTS, L.P.`
-- **Entity registration type:** All Awards
-- **Business / Business Types / Reps & Certs / Points of Contact:** Complete.
-- **Taxpayer Information:** submitted to IRS verification; SAM shows "May Require Review; Avg. 2-5 Days."
-- **Financial Information (EFT/banking):** **the last open section — this is the resume point.** Complete it per **§6** below.
-- **CAGE code:** auto-requested by SAM/DLA during registration; may take a few business days to assign (a registration cannot go Active without it).
-- **Saved-search notifications:** enabled for NAICS `337910` Active, PSC `7210` Active, and keyword `mattress` Active.
-- **Do not treat as bid-ready yet:** wait until SAM shows the entity registration **Active**.
+## 0. Status (corrected 2026-06-27)
+
+- **L.P. registration:** WRONG ENTITY — do not finish or fund it. UEI `XF73FG8CVMX1` is the L.P.'s; abandon it.
+- **LLC registration:** NOT STARTED — needs a fresh SAM entity registration under the LLC's EIN (validate
+  via EVS against the LLC's TX Certificate of Formation / SOS file 0802357166, start year 2015).
+- **Saved-search notifications** (NAICS `337910`, PSC `7210`, keyword `mattress`) can stay configured.
+- **Do not treat as bid-ready:** no federal bids until the **LLC** registration shows Active with a new UEI.
 
 ---
 
@@ -32,13 +49,13 @@ The UEI was issued on 2026-06-24 after the entity validation/start-date blocker 
 | **Start year** | ❌ **gap** | **TX Secretary of State formation record** (see §2) |
 | **State of incorporation** | ❌ **gap** | Same TX SOS record (shows TX) |
 
-Confirmed result: SAM assigned UEI `XF73FG8CVMX1` for `CONTINENTAL SILVERLINE PRODUCTS, L.P.` at the Houston street address. The remaining work is the full registration checklist, especially IRS taxpayer verification and financial/payment information.
+Confirmed result: SAM assigned UEI `XF73FG8CVMX1` for `CONTINENTAL SILVERLINE PRODUCTS, LLC` at the Houston street address. The remaining work is the full registration checklist, especially IRS taxpayer verification and financial/payment information.
 
 ---
 
 ## 2. If SAM asks again: TX SOS formation record
 
-Because the entity is a formed **TX limited partnership (L.P.)**, its formation record is public. (Legal name/entity type per [`company_identity.md`](company_identity.md): **CONTINENTAL SILVERLINE PRODUCTS, L.P.** — not an LLC.) Two ways to obtain an acceptable document:
+Because the entity is a formed **TX limited liability company (LLC)**, its formation record is public. (Legal name/entity type per [`company_identity.md`](company_identity.md): **CONTINENTAL SILVERLINE PRODUCTS, LLC**.) Two ways to obtain an acceptable document:
 
 **Option A — Free official printout (fastest).**
 - Texas Comptroller **Taxable Entity Search**: <https://mycpa.cpa.state.tx.us/coa/> — search the legal name; open the entity record.
@@ -46,7 +63,7 @@ Because the entity is a formed **TX limited partnership (L.P.)**, its formation 
 - **Print/screenshot the RESULTS page** showing the legal name, the **registration/formation date** (the start year), and **Texas** as the jurisdiction. SAM requires the capture to show the **search result AND the page URL** — not a blank form.
 
 **Option B — Certified copy (most bulletproof).**
-- Order a **Certificate of Formation** copy or **Certificate of Fact – Status** from SOSDirect (small fee, ~$15). A stamped/sealed **Certificate of Formation** is the EVS "gold standard" and covers legal name + start year + state in one document. (An L.P. files a Certificate of Formation — it does **not** have "Articles of Incorporation/Organization.")
+- Order a **Certificate of Formation** copy or **Certificate of Fact – Status** from SOSDirect (small fee, ~$15). A stamped/sealed **Certificate of Formation** is the EVS "gold standard" and covers legal name + start year + state in one document. (An LLC files a Certificate of Formation — it does **not** have "Articles of Incorporation/Organization.")
 
 > Use Option A first; fall back to Option B only if EVS rejects the printout.
 
@@ -57,7 +74,7 @@ Because the entity is a formed **TX limited partnership (L.P.)**, its formation 
 1. Sign in at <https://sam.gov> with the Login.gov account → **Entity Management / Get Started**.
 2. In **Entity Validation**, if your entity isn't matched, choose **"I don't see my entity / my information is different"** to open an **incidental validation ticket**.
 3. Enter the four data points so each **exactly** matches your documents:
-   - **Legal business name** — match the EIN letter character-for-character, including the entity suffix (here **`L.P.`** — *not* "LLC"/"Inc.") and punctuation.
+   - **Legal business name** — match the EIN letter character-for-character, including the entity suffix (here **`LLC`** — *not* "L.P."/"Inc.") and punctuation.
    - **Physical address** — the street address on the bank/utility statement; **never a P.O. box**.
    - **Start year** — the formation/registration year on the TX SOS record.
    - **State of incorporation** — Texas.
@@ -71,7 +88,7 @@ Because the entity is a formed **TX limited partnership (L.P.)**, its formation 
 - **P.O. box** as the physical address → rejected every time. Use a street address.
 - **Lease agreements** → rejected (private contracts, not public records).
 - **Blank/original applications or a W-9** → rejected; only **processed/certified** documents count.
-- **Any mismatch** between typed data and the documents (a different start year, the wrong suffix — e.g. typing "LLC" when the entity is an **"L.P."** — an abbreviated street) → rejected. Make them identical.
+- **Any mismatch** between typed data and the documents (a different start year, the wrong suffix — e.g. typing "L.P." when the entity is an **"LLC"** — an abbreviated street) → rejected. Make them identical.
 - Document with **no certifying stamp/seal/URL** → rejected.
 
 ---
@@ -99,23 +116,23 @@ you start.
 | Item | Notes |
 |---|---|
 | **ABA routing number** | 9-digit routing for the business bank account |
-| **Account number** | Business **checking** (or savings) account in the **legal entity name** (`CONTINENTAL SILVERLINE PRODUCTS, L.P.`) |
+| **Account number** | Business **checking** (or savings) account in the **legal entity name** (`CONTINENTAL SILVERLINE PRODUCTS, LLC`) |
 | **Account type** | Checking or Savings |
 | **ACH / EFT bank contact** | The bank's ACH dept U.S. phone + email (SAM's EFT block asks for an ACH point of contact) |
-| **Remittance name + address** | Where paper remittance would go if EFT fails — the L.P.'s name + Houston street address (no P.O. box) |
+| **Remittance name + address** | Where paper remittance would go if EFT fails — the LLC's name + Houston street address (no P.O. box) |
 | **EIN + exact legal name** | Must match the IRS letter for the TIN match already in progress |
 
 ### 7b. Steps
 1. Sign in at <https://sam.gov> → **Workspace → Entity Management** → open the
-   `CONTINENTAL SILVERLINE PRODUCTS, L.P.` registration → **Financial Information**.
+   `CONTINENTAL SILVERLINE PRODUCTS, LLC` registration → **Financial Information**.
 2. **Electronic Funds Transfer (EFT):** enter **ABA routing number**, **account
    number**, and **account type**. Double-check digits — a transposed routing/
    account number means federal payments fail.
 3. **ACH / Automated Clearing House contact:** enter the bank's ACH dept U.S.
    phone and email (or the company's accounts-receivable contact if SAM accepts
    that). Fax is optional.
-4. **Remittance address:** enter the L.P.'s remittance name + street address.
-5. **Accounts Receivable POC** (if prompted in this section): the L.P.'s AR
+4. **Remittance address:** enter the LLC's remittance name + street address.
+5. **Accounts Receivable POC** (if prompted in this section): the LLC's AR
    contact — name, address, phone, email.
 6. **Review → Submit** the entire registration.
 
@@ -133,7 +150,7 @@ you start.
 ### 7d. Common Financial-section delay/rejection traps
 - **TIN/name mismatch** with the IRS — the #1 Active blocker. The name on SAM
   must match the EIN letter character-for-character.
-- **Bank account not in the legal entity's name** — use the L.P.'s account, not
+- **Bank account not in the legal entity's name** — use the LLC's account, not
   a personal or DBA-only account.
 - **Routing/account typo** — silently breaks payment, not registration; verify
   against a voided check or bank letter.

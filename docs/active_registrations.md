@@ -1,6 +1,6 @@
-# Active Registrations Ledger — Continental Silverline Products, L.P.
+# Active Registrations Ledger — Continental Silverline Products, LLC
 
-- **For:** Blake / Continental Silverline Products, L.P. (Houston, TX)
+- **For:** Blake / Continental Silverline Products, LLC (Houston, TX)
 - **Last updated:** 2026-06-27
 - **Purpose:** Single source of truth for **where we are registered to bid**, so any new pursuit can pull the right portal, login, and commodity setup at a glance. Consolidates registration status previously scattered across `leads/review/_lead_radar.csv` notes and `vendor-profiles/`.
 
@@ -16,7 +16,7 @@
 
 | Buyer / vehicle | Platform | Status | Account ID | Commodity setup | Notes |
 |---|---|---|---|---|---|
-| **SAM.gov** (all federal contracts) | SAM.gov | 🟡 **UEI assigned, registration in progress** | UEI **XF73FG8CVMX1** | NAICS 337910/337127; PSC 7210/7105 | Legal name **CONTINENTAL SILVERLINE PRODUCTS, L.P.** Taxpayer info submitted (IRS match 2–5 days); **Financial/EFT banking still to enter**. Saved-search notifications are ON for **NAICS 337910 Active**, **PSC 7210 Active**, and **keyword mattress Active**. Not award-eligible until **Active**. Runbook: [`sam_uei_unblock_runbook.md`](sam_uei_unblock_runbook.md) |
+| **SAM.gov** (all federal contracts) | SAM.gov | 🔴 **WRONG ENTITY — must re-register** | UEI **XF73FG8CVMX1** is the **L.P.'s** (abandon) | NAICS 337910/337127; PSC 7210/7105 | **The existing SAM registration + UEI were created for CONTINENTAL SILVERLINE PRODUCTS, L.P. — a nonexistent entity.** Do **NOT** complete EFT/banking; do **NOT** cite this UEI. The real **LLC** needs a FRESH SAM registration under its own EIN (new UEI/CAGE). First: open an FSD ticket. Saved-search alerts (NAICS 337910 / PSC 7210 / mattress) stay on. Runbook: [`sam_uei_unblock_runbook.md`](sam_uei_unblock_runbook.md) |
 
 ## Texas — state & home market
 
@@ -47,7 +47,7 @@
 | **Louisiana OSP** | LaGov Supplier Self-Service | ✅ complete (2026-06-20) | — | mattress, bedding, dorm, correctional, FF&E | LaPAC notifications |
 | **Mississippi DFA** | MAGIC Supplier Self-Service | ✅ complete (2026-06-20) | — | mattress, dorm furniture, bedding, FF&E | Bid the FY26-27 "Furniture–Cafeteria/Dormitory" contract |
 | **Arkansas OSP** | ARBuy (Periscope/BSO) | ✅ complete (2026-06-21) | — | mattress, bedding, beds, correctional/dorm | AR Division of Correction, universities |
-| **New Mexico GSD/SPD** | eProNM/JAGGAER + Euna/Bonfire | ✅ complete (2026-06-27) | acct **beford@silverlinesleep.com** (Euna Supplier Network exposes no numeric vendor ID) | mattress, bedding, dorm, FF&E (15-code NIGP/UNSPSC set) | Euna/Bonfire NM-SPD portal registration complete (all 4 steps); eProNM + Euna both covered. Opportunity Recommendations = Daily → funnel; Invites + Messages on. Commodity set = UNSPSC mattresses/patient beds/mattress pads/overlays + NIGP 420 furniture family + 850 mattress covers/pads/protectors (animal-bedding 32508 removed). **Follow-up:** Euna business-profile legal name still reads "Continental Silverline LLC" — correct to **CONTINENTAL SILVERLINE PRODUCTS, L.P.** to match UEI/SAM. Runbook: [`nm_spd_euna_bonfire_registration_runbook.md`](nm_spd_euna_bonfire_registration_runbook.md) |
+| **New Mexico GSD/SPD** | eProNM/JAGGAER + Euna/Bonfire | ✅ complete (2026-06-27) | acct **beford@silverlinesleep.com** (Euna Supplier Network exposes no numeric vendor ID) | mattress, bedding, dorm, FF&E (15-code NIGP/UNSPSC set) | Euna/Bonfire NM-SPD portal registration complete (all 4 steps); eProNM + Euna both covered. Opportunity Recommendations = Daily → funnel; Invites + Messages on. Commodity set = UNSPSC mattresses/patient beds/mattress pads/overlays + NIGP 420 furniture family + 850 mattress covers/pads/protectors (animal-bedding 32508 removed). **Follow-up:** the Euna profile's "Continental Silverline LLC" is **CORRECT — leave it.** Instead, edit the **NM-SPD tenant** vendor record (submitted as "L.P." this session) to the LLC. (SAM/UEI is the wrong L.P. entity — see the SAM row.) Runbook: [`nm_spd_euna_bonfire_registration_runbook.md`](nm_spd_euna_bonfire_registration_runbook.md) |
 
 ## Counties / local (jails, detention)
 
@@ -79,10 +79,11 @@
 - **Keep it current:** when a new registration completes (or a portal issues a vendor number), update the matching row here **and** the source's Lead Radar note so the two stay in sync.
 
 ### Open registration tasks (next up)
-1. **Finish SAM.gov** Financial/EFT → registration Active; NAICS 337910 / PSC 7210 / keyword mattress saved-search alerts are already enabled.
+1. **RE-REGISTER SAM.gov for the LLC.** The existing registration + UEI XF73FG8CVMX1 are the wrong (nonexistent) L.P. entity — **do NOT complete EFT/banking on it.** Open an FSD ticket and register the LLC fresh under its own EIN (new UEI/CAGE). Saved-search alerts (NAICS 337910 / PSC 7210 / mattress) stay enabled.
 2. **Resume Choice Partners / HCDE** (UEI now available).
 3. **BuyBoard** vendor application (position for contract #767, dormitory furniture).
-4. ~~**New Mexico** — Euna/Bonfire NM-SPD registration~~ ✅ **done 2026-06-27**. Small follow-up: fix the Euna business-profile legal name ("Continental Silverline LLC" → **CONTINENTAL SILVERLINE PRODUCTS, L.P.**) so it matches the UEI/SAM entity.
+4. ~~**New Mexico** — Euna/Bonfire NM-SPD registration~~ ✅ **done 2026-06-27**. Correction: the Euna profile's "Continental Silverline LLC" is **CORRECT — do NOT change it.** Instead, edit the **NM-SPD tenant** vendor record (submitted as "L.P." this session) to the LLC.
+5. **Fix the legal entity everywhere** (L.P. → LLC) per [`research/entity_correction_plan_2026-06-27.md`](research/entity_correction_plan_2026-06-27.md): repo done; online portals are the operator checklist (SAM first).
 
 ### Scope note
 Docs only. No code/CSV/config changes. Account IDs listed are non-secret portal identifiers already recorded in `leads/review/_lead_radar.csv`; CMBL number, EIN, phone, and street address remain out of version control.

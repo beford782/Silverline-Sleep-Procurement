@@ -1,11 +1,17 @@
 # Silverline Procurement System — Full Audit (2026-06-27)
 
-- **For:** Blake / Continental Silverline Products, L.P.
+- **For:** Blake / Continental Silverline Products, LLC
 - **Method:** Multi-agent audit — 7 dimension finders (coverage, relevance engine, ingest pipeline, data integrity, pipeline discipline, runbooks/backlog, tests/CI) → adversarial verification of every finding against the real code/data (default-to-refuted) → synthesis. 15 agents, ~880K tokens.
 - **Result:** 48 verified defects, 44 improvement opportunities.
 - **Scope:** Read-only audit. This document is the record; fixes ship as separate PRs.
 
 > **PII note:** one critical finding is a street-address leak in `leads/review/_lead_radar.csv`. The address is **redacted** in this report (shown as `[street address — redacted]`) so the report itself does not re-commit the PII. Fix the underlying CSV row separately.
+
+> **⚠️ CORRECTION (2026-06-27):** This audit's "LLC-vs-L.P." guidance had the entity **backwards**. The
+> real entity is **CONTINENTAL SILVERLINE PRODUCTS, LLC** (a Texas LLC); there is no L.P. Any finding/
+> recommendation below that says to standardize on "L.P." is **superseded** by
+> [`entity_correction_plan_2026-06-27.md`](entity_correction_plan_2026-06-27.md). The canonical
+> `company_identity.md` and the SAM runbook have been corrected to LLC.
 
 ---
 
@@ -32,7 +38,7 @@ The system is structurally sound and the core discipline (empty active pipeline,
 | Hard rule (active = confirmed fit only) enforced by convention, not code; ingest auto-writes ACCEPT/REVIEW to active | pipeline-discipline | `ingest_sam.py:283-293,455`; `ingest_email.py:441,501-509`; `pipeline.py:256-366` | Route non-confirmed signals to Lead Radar/triage gate; require explicit `promote --confirmed-products`. |
 | `gate_status`/`procurement_risk`/`compliance_blocker` are inert — set at ingest, never enforced or recomputed | pipeline-discipline | `ingest_sam.py:240-242`; `pipeline.py:419-461`; `workflow_check.py:139-197` | workflow_check ERROR when status in {drafting,submitted,awarded} while gate=blocked or blocker non-empty; clear blocker on state transitions. |
 | NM-SPD Euna/Bonfire was partial — eProNM window closed 06-22, exclusive go-live 2026-06-29 (**now resolved — registration complete 2026-06-27**) | runbooks-backlog / coverage | `active_registrations.md:50`; `nm_spd_euna_bonfire_registration_runbook.md:35-46` | DONE — Euna/Bonfire registration complete; ledger flipped. |
-| SAM runbook embeds the recurring LLC-vs-L.P. error it exists to prevent | runbooks-backlog | `sam_uei_unblock_runbook.md:41,49,60` | Change to "TX limited partnership (L.P.)", "Certificate of Formation", add `L.P.` to suffix example. |
+| SAM runbook embeds the recurring LLC-vs-L.P. error it exists to prevent | runbooks-backlog | `sam_uei_unblock_runbook.md:41,49,60` | Change to "TX limited liability company (L.P.)", "Certificate of Formation", add `L.P.` to suffix example. |
 | Out-of-state university residence-life coverage absent (AR/NM) + omits top TX systems (Texas State Univ #4, ~11,300 beds) | coverage-gaps | `procurement_sources.json` (university rows); `opportunity_expansion_plan_2026-06.md:111,121,163` | Add rows for Texas State Univ System, Texas Tech, Sam Houston, UNT, NMSU, UNM, U of Arkansas (MS covered by IHL feed). |
 | ingest_sam has no Lead Radar routing — REVIEW items pollute active pipeline (inconsistent with email channel) | pipeline-discipline | `ingest_sam.py:283-292,455`; `ingest_email.py:428-432,487-500` | Port `review_target='leads'` routing into ingest_sam with same dedup logic. |
 | Relevance REJECTs discarded with no audit trail (no workflow passes `--reject-log`; ingest_sam has no such option) | ingest-pipeline | `ingest_sam.py:279-282`; `weekly_*_ingest.yml` | Add `--reject-log` to ingest_sam; pass a committed reject-log path in all three workflows. |
@@ -72,7 +78,7 @@ The system is structurally sound and the core discipline (empty active pipeline,
 |---|---|---|---|---|
 | **DO-NOW: `if: failure()` alert step on every scheduled ingest workflow** | high | low | tests-ci | Copy `procurement_digest.yml:97-111` gh-issue pattern into a final `if: failure()` step on SAM/RSS/email workflows. |
 | **DO-NOW: Broaden the scheduled SAM sweep beyond `title="mattress"`** | high | low | relevance-engine | Add `--naics-code 337910` pass + title sweeps (`bedding`,`bunk`,`box spring`,`cot`) to `weekly_sam_ingest.yml:54`; dedupe across queries. |
-| **DO-NOW: One canonical `docs/company_identity.md` + fix SAM runbook LLC->L.P.** | high | low | runbooks-backlog | Create identity card (legal name, TX Limited Partnership, Certificate of Formation, UEI XF73FG8CVMX1, NAICS 337910/337127, PSC 7210/7105); edit `sam_uei_unblock_runbook.md:41,49,60`; link from all runbooks. |
+| **DO-NOW: One canonical `docs/company_identity.md` + fix SAM runbook LLC->L.P.** | high | low | runbooks-backlog | Create identity card (legal name, TX Limited Liability Company, Certificate of Formation, UEI XF73FG8CVMX1, NAICS 337910/337127, PSC 7210/7105); edit `sam_uei_unblock_runbook.md:41,49,60`; link from all runbooks. |
 | Reorder `classify()` so STRONG_INCLUDE overrides ambiguous HARD_EXCLUDE families | high | low | relevance-engine | Split HARD_EXCLUDE into unambiguous kills vs context terms (disposal/recycling/reupholster/`aviation`); route STRONG+context to REVIEW. |
 | Promote anti-ligature/ligature-resistant from penalty to STRONG fit signal | high | low | relevance-engine | Remove from `relevance.py:90-91` SOFT_EXCLUDE and `pipeline.py:101,125` CAUTION/STRONG_CAUTION; add to correctional vocab. |
 | Consult the lead archive for dedup | high | low | ingest-pipeline | Feed `lead_radar.DEFAULT_ARCHIVE` keys into `lead_ids` in `ingest_email.py:451-455` and `ingest_rss.py:216-220`. |

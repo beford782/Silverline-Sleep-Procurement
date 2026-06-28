@@ -1,4 +1,4 @@
-# Continental Silverline Products, L.P. — Capability Statement
+# Continental Silverline Products, LLC — Capability Statement
 
 Reusable capability-statement template for vendor-introduction meetings and
 Sources Sought responses. It contains **no pricing** (capability only).
@@ -15,7 +15,7 @@ Sources Sought responses. It contains **no pricing** (capability only).
 **Texas CMBL / Vendor ID:** [on file] · **NAICS:** 337910 (Mattress Manufacturing)
 
 ## Who we are
-Continental Silverline Products, L.P. is a Houston, Texas mattress manufacturer
+Continental Silverline Products, LLC is a Houston, Texas mattress manufacturer
 (brands **Restonic / Spring Air / Silverline Sleep**) supplying institutional and
 public-sector bedding. We manufacture in-house and deliver on our own fleet across
 Texas, Oklahoma, Louisiana, Mississippi, Arkansas, and New Mexico — typical bulk
@@ -41,7 +41,7 @@ lead time under 3–4 weeks.
 Reference available on request.
 
 ## Business information
-- Legal entity: Continental Silverline Products, L.P. · Manufacturing: Houston, Texas
+- Legal entity: Continental Silverline Products, LLC · Manufacturing: Houston, Texas
 - Texas CMBL / Vendor ID: [on file] · NAICS 337910
 - [Company website / catalog link]
 

@@ -51,19 +51,30 @@
 | ☐ | Portal | Platform | Notes |
 |---|---|---|---|
 | [x] | **NM-SPD Euna/Bonfire tenant** | Euna/Bonfire | **VERIFIED 2026-06-28: no L.P. anywhere — Euna Supplier Network is a single network account; Business Profile reads "Continental Silverline LLC" and propagates to all tenants incl. NM-SPD. The old "submitted as L.P." note was a leftover from the wrong-entity session. Keywords (bedding/mattress/mattresses) + UNSPSC mattress codes (56.10.15.08, 42.19.18.10) set. Minor open watch: whether NM-SPD needs an explicit per-tenant "follow" beyond network membership.** |
-| [ ] | **City of Houston** | Beacon Bid | Home city |
-| [ ] | **TIPS** (Region 8) | IonWave | |
-| [ ] | **EPIC6 / Region 6** | IonWave | |
-| [ ] | **Region 4 ESC / OMNIA** | IonWave | |
-| [ ] | **E&I Cooperative** | JAGGAER | |
-| [ ] | **Sourcewell** | Sourcewell portal | |
-| [ ] | **El Paso County** | IonWave | |
-| [ ] | **Tarrant County** | IonWave | |
-| [ ] | **Dallas County / BidNet Direct** (six-state profile) | BidNet | One profile propagates across the 6-state aggregation |
-| [ ] | **Texas A&M (AggieBid)** | JAGGAER | |
-| [ ] | **University of Oklahoma** (OUHSC) | JAGGAER | |
-| [ ] | **Oklahoma State University** | JAGGAER | |
-| [ ] | **LSU / LaPAC** enrollment | LaPAC | May update with the LA OSP fix |
+| [ ] | **City of Houston** | Beacon Bid | Home city — NOT yet checked |
+| [x] | **TIPS** (Region 8) | IonWave | **VERIFIED 2026-06-28: no L.P.** Org Type = "Limited Liability Company"; Trade Name "Continental Silverline", Legal Name blank; UEI field blank. IonWave uses ONE shared profile at `supplier.ionwave.net` (see note below). |
+| [x] | **EPIC6 / Region 6** | IonWave | **VERIFIED 2026-06-28 (via shared IonWave profile)** — same record as TIPS/Region 4; Org Type = LLC, no L.P. |
+| [x] | **Region 4 ESC / OMNIA** | IonWave | **VERIFIED 2026-06-28: no L.P.** Opened the identical `supplier.ionwave.net` profile as TIPS; Org Type = LLC. |
+| [x] | **E&I Cooperative** | JAGGAER | **VERIFIED 2026-06-28: no L.P.** Legal Company Name "Continental Silverline"; Legal Structure = Single-Member LLC. Shares JAGGAER Supplier Network profile supplierID 1011150392 (see note). |
+| [ ] | **Sourcewell** | Sourcewell portal | NOT yet checked (separate platform) |
+| [x] | **El Paso County** | IonWave | **VERIFIED 2026-06-28 (via shared IonWave profile)** — Org Type = LLC, no L.P. |
+| [x] | **Tarrant County** | IonWave | **VERIFIED 2026-06-28 (via shared IonWave profile)** — Org Type = LLC, no L.P. |
+| [x] | **Dallas County / BidNet Direct** (six-state profile) | BidNet | **VERIFIED 2026-06-28: no L.P.** Org Name = brand "Silverline Sleep"; Business Structure = "LLC or LLP". One profile across all six states. Also fixed a stale org-contact email (restonichouston → silverlinesleep); alert routing already correct (user Preferences email = silverlinesleep). |
+| [x] | **Texas A&M (AggieBid)** | JAGGAER | **VERIFIED 2026-06-28: no L.P.** Legal Company Name "Continental Silverline"; Single-Member LLC. Shared JAGGAER profile supplierID 1011150392. |
+| [x] | **University of Oklahoma** (OUHSC) | JAGGAER | **VERIFIED 2026-06-28 (via shared JAGGAER profile)** — same supplierID 1011150392; Single-Member LLC, no L.P. |
+| [x] | **Oklahoma State University** | JAGGAER | **VERIFIED 2026-06-28 (via shared JAGGAER profile)** — same supplierID 1011150392; no separate record. |
+| [ ] | **LSU / LaPAC** enrollment | LaPAC | NOT yet checked (ties to LA OSP / LaGov — payment-capable) |
+
+> **Key 2026-06-28 sweep discovery — unified supplier profiles:** IonWave portals all read ONE company
+> profile at `supplier.ionwave.net` (Org Type = Limited Liability Company), and JAGGAER portals (E&I,
+> TAMU, OU, OSU) all share ONE JAGGAER Supplier Network profile, supplierID **1011150392** (Legal
+> Structure = Single-Member LLC). So a single check per platform covers every portal on it. **Across
+> every live portal checked — BidNet, all IonWave, all JAGGAER, NM/Euna — there was NO "L.P." anywhere;
+> all already read as LLC.** This confirms the "L.P." problem was the repo's own records + the single
+> SAM.gov record, not the live registrations. Names are recorded as the brand ("Continental Silverline" /
+> "Silverline Sleep") with structure = LLC and the LLC's EIN — making the full "…PRODUCTS, LLC" exact is
+> an optional cosmetic, not an L.P. fix. Remaining unchecked: City of Houston, Sourcewell, LSU/LaPAC, and
+> the Tier-2 payment-capable portals (operator/accountant taxpayer-name eyeball).
 
 ## TIER 4 — Verify, or register fresh as LLC
 | ☐ | Record | Action | Who |

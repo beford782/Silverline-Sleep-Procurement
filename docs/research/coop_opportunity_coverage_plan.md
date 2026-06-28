@@ -1,6 +1,6 @@
 # Co-op / CMBL / University Coverage Plan - surfacing opportunities from no-auto-alert sources
 
-- **For:** Blake / Continental Silverline Products, L.P.
+- **For:** Blake / Continental Silverline Products, LLC
 - **Date:** 2026-06-27
 - **Method:** Multi-agent research (10 source agents + synthesis) into how to capture opportunities
  from the registered sources that don't send per-opportunity alerts out of the box.

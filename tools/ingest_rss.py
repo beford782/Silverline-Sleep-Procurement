@@ -58,6 +58,8 @@ from pipeline import (  # noqa: E402
 )
 import relevance  # noqa: E402
 import lead_radar  # noqa: E402
+import demand_signal  # noqa: E402
+import demand_radar  # noqa: E402
 
 
 def _localname(tag: str) -> str:
@@ -200,19 +202,29 @@ def existing_ids(rows: list[dict]) -> set[str]:
     return {(r.get("opportunity_id") or "").strip() for r in rows if r.get("opportunity_id")}
 
 
-def ingest(entries: list[tuple[dict, str]], existing_rows: list[dict], today: str,
+def ingest(entries: list[tuple], existing_rows: list[dict], today: str,
            home_states: frozenset[str] = relevance.HOME_STATES_DEFAULT,
            existing_leads: list[dict] | None = None,
            review_target: str = "leads",
-           existing_lead_archive: list[dict] | None = None
-           ) -> tuple[list[dict], list[dict], list[dict], list[dict]]:
-    """Partition (entry, source) pairs into (new_rows, leads, dupes, rejected).
+           existing_lead_archive: list[dict] | None = None,
+           existing_demand: list[dict] | None = None,
+           existing_demand_archive: list[dict] | None = None,
+           ) -> tuple[list[dict], list[dict], list[dict], list[dict], list[dict]]:
+    """Partition entries into (new_rows, leads, demand, dupes, rejected).
 
-    ACCEPT rows write to the active pipeline (new_rows). REVIEW rows route per
-    `review_target` (default 'leads' -> Lead Radar; 'active' keeps the legacy
-    HUMAN-flagged watching row; 'reject-log' drops them). REJECT is unchanged.
-    Lead dedup also consults the Lead Radar archive so a human-triaged dead
-    lead is not re-ingested every sweep.
+    Each entry is either a ``(entry, source)`` pair (kind defaults to
+    'procurement') or a ``(entry, source, kind)`` triple. Procurement entries
+    keep the legacy behavior: ACCEPT rows write to the active pipeline
+    (new_rows); REVIEW rows route per `review_target` (default 'leads' ->
+    Lead Radar; 'active' keeps the legacy HUMAN-flagged watching row;
+    'reject-log' drops them); REJECT is unchanged. Lead dedup also consults the
+    Lead Radar archive so a human-triaged dead lead is not re-ingested.
+
+    Demand entries (kind == 'demand') run the pre-RFP demand classifier
+    (demand_signal.classify_demand) and route ACCEPT/REVIEW signals to a
+    parallel `demand` bucket (Demand Radar rows), deduped against both the
+    Demand Radar review file and its archive. REJECT demand items are dropped
+    (and collected in `rejected` so a reject-log can capture them).
     """
     existing_leads = existing_leads or []
     ids = existing_ids(existing_rows)
@@ -224,13 +236,52 @@ def ingest(entries: list[tuple[dict, str]], existing_rows: list[dict], today: st
     for r in existing_rows:
         lead_ids |= lead_radar.lead_match_keys(r)
 
+    demand_ids: set[str] = set()
+    for r in (existing_demand or []):
+        demand_ids |= demand_radar.demand_match_keys(r)
+    for r in (existing_demand_archive or []):
+        demand_ids |= demand_radar.demand_match_keys(r)
+
     seen: set[str] = set()
     lead_seen: set[str] = set()
+    demand_seen: set[str] = set()
     new_rows: list[dict] = []
     leads: list[dict] = []
+    demand: list[dict] = []
     dupes: list[dict] = []
     rejected: list[dict] = []
-    for entry, source in entries:
+    for item in entries:
+        if len(item) == 3:
+            entry, source, kind = item
+        else:
+            entry, source = item
+            kind = "procurement"
+
+        if kind == "demand":
+            # Pre-RFP demand path: parallel to procurement, never touches the
+            # bid pipeline. Mirror the noise-host rejection and reject-logging.
+            title = (entry.get("title") or "").strip()
+            link = (entry.get("url") or "").strip()
+            text = "\n".join(p for p in (title, entry.get("summary", "")) if p)
+            verdict = demand_signal.classify_demand(text, source=source)
+            decision = verdict.decision
+            if decision != "REJECT" and _is_noise_host(link):
+                decision = "REJECT"
+            if decision == "REJECT":
+                rej = entry_to_row(entry, source, today)
+                rej["notes"] = (f"{rej['notes']}; demand={decision}").strip("; ")
+                rejected.append(rej)
+                continue
+            drow = demand_radar.build_demand_row(title, source, verdict, today,
+                                                 source_url=link)
+            keys = demand_radar.demand_match_keys(drow)
+            if keys & demand_ids or keys & demand_seen:
+                dupes.append(drow)
+                continue
+            demand_seen |= keys
+            demand.append(drow)
+            continue
+
         row = entry_to_row(entry, source, today)
         text = "\n".join(p for p in (row["title"], entry.get("summary", "")) if p)
         # Web/RSS items must carry a procurement cue to ACCEPT (filters news,
@@ -271,7 +322,7 @@ def ingest(entries: list[tuple[dict, str]], existing_rows: list[dict], today: st
             continue
         seen.add(oid)
         new_rows.append(row)
-    return new_rows, leads, dupes, rejected
+    return new_rows, leads, demand, dupes, rejected
 
 
 def fetch_feed(url: str, timeout: float = DEFAULT_TIMEOUT_S) -> str:
@@ -281,15 +332,18 @@ def fetch_feed(url: str, timeout: float = DEFAULT_TIMEOUT_S) -> str:
         return resp.read().decode("utf-8", errors="replace")
 
 
-def _load_feeds(args) -> list[tuple[str, str]]:
-    """Return list of (url, source). Fixture mode returns a sentinel."""
-    feeds: list[tuple[str, str]] = []
+def _load_feeds(args) -> list[tuple[str, str, str]]:
+    """Return list of (url, source, kind). `kind` is 'procurement' (default)
+    or 'demand'; config entries may carry an optional "kind" key, while
+    --feed URLs take their kind from the --kind flag."""
+    feeds: list[tuple[str, str, str]] = []
     if args.feeds_config:
         with open(args.feeds_config, "r", encoding="utf-8") as fh:
             for f in json.load(fh):
-                feeds.append((f["url"], f.get("source") or f["url"]))
+                feeds.append((f["url"], f.get("source") or f["url"],
+                              f.get("kind", "procurement")))
     for url in args.feed or []:
-        feeds.append((url, args.source or url))
+        feeds.append((url, args.source or url, getattr(args, "kind", "procurement")))
     return feeds
 
 
@@ -297,14 +351,22 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--feed", action="append", help="Feed URL (repeatable).")
     parser.add_argument("--source", default=None, help="Source label for --feed URLs.")
-    parser.add_argument("--feeds-config", default=None, help="JSON list of {url, source} feeds.")
+    parser.add_argument("--feeds-config", default=None, help="JSON list of {url, source, kind} feeds.")
     parser.add_argument("--fixture", default=None, help="Read one feed's XML from a file (testing).")
+    parser.add_argument("--kind", choices=("procurement", "demand"), default="procurement",
+                        help="Feed kind for --feed/--fixture manual paths (default: procurement). "
+                             "'demand' routes entries through the pre-RFP demand classifier "
+                             "into Demand Radar. Per-feed 'kind' in --feeds-config overrides this.")
     parser.add_argument("--active", default=str(DEFAULT_ACTIVE))
     parser.add_argument("--archive", default=str(DEFAULT_ARCHIVE))
     parser.add_argument("--leads", default=str(lead_radar.DEFAULT_REVIEW),
                         help="Lead Radar CSV write target for REVIEW rows (default: %(default)s)")
     parser.add_argument("--lead-archive", default=str(lead_radar.DEFAULT_ARCHIVE),
                         help="Lead Radar archive consulted for dedup only; never written (default: %(default)s)")
+    parser.add_argument("--demand", default=str(demand_radar.DEFAULT_REVIEW),
+                        help="Demand Radar CSV write target for kind=demand signals (default: %(default)s)")
+    parser.add_argument("--demand-archive", default=str(demand_radar.DEFAULT_ARCHIVE),
+                        help="Demand Radar archive consulted for dedup only; never written (default: %(default)s)")
     parser.add_argument("--review-target", choices=("leads", "active", "reject-log"), default="leads",
                         help="Where REVIEW-band items go: 'leads' (Lead Radar, default), "
                              "'active' (legacy), or 'reject-log'.")
@@ -316,22 +378,25 @@ def main(argv: list[str] | None = None) -> int:
     active_path = Path(args.active)
     archive_path = Path(args.archive)
     leads_path = Path(args.leads)
+    demand_path = Path(args.demand)
     existing_active = _read_existing_or_empty(active_path)
     existing_rows = existing_active + _read_existing_or_empty(archive_path)
     existing_leads = _read_existing_leads_or_empty(leads_path)
     existing_lead_archive = _read_existing_leads_or_empty(Path(args.lead_archive))
+    existing_demand = _read_existing_demand_or_empty(demand_path)
+    existing_demand_archive = _read_existing_demand_or_empty(Path(args.demand_archive))
 
-    entries: list[tuple[dict, str]] = []
+    entries: list[tuple] = []
     if args.fixture:
         with open(args.fixture, "r", encoding="utf-8") as fh:
             for e in parse_feed(fh.read()):
-                entries.append((e, args.source or "RSS"))
+                entries.append((e, args.source or "RSS", args.kind))
     else:
         feeds = _load_feeds(args)
         if not feeds:
             print("error: provide --feed/--source, --feeds-config, or --fixture", file=sys.stderr)
             return 2
-        for url, source in feeds:
+        for url, source, kind in feeds:
             try:
                 xml_text = fetch_feed(url)
             except (urllib.error.URLError, urllib.error.HTTPError) as exc:
@@ -339,23 +404,28 @@ def main(argv: list[str] | None = None) -> int:
                 continue
             try:
                 for e in parse_feed(xml_text):
-                    entries.append((e, source))
+                    entries.append((e, source, kind))
             except ValueError as exc:
                 print(f"warn: {source}: {exc}", file=sys.stderr)
 
-    new_rows, leads, dupes, rejected = ingest(
+    new_rows, leads, demand, dupes, rejected = ingest(
         entries, existing_rows, today, existing_leads=existing_leads,
         review_target=args.review_target,
-        existing_lead_archive=existing_lead_archive)
+        existing_lead_archive=existing_lead_archive,
+        existing_demand=existing_demand,
+        existing_demand_archive=existing_demand_archive)
     print(f"feed entries fetched: {len(entries)}")
     print(f"  active:   {len(new_rows)}")
     print(f"  leads:    {len(leads)} (review -> {args.review_target})")
+    print(f"  demand:   {len(demand)} (pre-RFP -> Demand Radar)")
     print(f"  dupes:    {len(dupes)}")
     print(f"  rejected: {len(rejected)} (not mattress-relevant)")
     for r in new_rows:
         print(f"  + [{r['source']}] {r['title']}")
     for lead in leads:
         print(f"  ~ [lead/{lead['lead_type']}] {lead['title']}")
+    for d in demand:
+        print(f"  ~ [demand/{d.get('segment') or '?'}] {d.get('facility_name')}")
 
     if args.reject_log and rejected:
         _append_reject_log(Path(args.reject_log), rejected)
@@ -374,6 +444,10 @@ def main(argv: list[str] | None = None) -> int:
         lead_radar.write_lead_rows_atomic(leads_path, existing_leads + leads)
         print(f"wrote {len(leads)} lead(s) to {leads_path}")
         wrote_anything = True
+    if demand:
+        demand_radar.write_demand_rows_atomic(demand_path, existing_demand + demand)
+        print(f"wrote {len(demand)} demand signal(s) to {demand_path}")
+        wrote_anything = True
     if not wrote_anything:
         print("(no new rows to write)")
     return 0
@@ -391,6 +465,14 @@ def _read_existing_leads_or_empty(path: Path) -> list[dict]:
     if not path.exists():
         return []
     _, rows = lead_radar.read_lead_rows(path)
+    return rows
+
+
+def _read_existing_demand_or_empty(path: Path) -> list[dict]:
+    """Existing Demand Radar rows for dedup; empty when the file is absent."""
+    if not path.exists():
+        return []
+    _, rows = demand_radar.read_demand_rows(path)
     return rows
 
 

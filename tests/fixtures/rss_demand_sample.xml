@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Demand Radar Sample - construction &amp; real-estate signals</title>
+    <link>https://news.example.com/construction</link>
+    <description>Pre-RFP institutional-bed demand signals</description>
+    <item>
+      <title>Hilton breaks ground on 180-key hotel in Austin, Texas</title>
+      <link>https://news.example.com/hilton-austin-groundbreaking</link>
+      <pubDate>Mon, 15 Jun 2026 14:00:00 -0500</pubDate>
+      <description>Hilton breaks ground on a new 180-key Hampton hotel in Austin, Texas, with the property opening in 2027.</description>
+    </item>
+    <item>
+      <title>Brookdale senior living community begins renovation of 120-bed facility in Dallas, Texas</title>
+      <link>https://news.example.com/brookdale-dallas-renovation</link>
+      <pubDate>Tue, 16 Jun 2026 09:30:00 -0500</pubDate>
+      <description>Brookdale assisted living community begins a full renovation of its 120-bed facility in Dallas, Texas, refreshing guestrooms and soft goods.</description>
+    </item>
+    <item>
+      <title>Developer breaks ground on 40-story office tower in Houston, Texas</title>
+      <link>https://news.example.com/houston-office-tower</link>
+      <pubDate>Tue, 16 Jun 2026 10:00:00 -0500</pubDate>
+      <description>A developer breaks ground on a 40-story office tower with retail and a parking garage in downtown Houston, Texas.</description>
+    </item>
+    <item>
+      <title>Marriott to open 250-room resort in San Antonio, Texas in Q3 2027</title>
+      <link>https://news.example.com/marriott-san-antonio-resort</link>
+      <pubDate>Wed, 17 Jun 2026 08:00:00 -0500</pubDate>
+      <description>Marriott to open a 250-room resort in San Antonio, Texas in Q3 2027, now under construction.</description>
+    </item>
+  </channel>
+</rss>

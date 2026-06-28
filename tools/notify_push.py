@@ -41,6 +41,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import pipeline  # noqa: E402
 import lead_radar  # noqa: E402
+import demand_radar  # noqa: E402
 
 
 def select_new_rows(active_rows: list[dict], lead_rows: list[dict], created_date: str
@@ -49,6 +50,22 @@ def select_new_rows(active_rows: list[dict], lead_rows: list[dict], created_date
     accepts = [r for r in active_rows if (r.get("created_date") or "") == created_date]
     leads = [r for r in lead_rows if (r.get("created_date") or "") == created_date]
     return accepts, leads
+
+
+def select_new_demand_rows(demand_rows: list[dict], created_date: str) -> list[dict]:
+    """Demand Radar rows first seen on `created_date`.
+
+    Mirrors `select_new_rows`' date logic, but pre-RFP demand signals carry their
+    discovery date in `first_seen` (there is no bid `created_date`). Kept separate
+    so the Demand Radar lane never mixes with the bid pipeline.
+    """
+    return [r for r in demand_rows if (r.get("first_seen") or "") == created_date]
+
+
+def _demand_window_sort_key(r: dict) -> tuple:
+    """Ascending by est_buy_window (YYYY-MM); blank/missing windows sort last."""
+    bw = (r.get("est_buy_window") or "").strip()
+    return (1, "") if not bw else (0, bw)
 
 
 def _fmt_row(r: dict, id_field: str) -> str:
@@ -63,15 +80,36 @@ def _fmt_row(r: dict, id_field: str) -> str:
     return line
 
 
-def build_email(accepts: list[dict], leads: list[dict], pr_url: str, date: str
-                ) -> tuple[str, str]:
+def _fmt_demand_row(r: dict) -> str:
+    """One Demand Radar line: segment · scale · buy-window · location · facility · URL.
+
+    Deliberately distinct from `_fmt_row` so a pre-RFP demand signal can never be
+    read as a biddable solicitation.
+    """
+    segment = r.get("segment") or "?"
+    scale = r.get("scale") or "?"
+    window = r.get("est_buy_window") or "TBD"
+    location = r.get("location") or "?"
+    facility = r.get("facility_name") or r.get("demand_id") or "(unnamed)"
+    url = r.get("source_url") or ""
+    line = (f"  - {segment} · {scale} · buy-window {window} · {location} · {facility}")
+    if url:
+        line += f"\n    {url}"
+    return line
+
+
+def build_email(accepts: list[dict], leads: list[dict], pr_url: str, date: str,
+                demand: list[dict] | None = None) -> tuple[str, str]:
     """Return (subject, body) for the digest. Caller decides whether to send."""
-    n_a, n_l = len(accepts), len(leads)
+    demand = demand or []
+    n_a, n_l, n_d = len(accepts), len(leads), len(demand)
     bits = []
     if n_a:
         bits.append(f"{n_a} bid fit{'s' if n_a != 1 else ''}")
     if n_l:
         bits.append(f"{n_l} lead{'s' if n_l != 1 else ''}")
+    if n_d:
+        bits.append(f"{n_d} demand")
     summary = " + ".join(bits) if bits else "no new rows"
     subject = f"[Silverline] {summary} - {date}"
 
@@ -83,6 +121,12 @@ def build_email(accepts: list[dict], leads: list[dict], pr_url: str, date: str
     if leads:
         lines.append("== LEAD RADAR (broad/ambiguous - confirm product fit before bidding) ==")
         lines += [_fmt_row(r, "lead_id") for r in leads]
+        lines.append("")
+    if demand:
+        lines.append("== DEMAND RADAR (pre-RFP construction signals — sales outreach, "
+                     "sorted by buy-window) ==")
+        lines += [_fmt_demand_row(r)
+                  for r in sorted(demand, key=_demand_window_sort_key)]
         lines.append("")
     if pr_url:
         lines.append(f"Triage PR: {pr_url}")
@@ -144,6 +188,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="Active pipeline CSV (default: %(default)s)")
     parser.add_argument("--leads", default=str(lead_radar.DEFAULT_REVIEW),
                         help="Lead Radar CSV (default: %(default)s)")
+    parser.add_argument("--demand", default=str(demand_radar.DEFAULT_REVIEW),
+                        help="Demand Radar CSV (default: %(default)s)")
     parser.add_argument("--created-date", default=None,
                         help="Notify about rows created on this date (default: today, UTC-naive).")
     parser.add_argument("--pr-url", default="", help="Triage PR URL to include in the email.")
@@ -171,11 +217,13 @@ def main(argv: list[str] | None = None) -> int:
     else:
         active_rows = pipeline.read_rows(Path(args.active))[1] if Path(args.active).exists() else []
         lead_rows = lead_radar.read_lead_rows(Path(args.leads))[1] if Path(args.leads).exists() else []
+        demand_rows = demand_radar.read_demand_rows(Path(args.demand))[1] if Path(args.demand).exists() else []
         accepts, leads = select_new_rows(active_rows, lead_rows, created_date)
-        if not accepts and not leads:
+        demand = select_new_demand_rows(demand_rows, created_date)
+        if not accepts and not leads and not demand:
             print(f"notify: nothing new for {created_date}; no email sent.")
             return 0
-        subject, body = build_email(accepts, leads, args.pr_url, created_date)
+        subject, body = build_email(accepts, leads, args.pr_url, created_date, demand)
 
     if args.dry_run:
         print(f"--- DRY RUN (no email sent) ---\nTo: <recipient>\nSubject: {subject}\n\n{body}")

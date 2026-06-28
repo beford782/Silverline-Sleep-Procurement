@@ -18,6 +18,7 @@ if str(TOOLS) not in sys.path:
 import notify_push  # noqa: E402
 import pipeline  # noqa: E402
 import lead_radar  # noqa: E402
+import demand_radar  # noqa: E402
 
 
 def _active_row(**kw) -> dict:
@@ -28,6 +29,12 @@ def _active_row(**kw) -> dict:
 
 def _lead_row(**kw) -> dict:
     row = {k: "" for k in lead_radar.LEAD_HEADER} if hasattr(lead_radar, "LEAD_HEADER") else {}
+    row.update(kw)
+    return row
+
+
+def _demand_row(**kw) -> dict:
+    row = {k: "" for k in demand_radar.DEMAND_HEADER}
     row.update(kw)
     return row
 
@@ -67,12 +74,71 @@ class BuildEmailTests(unittest.TestCase):
         self.assertNotIn("LEAD RADAR", body)
 
 
+class DemandSectionTests(unittest.TestCase):
+    def test_select_new_demand_uses_first_seen(self) -> None:
+        rows = [
+            _demand_row(demand_id="d-new", segment="hotel", first_seen="2026-06-27"),
+            _demand_row(demand_id="d-old", segment="hotel", first_seen="2026-06-01"),
+        ]
+        sel = notify_push.select_new_demand_rows(rows, "2026-06-27")
+        self.assertEqual([r["demand_id"] for r in sel], ["d-new"])
+
+    def test_demand_section_appears_and_subject_counts(self) -> None:
+        demand = [_demand_row(demand_id="d1", segment="senior-living", scale="120 beds",
+                              est_buy_window="2026-09", location="TX",
+                              facility_name="Cedar Park Senior Living",
+                              source_url="https://news/x", first_seen="2026-06-27")]
+        subject, body = notify_push.build_email([], [], "", "2026-06-27", demand)
+        self.assertIn("1 demand", subject)
+        self.assertIn("DEMAND RADAR", body)
+        self.assertIn("Cedar Park Senior Living", body)
+        self.assertIn("2026-09", body)
+        self.assertIn("https://news/x", body)
+
+    def test_demand_lines_sorted_by_window_blanks_last(self) -> None:
+        demand = [
+            _demand_row(demand_id="late", facility_name="Late", est_buy_window="2027-01"),
+            _demand_row(demand_id="blank", facility_name="Blank", est_buy_window=""),
+            _demand_row(demand_id="soon", facility_name="Soon", est_buy_window="2026-08"),
+        ]
+        _, body = notify_push.build_email([], [], "", "2026-06-27", demand)
+        i_soon = body.index("Soon")
+        i_late = body.index("Late")
+        i_blank = body.index("Blank")
+        self.assertLess(i_soon, i_late)
+        self.assertLess(i_late, i_blank)
+
+    def test_no_demand_no_section(self) -> None:
+        accepts = [_active_row(opportunity_id="a", title="Mattresses", created_date="2026-06-27")]
+        subject, body = notify_push.build_email(accepts, [], "", "2026-06-27")
+        self.assertNotIn("DEMAND RADAR", body)
+        self.assertNotIn("demand", subject)
+
+    def test_demand_never_under_bid_fits_heading(self) -> None:
+        accepts = [_active_row(opportunity_id="a", title="Jail Mattresses",
+                               created_date="2026-06-27")]
+        demand = [_demand_row(demand_id="d1", segment="hotel", facility_name="Grand Hotel",
+                              est_buy_window="2026-09", first_seen="2026-06-27")]
+        _, body = notify_push.build_email(accepts, [], "", "2026-06-27", demand)
+        # The demand facility must fall AFTER the demand heading and never inside
+        # the ACTIVE BID FITS block.
+        bid_heading = body.index("ACTIVE BID FITS")
+        demand_heading = body.index("DEMAND RADAR")
+        self.assertLess(bid_heading, demand_heading)
+        self.assertGreater(body.index("Grand Hotel"), demand_heading)
+        # The bid block (between its heading and the demand heading) must not name
+        # the demand facility.
+        bid_block = body[bid_heading:demand_heading]
+        self.assertNotIn("Grand Hotel", bid_block)
+
+
 class MainDryRunTests(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, str(self.tmp), True)
         self.active = self.tmp / "active.csv"
         self.leads = self.tmp / "leads.csv"
+        self.demand = self.tmp / "demand.csv"
 
     def _run(self, *argv: str) -> tuple[int, str]:
         out = io.StringIO()
@@ -92,6 +158,7 @@ class MainDryRunTests(unittest.TestCase):
                 None, "2026-06-27"),
         ])
         rc, out = self._run("--active", str(self.active), "--leads", str(self.leads),
+                            "--demand", str(self.demand),
                             "--created-date", "2026-06-27", "--pr-url", "https://gh/pr/5",
                             "--dry-run")
         self.assertEqual(rc, 0)
@@ -99,11 +166,34 @@ class MainDryRunTests(unittest.TestCase):
         self.assertIn("Jail Mattresses", out)
         self.assertIn("https://gh/pr/5", out)
 
+    def test_dry_run_includes_demand_section(self) -> None:
+        pipeline.write_rows_atomic(self.active, [
+            _active_row(opportunity_id="a", title="Jail Mattresses", source="Bonfire",
+                        created_date="2026-06-27"),
+        ])
+        demand_radar.write_demand_rows_atomic(self.demand, [
+            _demand_row(demand_id="d1", segment="hotel", scale="200 keys",
+                        est_buy_window="2026-09", location="TX",
+                        facility_name="Grand Hotel", source_url="https://news/h",
+                        first_seen="2026-06-27"),
+            _demand_row(demand_id="d-old", segment="hotel", facility_name="Old Tower",
+                        first_seen="2026-01-01"),
+        ])
+        rc, out = self._run("--active", str(self.active), "--leads", str(self.leads),
+                            "--demand", str(self.demand),
+                            "--created-date", "2026-06-27", "--dry-run")
+        self.assertEqual(rc, 0)
+        self.assertIn("1 demand", out)
+        self.assertIn("DEMAND RADAR", out)
+        self.assertIn("Grand Hotel", out)
+        self.assertNotIn("Old Tower", out)
+
     def test_no_new_rows_sends_nothing(self) -> None:
         pipeline.write_rows_atomic(self.active, [
             _active_row(opportunity_id="a", title="Old", created_date="2026-01-01"),
         ])
         rc, out = self._run("--active", str(self.active), "--leads", str(self.leads),
+                            "--demand", str(self.demand),
                             "--created-date", "2026-06-27", "--dry-run")
         self.assertEqual(rc, 0)
         self.assertIn("nothing new", out)

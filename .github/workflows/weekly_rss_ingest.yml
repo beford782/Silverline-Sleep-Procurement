@@ -39,25 +39,28 @@ jobs:
         run: |
           active_changed=false
           leads_changed=false
+          demand_changed=false
           git diff --quiet -- bids/active/_pipeline.csv || active_changed=true
           git diff --quiet -- leads/review/_lead_radar.csv || leads_changed=true
+          git diff --quiet -- leads/demand/_demand_radar.csv || demand_changed=true
 
           changed=false
-          if [ "$active_changed" = "true" ] || [ "$leads_changed" = "true" ]; then
+          if [ "$active_changed" = "true" ] || [ "$leads_changed" = "true" ] || [ "$demand_changed" = "true" ]; then
             changed=true
           fi
 
           {
             echo "active_changed=$active_changed"
             echo "leads_changed=$leads_changed"
+            echo "demand_changed=$demand_changed"
             echo "changed=$changed"
           } >> "$GITHUB_OUTPUT"
 
           if [ "$changed" = "true" ]; then
             echo "RSS ingest changed CSVs before scoring."
-            git --no-pager diff --stat -- bids/active/_pipeline.csv leads/review/_lead_radar.csv
+            git --no-pager diff --stat -- bids/active/_pipeline.csv leads/review/_lead_radar.csv leads/demand/_demand_radar.csv
           else
-            echo "RSS ingest added no active or Lead Radar rows."
+            echo "RSS ingest added no active, Lead Radar, or Demand Radar rows."
           fi
 
       - name: Re-score active pipeline
@@ -78,36 +81,40 @@ jobs:
         run: |
           active_changed=false
           leads_changed=false
+          demand_changed=false
           git diff --quiet -- bids/active/_pipeline.csv || active_changed=true
           git diff --quiet -- leads/review/_lead_radar.csv || leads_changed=true
+          git diff --quiet -- leads/demand/_demand_radar.csv || demand_changed=true
 
           changed=false
-          if [ "$active_changed" = "true" ] || [ "$leads_changed" = "true" ]; then
+          if [ "$active_changed" = "true" ] || [ "$leads_changed" = "true" ] || [ "$demand_changed" = "true" ]; then
             changed=true
           fi
 
-          if [ "$active_changed" = "true" ] && [ "$leads_changed" = "true" ]; then
-            scope="active bids + Lead Radar"
-          elif [ "$active_changed" = "true" ]; then
-            scope="active bids"
-          elif [ "$leads_changed" = "true" ]; then
-            scope="Lead Radar"
-          else
-            scope="none"
+          scope_parts=""
+          if [ "$active_changed" = "true" ]; then scope_parts="active bids"; fi
+          if [ "$leads_changed" = "true" ]; then
+            if [ -n "$scope_parts" ]; then scope_parts="$scope_parts + Lead Radar"; else scope_parts="Lead Radar"; fi
           fi
+          if [ "$demand_changed" = "true" ]; then
+            if [ -n "$scope_parts" ]; then scope_parts="$scope_parts + Demand Radar"; else scope_parts="Demand Radar"; fi
+          fi
+          if [ -z "$scope_parts" ]; then scope_parts="none"; fi
+          scope="$scope_parts"
 
           {
             echo "active_changed=$active_changed"
             echo "leads_changed=$leads_changed"
+            echo "demand_changed=$demand_changed"
             echo "changed=$changed"
             echo "scope=$scope"
           } >> "$GITHUB_OUTPUT"
 
           if [ "$changed" = "true" ]; then
             echo "Changes detected ($scope) - will open PR."
-            git --no-pager diff --stat -- bids/active/_pipeline.csv leads/review/_lead_radar.csv
+            git --no-pager diff --stat -- bids/active/_pipeline.csv leads/review/_lead_radar.csv leads/demand/_demand_radar.csv
           else
-            echo "No active-pipeline or Lead Radar changes - no PR will be opened."
+            echo "No active-pipeline, Lead Radar, or Demand Radar changes - no PR will be opened."
           fi
 
       - name: Open PR with new rows
@@ -123,7 +130,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git checkout -b "$BRANCH"
-          git add bids/active/_pipeline.csv leads/review/_lead_radar.csv
+          git add bids/active/_pipeline.csv leads/review/_lead_radar.csv leads/demand/_demand_radar.csv
           git commit -m "Twice-weekly RSS/feed ingest (${SCOPE}): ${TODAY}"
           git push -u origin "$BRANCH"
 

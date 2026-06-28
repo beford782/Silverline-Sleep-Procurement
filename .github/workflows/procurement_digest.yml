@@ -52,6 +52,12 @@ jobs:
             python tools/lead_radar.py summary
             echo '```'
             echo
+            echo "## Demand Radar — upcoming buy-windows (pre-RFP construction signals; sales outreach, not bids)"
+            echo
+            echo '```text'
+            python tools/demand_radar.py summary
+            echo '```'
+            echo
             echo "## Open automation PRs"
             echo
           } > /tmp/digest.md
@@ -89,6 +95,7 @@ jobs:
             echo
             echo "- If there are open automation PRs, review those first."
             echo "- Active pipeline rows are confirmed bid candidates; Lead Radar rows are watch/research signals."
+            echo "- Demand Radar rows are pre-RFP private-sector construction signals for human outreach (sales), NOT biddable solicitations."
             echo "- If both counts look unchanged and there are no automation PRs, no action is needed."
           } >> /tmp/digest.md
 

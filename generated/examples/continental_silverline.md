@@ -19,7 +19,7 @@ _Generated 2026-05-13 · 78 of 83 fields answered._
 
 | Field | Answer | Guidance |
 | --- | --- | --- |
-| Company legal name | Continental Silverline | Legal entity used for government bids. |
+| Company legal name | Continental Silverline Products, LLC | Legal entity used for government bids. |
 | DBA / brand name | Restonic / Spring Air / Silverline Sleep | If different from legal name. |
 | Website | private | Company website or product catalog URL. |
 | Houston-area address or general location | Houston, Texas | Full address or general area if preferred. |

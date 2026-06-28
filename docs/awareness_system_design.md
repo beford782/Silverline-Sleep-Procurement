@@ -1,6 +1,6 @@
 # Awareness System Design - getting opportunities to Blake
 
-- **For:** Blake / Continental Silverline Products, L.P.
+- **For:** Blake / Continental Silverline Products, LLC
 - **Date:** 2026-06-27
 - **Problem:** The email-alert channel (the majority of registered portals -
   IonWave, DemandStar, BidNet, BuyBoard, Texas ESBD, the co-ops, NM-SPD - which

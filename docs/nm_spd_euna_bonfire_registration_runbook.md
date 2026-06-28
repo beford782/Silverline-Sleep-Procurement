@@ -1,6 +1,6 @@
 # New Mexico SPD — Euna / Bonfire Registration Runbook
 
-- **For:** Blake / Continental Silverline Products, L.P. (Houston, TX)
+- **For:** Blake / Continental Silverline Products, LLC (Houston, TX)
 - **Date:** 2026-06-26
 - **Type:** Operator runbook (docs only). One vendor registration to complete by hand.
 - **Why now:** NM coverage is **partial**. The state's eProNM (SciQuest/JAGGAER) supplier
@@ -51,7 +51,7 @@
 
 | Item | Value / source |
 |---|---|
-| Legal name | **CONTINENTAL SILVERLINE PRODUCTS, L.P.** (a Limited Partnership — *not* LLC) |
+| Legal name | **CONTINENTAL SILVERLINE PRODUCTS, LLC** (a Texas Limited Liability Company) |
 | SAM.gov UEI | **XF73FG8CVMX1** (public) |
 | DUNS | Deprecated by the federal government (2022). Leave blank if optional; the UEI replaces it. |
 | Main phone / Ext | `[on file]` |
@@ -82,8 +82,8 @@
      do it.
 
 3. **Complete the vendor / company profile.**
-   - Legal name: `CONTINENTAL SILVERLINE PRODUCTS, L.P.`
-   - Entity type: **Limited Partnership**
+   - Legal name: `CONTINENTAL SILVERLINE PRODUCTS, LLC`
+   - Entity type: **Limited Liability Company**
    - **SAM.gov UEI: `XF73FG8CVMX1`**; DUNS: leave blank (deprecated).
    - Address: `[on file]` (Houston, TX, **no P.O. box**); add remit/mailing if prompted.
    - Main phone: `[on file]`.

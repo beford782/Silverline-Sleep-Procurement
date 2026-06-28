@@ -6,7 +6,7 @@ This working profile summarizes the completed mattress procurement questionnaire
 
 | Field | Summary |
 | --- | --- |
-| Legal name | Continental Silverline |
+| Legal name | Continental Silverline Products, LLC |
 | DBA / brands | Restonic / Spring Air / Silverline Sleep |
 | Manufacturing location | Houston, Texas |
 | Service geography | Texas, Oklahoma, Louisiana, Mississippi, Arkansas, and New Mexico |

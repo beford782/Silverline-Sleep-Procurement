@@ -22,6 +22,7 @@ if str(TOOLS) not in sys.path:
 
 import ingest_sam  # noqa: E402
 import pipeline  # noqa: E402
+import lead_radar  # noqa: E402
 
 
 def _read_csv(path: Path) -> list[dict]:
@@ -139,6 +140,27 @@ class RecordMappingTests(unittest.TestCase):
         self.assertEqual(len(leads), 0)
         self.assertEqual(len(new_rows), 1)
         self.assertIn("HUMAN", new_rows[0]["next_action"])
+
+    def test_review_lead_deduped_against_lead_archive(self) -> None:
+        # A lead a human already triaged and ARCHIVED (no-fit) must not be
+        # re-ingested as a fresh Lead Radar row on the next sweep.
+        review_record = {
+            "noticeId": "n-arch-1",
+            "solicitationNumber": "ARCH-001",
+            "title": "Office and classroom furniture for school district",
+            "fullParentPathName": "GENERAL SERVICES ADMINISTRATION",
+            "naicsCode": "337127",
+            "postedDate": "2026-05-10",
+        }
+        row = ingest_sam.record_to_row(review_record, today="2026-05-14")
+        archived_lead = lead_radar.build_lead_row(row, None, "2026-05-14")
+        new_rows, leads, dupes, _rej = ingest_sam.ingest(
+            [review_record], [], today="2026-05-14",
+            existing_lead_archive=[archived_lead],
+        )
+        self.assertEqual(len(leads), 0)
+        self.assertEqual(len(new_rows), 0)
+        self.assertEqual(len(dupes), 1)
 
 
 class SearchUrlTests(unittest.TestCase):

@@ -438,7 +438,8 @@ def existing_ids(rows: list[dict]) -> set[str]:
 def ingest(messages: Iterable[dict], existing_rows: list[dict], today: str,
            home_states: frozenset[str] = relevance.HOME_STATES_DEFAULT,
            existing_leads: list[dict] | None = None,
-           review_target: str = "leads"
+           review_target: str = "leads",
+           existing_lead_archive: list[dict] | None = None
            ) -> tuple[list[dict], list[dict], list[dict], list[dict], list[dict]]:
     """Partition messages into (new_rows, leads, dupes, skipped, rejected).
 
@@ -456,10 +457,14 @@ def ingest(messages: Iterable[dict], existing_rows: list[dict], today: str,
     """
     existing_leads = existing_leads or []
     ids = existing_ids(existing_rows)
-    # Lead dedup spans existing Lead Radar rows AND active/archive rows, so a
-    # broad signal already tracked (as a lead or a live bid) is not re-added.
+    # Lead dedup spans existing Lead Radar rows, the Lead Radar ARCHIVE (so a
+    # human-triaged dead lead is not re-ingested every sweep), AND active/archive
+    # pipeline rows, so a broad signal already tracked (as a live lead, an
+    # archived no-fit, or a live bid) is not re-added.
     lead_ids: set[str] = set()
     for r in existing_leads:
+        lead_ids |= lead_radar.lead_match_keys(r)
+    for r in (existing_lead_archive or []):
         lead_ids |= lead_radar.lead_match_keys(r)
     for r in existing_rows:
         lead_ids |= lead_radar.lead_match_keys(r)
@@ -969,6 +974,8 @@ def main(argv: list[str] | None = None) -> int:
                         help=f"Archive CSV consulted for dedup only; never written. Default: {DEFAULT_ARCHIVE.relative_to(REPO_ROOT)}")
     parser.add_argument("--leads", default=str(lead_radar.DEFAULT_REVIEW),
                         help=f"Lead Radar CSV write target for REVIEW rows (default: {lead_radar.DEFAULT_REVIEW.relative_to(REPO_ROOT)})")
+    parser.add_argument("--lead-archive", default=str(lead_radar.DEFAULT_ARCHIVE),
+                        help=f"Lead Radar archive consulted for dedup only; never written. Default: {lead_radar.DEFAULT_ARCHIVE.relative_to(REPO_ROOT)}")
     parser.add_argument("--review-target", choices=("leads", "active", "reject-log"), default="leads",
                         help="Where REVIEW-band items go: 'leads' (Lead Radar, default), "
                              "'active' (legacy: active pipeline, HUMAN-flagged), or 'reject-log'.")
@@ -994,11 +1001,13 @@ def main(argv: list[str] | None = None) -> int:
     existing_archive = _read_existing_or_empty(archive_path)
     existing_rows = existing_active + existing_archive
     existing_leads = _read_existing_leads_or_empty(leads_path)
+    existing_lead_archive = _read_existing_leads_or_empty(Path(args.lead_archive))
 
     messages = _load_messages(args, today)
     new_rows, leads, dupes, skipped, rejected = ingest(
         messages, existing_rows, today, existing_leads=existing_leads,
-        review_target=args.review_target)
+        review_target=args.review_target,
+        existing_lead_archive=existing_lead_archive)
 
     print(f"email alerts fetched: {len(messages)} message(s)")
     print(f"  active:  {len(new_rows)}")

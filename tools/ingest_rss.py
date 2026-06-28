@@ -203,18 +203,23 @@ def existing_ids(rows: list[dict]) -> set[str]:
 def ingest(entries: list[tuple[dict, str]], existing_rows: list[dict], today: str,
            home_states: frozenset[str] = relevance.HOME_STATES_DEFAULT,
            existing_leads: list[dict] | None = None,
-           review_target: str = "leads"
+           review_target: str = "leads",
+           existing_lead_archive: list[dict] | None = None
            ) -> tuple[list[dict], list[dict], list[dict], list[dict]]:
     """Partition (entry, source) pairs into (new_rows, leads, dupes, rejected).
 
     ACCEPT rows write to the active pipeline (new_rows). REVIEW rows route per
     `review_target` (default 'leads' -> Lead Radar; 'active' keeps the legacy
     HUMAN-flagged watching row; 'reject-log' drops them). REJECT is unchanged.
+    Lead dedup also consults the Lead Radar archive so a human-triaged dead
+    lead is not re-ingested every sweep.
     """
     existing_leads = existing_leads or []
     ids = existing_ids(existing_rows)
     lead_ids: set[str] = set()
     for r in existing_leads:
+        lead_ids |= lead_radar.lead_match_keys(r)
+    for r in (existing_lead_archive or []):
         lead_ids |= lead_radar.lead_match_keys(r)
     for r in existing_rows:
         lead_ids |= lead_radar.lead_match_keys(r)
@@ -298,6 +303,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--archive", default=str(DEFAULT_ARCHIVE))
     parser.add_argument("--leads", default=str(lead_radar.DEFAULT_REVIEW),
                         help="Lead Radar CSV write target for REVIEW rows (default: %(default)s)")
+    parser.add_argument("--lead-archive", default=str(lead_radar.DEFAULT_ARCHIVE),
+                        help="Lead Radar archive consulted for dedup only; never written (default: %(default)s)")
     parser.add_argument("--review-target", choices=("leads", "active", "reject-log"), default="leads",
                         help="Where REVIEW-band items go: 'leads' (Lead Radar, default), "
                              "'active' (legacy), or 'reject-log'.")
@@ -312,6 +319,7 @@ def main(argv: list[str] | None = None) -> int:
     existing_active = _read_existing_or_empty(active_path)
     existing_rows = existing_active + _read_existing_or_empty(archive_path)
     existing_leads = _read_existing_leads_or_empty(leads_path)
+    existing_lead_archive = _read_existing_leads_or_empty(Path(args.lead_archive))
 
     entries: list[tuple[dict, str]] = []
     if args.fixture:
@@ -337,7 +345,8 @@ def main(argv: list[str] | None = None) -> int:
 
     new_rows, leads, dupes, rejected = ingest(
         entries, existing_rows, today, existing_leads=existing_leads,
-        review_target=args.review_target)
+        review_target=args.review_target,
+        existing_lead_archive=existing_lead_archive)
     print(f"feed entries fetched: {len(entries)}")
     print(f"  active:   {len(new_rows)}")
     print(f"  leads:    {len(leads)} (review -> {args.review_target})")

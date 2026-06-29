@@ -50,7 +50,7 @@ renovations → map the buying network (owner, mgmt co, FF&E firm, brand timelin
 portfolio). Most will be `channel`/`spec-position`, not direct sells — that's expected.*
 
 ```
-("property improvement plan" OR "re-flag" OR reflag OR rebrand OR "brand conversion" OR "hotel conversion" OR "guestroom renovation" OR "soft goods" OR "soft-goods" OR "case goods") (hotel OR inn OR suites OR "extended stay" OR "extended-stay") (rooms OR keys OR guestrooms) <LOC>
+("property improvement plan" OR "re-flag" OR reflag OR rebrand OR "brand conversion" OR "hotel conversion" OR "guestroom renovation" OR "soft goods" OR "soft-goods" OR "case goods") (hotel OR hospitality OR "extended stay" OR "extended-stay") (rooms OR keys OR guestrooms OR "guest rooms") <LOC>
 ```
 Clone across `<LOC>` = `Houston` · `("Dallas" OR "Fort Worth")` · `Austin` · `"San Antonio"` · `Texas` (statewide).
 
@@ -63,7 +63,7 @@ Clone across `<LOC>` = `Houston` · `("Dallas" OR "Fort Worth")` · `Austin` · 
 *Less brand-locked → more direct-sale potential. Misses some opps but what it finds is less channel-locked.*
 
 ```
-("boutique hotel" OR "independent hotel" OR "locally owned hotel" OR "locally-owned hotel" OR "family owned hotel" OR "extended stay hotel" OR "extended-stay hotel") ("renovation" OR "rebrand" OR "set to open" OR "now open" OR "under construction" OR "breaks ground") (rooms OR keys) <LOC>
+("boutique hotel" OR "independent hotel" OR "locally owned hotel" OR "locally-owned hotel" OR "family owned hotel" OR "extended stay hotel" OR "extended-stay hotel") ("renovation" OR "rebrand" OR "set to open" OR "under construction" OR "breaks ground") (rooms OR keys OR guestrooms OR "guest rooms") <LOC>
 ```
 Clone across `<LOC>` = `Texas` (statewide) · `Houston`.  *(Swap Houston → `("Dallas" OR "Fort Worth")` if you prefer.)*
 

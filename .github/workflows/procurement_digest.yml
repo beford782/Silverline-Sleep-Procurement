@@ -52,6 +52,12 @@ jobs:
             python tools/win_score.py rank --source pipeline --top 10
             echo '```'
             echo
+            echo "## Fix this to unlock the most win-weighted pipeline (readiness backlog)"
+            echo
+            echo '```text'
+            python tools/readiness.py backlog
+            echo '```'
+            echo
             echo "## Current Lead Radar"
             echo
             echo '```text'

@@ -152,6 +152,25 @@ def check_workflow(
         else:
             _check_markdown_status(row, active_md[oid], findings)
 
+        # Eligibility gate (readiness.py owns these columns): a biddable row
+        # (drafting/submitted) that still carries an OPEN eligibility blocker is
+        # an error — we would be drafting/submitting something we are not
+        # eligible to win. Fires only on the new gate columns, so rows that are
+        # merely watching/no-bid are unaffected (backward-compatible).
+        if status in {"drafting", "submitted"}:
+            blocker = (row.get("compliance_blocker") or "").strip()
+            proc_risk = (row.get("procurement_risk") or "").strip().lower()
+            gate = (row.get("gate_status") or "").strip().lower()
+            if blocker or proc_risk == "blocker" or gate == "blocked":
+                reason = blocker or (proc_risk == "blocker" and "procurement_risk=blocker") \
+                    or "gate_status=blocked"
+                findings.append(Finding(
+                    "ERROR",
+                    "biddable-with-open-blocker",
+                    f"biddable row ({status}) has an open eligibility blocker: "
+                    f"{label} [{reason}]",
+                ))
+
         if not (row.get("owner") or "").strip():
             findings.append(Finding("WARN", "missing-owner", f"active row has no owner: {label}"))
         if not (row.get("next_action") or "").strip():

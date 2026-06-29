@@ -1,0 +1,18 @@
+{
+  "_comment": {
+    "sam_active": "SAM.gov registration Active (federal eligibility). Currently false: UEI is on a wrong-named WIP record; do not cite. Gates all federal/SAM buys (see win_score.py + readiness.py).",
+    "cfr_1633": "Can certify finished mattresses to 16 CFR Part 1633 open-flame flammability (required for institutional/correctional specs).",
+    "cal_tb_117": "Can meet California Technical Bulletin 117 (TB 117) flammability where specified.",
+    "fr_fluid_proof_covers": "Can supply fire-retardant / fluid-proof mattress covers (correctional / med-surg requirement).",
+    "gpo_eligibility": "GPO / co-op award eligibility by vehicle. true = we can sell under that vehicle. E&I is registered/complete; the rest are not yet eligible.",
+    "bonding": "Can post payment/performance bonds when a solicitation requires bonding. Currently false.",
+    "brand_authorizations": "Brands we are authorized to supply against a brand-name/sole-source spec. A spec naming a brand NOT in this list is an eligibility blocker."
+  },
+  "sam_active": false,
+  "cfr_1633": true,
+  "cal_tb_117": true,
+  "fr_fluid_proof_covers": true,
+  "gpo_eligibility": {"E&I": true, "DSSI": false, "Vizient": false, "Premier": false, "HealthTrust": false},
+  "bonding": false,
+  "brand_authorizations": ["Restonic", "Spring Air"]
+}

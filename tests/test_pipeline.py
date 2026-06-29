@@ -77,6 +77,29 @@ class HeaderParityTests(unittest.TestCase):
         self.assertEqual(active_header, pipeline.CANONICAL_HEADER)
         self.assertEqual(archive_header, pipeline.CANONICAL_HEADER)
 
+    def test_canonical_header_appends_win_columns(self) -> None:
+        # The Win Engine appends win_score/win_factors to the END (prefix-safe).
+        self.assertEqual(pipeline.CANONICAL_HEADER[-2:], ["win_score", "win_factors"])
+
+    def test_read_rows_accepts_legacy_24col_header(self) -> None:
+        # The critical backward-compat test: a legacy 24-column pipeline CSV
+        # (everything up to compliance_blocker, before win_score/win_factors)
+        # still read_rows-loads after CANONICAL_HEADER grows.
+        legacy_24 = pipeline.CANONICAL_HEADER[:24]
+        self.assertEqual(legacy_24[-1], "compliance_blocker")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "legacy24.csv"
+            with path.open("w", encoding="utf-8", newline="") as fh:
+                writer = csv.DictWriter(fh, fieldnames=legacy_24, lineterminator="\n")
+                writer.writeheader()
+                writer.writerow({"opportunity_id": "legacy-24", "status": "watching",
+                                 "source": "Legacy", "buyer": "Buyer", "title": "Mattresses"})
+            header, rows = pipeline.read_rows(path)
+        self.assertEqual(header, legacy_24)
+        self.assertEqual(rows[0]["opportunity_id"], "legacy-24")
+        self.assertEqual(rows[0]["win_score"], "")
+        self.assertEqual(rows[0]["win_factors"], "")
+
     def test_read_rows_accepts_legacy_header_and_fills_new_fields(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "legacy.csv"
@@ -239,7 +262,8 @@ class PipelineCliTests(unittest.TestCase):
             "--solicitation-number", "IFB 200",
         ]
         self._run(*argv3)
-        rc, out, _ = self._run("--active", str(self.active), "--archive", str(self.archive), "list")
+        rc, out, _ = self._run("--active", str(self.active), "--archive", str(self.archive),
+                               "list", "--sort", "due")
         self.assertEqual(rc, 0)
         # Confirm ordering: 2026-06-15 row before 2026-07-01 row, blank last.
         idx_06 = out.index("2026-06-15")
@@ -247,6 +271,23 @@ class PipelineCliTests(unittest.TestCase):
         idx_blank = out.index("city-of-houston")
         self.assertLess(idx_06, idx_07)
         self.assertLess(idx_07, idx_blank)
+
+    def test_list_default_sort_is_win_score_desc(self) -> None:
+        # Two rows with explicit win_score; the higher must list first under the
+        # new default (--sort win). Lower win_score sinks regardless of due date.
+        self._run(*self._base_add_args(
+            opportunity_id="low-win", title="Mattresses", due_date="2026-06-15"))
+        self._run(*self._base_add_args(
+            opportunity_id="high-win", title="Mattresses", due_date="2026-12-31"))
+        # Stamp win_score directly via the CSV (simpler than a full compute here).
+        header, rows = pipeline.read_rows(self.active)
+        for r in rows:
+            r["win_score"] = "90" if r["opportunity_id"] == "high-win" else "10"
+        pipeline.write_rows_atomic(self.active, rows)
+
+        rc, out, _ = self._run("--active", str(self.active), "--archive", str(self.archive), "list")
+        self.assertEqual(rc, 0)
+        self.assertLess(out.index("high-win"), out.index("low-win"))
 
     def test_summary_counts(self) -> None:
         self._run(*self._base_add_args())
@@ -566,6 +607,84 @@ class PipelineCliTests(unittest.TestCase):
         self.assertEqual(rc, 0, err)
         _, archive_rows = _read_csv(self.archive)
         self.assertEqual(archive_rows[0]["next_action"], "")
+
+
+class WinScoreCommandTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmpdir = Path(tempfile.mkdtemp())
+        self.active = self.tmpdir / "active.csv"
+        self.archive = self.tmpdir / "archive.csv"
+        _write_header_only(self.active)
+        _write_header_only(self.archive)
+        self.addCleanup(shutil.rmtree, str(self.tmpdir), True)
+
+    def _run(self, *argv: str) -> tuple[int, str, str]:
+        out, err = io.StringIO(), io.StringIO()
+        rc = -1
+        with redirect_stdout(out), redirect_stderr(err):
+            try:
+                rc = pipeline.main(list(argv))
+            except SystemExit as exc:
+                rc = int(exc.code) if exc.code is not None else 0
+        return rc, out.getvalue(), err.getvalue()
+
+    def _add_mattress_row(self) -> None:
+        self._run(
+            "--active", str(self.active), "--archive", str(self.archive),
+            "add", "--source", "Texas ESBD", "--buyer", "Harris County, TX",
+            "--solicitation-number", "RFP 100",
+            "--title", "Correctional mattresses for county jail",
+            "--primary-products", "mattresses",
+            "--estimated-value", "200000",
+            "--due-date", "2026-12-31",
+        )
+
+    def test_win_score_dry_run_writes_nothing(self) -> None:
+        self._add_mattress_row()
+        _, before = _read_csv(self.active)
+        rc, out, err = self._run("--active", str(self.active), "--archive", str(self.archive),
+                                 "win-score", "--dry-run")
+        self.assertEqual(rc, 0, err)
+        self.assertIn("--dry-run", out)
+        _, after = _read_csv(self.active)
+        self.assertEqual(before, after)
+
+    def test_win_score_real_run_round_trips(self) -> None:
+        self._add_mattress_row()
+        rc, _, err = self._run("--active", str(self.active), "--archive", str(self.archive),
+                               "win-score")
+        self.assertEqual(rc, 0, err)
+        # Round-trips through read_rows/write_rows_atomic and parses.
+        _, rows = pipeline.read_rows(self.active)
+        self.assertEqual(len(rows), 1)
+        self.assertTrue(rows[0]["win_score"])
+        self.assertGreater(int(rows[0]["win_score"]), 0)
+        # win_factors parses as the compact pf=..;vt=..;wp=..;sf=.. form.
+        factors = dict(kv.split("=") for kv in rows[0]["win_factors"].split(";"))
+        self.assertEqual(set(factors), {"pf", "vt", "wp", "sf"})
+        for v in factors.values():
+            float(v)  # each value parses as a float
+
+    def test_win_score_only_created_date_limits_updates(self) -> None:
+        self._run(
+            "--active", str(self.active), "--archive", str(self.archive),
+            "add", "--opportunity-id", "old", "--source", "Texas ESBD",
+            "--buyer", "Harris County, TX", "--solicitation-number", "A",
+            "--title", "Mattresses", "--created-date", "2026-06-24",
+        )
+        self._run(
+            "--active", str(self.active), "--archive", str(self.archive),
+            "add", "--opportunity-id", "new", "--source", "Texas ESBD",
+            "--buyer", "Harris County, TX", "--solicitation-number", "B",
+            "--title", "Mattresses", "--created-date", "2026-06-25",
+        )
+        rc, _, err = self._run("--active", str(self.active), "--archive", str(self.archive),
+                               "win-score", "--only-created-date", "2026-06-25")
+        self.assertEqual(rc, 0, err)
+        _, rows = pipeline.read_rows(self.active)
+        by_id = {r["opportunity_id"]: r for r in rows}
+        self.assertEqual(by_id["old"]["win_score"], "")
+        self.assertTrue(by_id["new"]["win_score"])
 
 
 if __name__ == "__main__":

@@ -151,6 +151,35 @@ class WorkflowCheckTests(unittest.TestCase):
         by_code = {f.code: f for f in findings}
         self.assertEqual(by_code["stale-review"].severity, "WARN")
 
+    def test_biddable_row_with_blocker_is_error(self) -> None:
+        _write_pipeline(self.active_csv, [
+            _row("active-one", "drafting", compliance_blocker="SAM not Active")])
+        _write_pipeline(self.archive_csv, [])
+        (self.active_dir / "active-one.md").write_text("| Status | drafting |\n", encoding="utf-8")
+
+        findings = self._findings()
+        by_code = {f.code: f for f in findings}
+        self.assertIn("biddable-with-open-blocker", by_code)
+        self.assertEqual(by_code["biddable-with-open-blocker"].severity, "ERROR")
+
+    def test_watching_row_with_blocker_is_silent(self) -> None:
+        _write_pipeline(self.active_csv, [
+            _row("active-one", "watching", compliance_blocker="SAM not Active",
+                 procurement_risk="blocker", gate_status="blocked")])
+        _write_pipeline(self.archive_csv, [])
+
+        findings = self._findings()
+        self.assertNotIn("biddable-with-open-blocker", {f.code for f in findings})
+
+    def test_biddable_row_without_blocker_is_silent(self) -> None:
+        _write_pipeline(self.active_csv, [
+            _row("active-one", "drafting", gate_status="bid_ready")])
+        _write_pipeline(self.archive_csv, [])
+        (self.active_dir / "active-one.md").write_text("| Status | drafting |\n", encoding="utf-8")
+
+        findings = self._findings()
+        self.assertNotIn("biddable-with-open-blocker", {f.code for f in findings})
+
     def test_orphan_markdown_is_error(self) -> None:
         _write_pipeline(self.active_csv, [])
         _write_pipeline(self.archive_csv, [])

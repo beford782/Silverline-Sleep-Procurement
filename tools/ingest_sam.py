@@ -47,6 +47,7 @@ import os
 import re
 import ssl
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -74,6 +75,8 @@ import lead_radar  # noqa: E402
 SAM_SEARCH_URL = "https://api.sam.gov/opportunities/v2/search"
 DEFAULT_LIMIT = 50
 DEFAULT_TIMEOUT_S = 30
+DEFAULT_MAX_RETRIES = 3
+DEFAULT_BACKOFF_S = 2.0
 
 
 def _empty_payload(limit: int, offset: int) -> dict:
@@ -148,13 +151,75 @@ def build_search_url(
     return SAM_SEARCH_URL + "?" + urllib.parse.urlencode(params)
 
 
-def fetch_page(url: str, timeout: float = DEFAULT_TIMEOUT_S) -> dict:
-    """GET the URL and return parsed JSON. Stdlib-only HTTP client."""
+def _retry_after_seconds(exc: urllib.error.HTTPError) -> float | None:
+    """Parse a numeric Retry-After header (seconds) from a 429 response."""
+    headers = getattr(exc, "headers", None)
+    if not headers:
+        return None
+    raw = headers.get("Retry-After")
+    if not raw:
+        return None
+    try:
+        return max(0.0, float(str(raw).strip()))
+    except (TypeError, ValueError):
+        # HTTP-date form of Retry-After is not honored here; fall back to backoff.
+        return None
+
+
+def fetch_page(
+    url: str,
+    timeout: float = DEFAULT_TIMEOUT_S,
+    *,
+    max_retries: int = DEFAULT_MAX_RETRIES,
+    backoff_s: float = DEFAULT_BACKOFF_S,
+    sleep=None,
+) -> dict:
+    """GET the URL and return parsed JSON. Stdlib-only HTTP client.
+
+    Bounded retry with exponential backoff on HTTP 429 (honoring a numeric
+    Retry-After header when present) and on transient network errors (URLError).
+    A persistent 429 or a non-429 HTTPError is raised to the caller, which
+    distinguishes "throttled" from "empty result" so throttling never looks like
+    a genuinely quiet week (the silent-miss mode).
+    """
+    if sleep is None:
+        sleep = time.sleep  # resolved at call time so tests can patch time.sleep
     ctx = ssl.create_default_context()
     req = urllib.request.Request(url, headers={"User-Agent": "silverline-sleep-procurement/1.0"})
-    with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
-        body = resp.read()
-    return json.loads(body.decode("utf-8"))
+    last_exc: Exception | None = None
+    for attempt in range(max_retries):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
+                body = resp.read()
+            return json.loads(body.decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            # 429 is retryable; every other HTTP status is a hard error.
+            if exc.code != 429 or attempt >= max_retries - 1:
+                raise
+            delay = _retry_after_seconds(exc)
+            if delay is None:
+                delay = backoff_s * (2 ** attempt)
+            print(
+                f"warning: HTTP 429 from SAM.gov; retry {attempt + 1}/{max_retries - 1} "
+                f"in {delay:g}s",
+                file=sys.stderr,
+            )
+            last_exc = exc
+            sleep(delay)
+        except urllib.error.URLError as exc:
+            # Transient network error: retry with plain exponential backoff.
+            if attempt >= max_retries - 1:
+                raise
+            delay = backoff_s * (2 ** attempt)
+            print(
+                f"warning: network error contacting SAM.gov ({exc}); "
+                f"retry {attempt + 1}/{max_retries - 1} in {delay:g}s",
+                file=sys.stderr,
+            )
+            last_exc = exc
+            sleep(delay)
+    # Loop only exits via return or raise; this satisfies type-checkers.
+    raise last_exc if last_exc is not None else RuntimeError("fetch_page exhausted retries")
 
 
 def _extract_place_of_performance(pop: dict | None) -> str:
@@ -396,8 +461,14 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help=(
             "Treat SAM.gov HTTP 429 quota throttling as an empty result and exit 0. "
-            "Use this for unattended scheduled runs; default behavior still fails."
+            "Use this for unattended scheduled runs; default behavior still fails. "
+            "Throttling stays VISIBLE either way (a ::warning::SAM THROTTLED annotation)."
         ),
+    )
+    parser.add_argument(
+        "--reject-log",
+        default=None,
+        help="Optional CSV path to append relevance-rejected rows for audit/tuning.",
     )
     args = parser.parse_args(argv)
 
@@ -419,6 +490,7 @@ def main(argv: list[str] | None = None) -> int:
     if lead_archive_path.exists():
         _, existing_lead_archive = lead_radar.read_lead_rows(lead_archive_path)
 
+    throttled = False
     if args.fixture:
         with open(args.fixture, "r", encoding="utf-8") as fh:
             payloads = [json.load(fh)]
@@ -467,12 +539,20 @@ def main(argv: list[str] | None = None) -> int:
                     # per its public docs; treat as zero results, not as
                     # an error.
                     payload = _empty_payload(args.limit, offset)
-                elif exc.code == 429 and args.allow_throttled_empty:
-                    print(
-                        f"warning: HTTP 429 from SAM.gov; treating as empty scheduled result: {body}",
-                        file=sys.stderr,
-                    )
-                    payload = _empty_payload(args.limit, offset)
+                elif exc.code == 429:
+                    # Persistent throttle (fetch_page already retried). Make it
+                    # DISTINCT from a quiet week so a re-run gets scheduled instead
+                    # of the run being read as "no opportunities."
+                    print("::warning::SAM THROTTLED - re-run needed (HTTP 429 after retries)")
+                    if args.allow_throttled_empty:
+                        print(
+                            f"warning: HTTP 429 from SAM.gov; treating as empty scheduled result: {body}",
+                            file=sys.stderr,
+                        )
+                        throttled = True
+                        break  # empty result; stop paging
+                    print(f"error: HTTP {exc.code} from SAM.gov: {body}", file=sys.stderr)
+                    return 1
                 else:
                     print(f"error: HTTP {exc.code} from SAM.gov: {body}", file=sys.stderr)
                     return 1
@@ -521,6 +601,15 @@ def main(argv: list[str] | None = None) -> int:
     if leads:
         for r in leads:
             print(f"  ~ {r['lead_id']} :: {r['title']} (Lead Radar)")
+    if throttled:
+        # A plain-text marker (alongside the ::warning:: annotation) so the
+        # digest / step log can show "SAM THROTTLED - re-run needed" instead of
+        # mistaking the throttled-empty run for a genuinely quiet week.
+        print("SAM THROTTLED - results incomplete; re-run needed")
+
+    if args.reject_log and rejected:
+        _append_reject_log(Path(args.reject_log), rejected)
+        print(f"  logged {len(rejected)} rejected row(s) to {args.reject_log}")
 
     if args.dry_run:
         print("(--dry-run: no files written)")
@@ -538,6 +627,25 @@ def main(argv: list[str] | None = None) -> int:
         lead_radar.write_lead_rows_atomic(leads_path, existing_leads + leads)
         print(f"wrote {len(leads)} new Lead Radar row(s) to {leads_path}")
     return 0
+
+
+def _append_reject_log(path: Path, rejected: list[dict]) -> None:
+    """Append relevance-rejected rows to a CSV audit trail (header if absent).
+
+    Today the SAM reject path just DROPS rows, so a real miss (a mattress buy
+    the classifier scored REJECT) leaves no trace. This gives the operator an
+    auditable record of what was filtered out and why (the row's next_action
+    carries the reject reasons), so silent misses become reviewable.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    exists = path.exists()
+    with path.open("a", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=CANONICAL_HEADER, lineterminator="\n",
+                                extrasaction="ignore")
+        if not exists:
+            writer.writeheader()
+        for row in rejected:
+            writer.writerow(row)
 
 
 if __name__ == "__main__":

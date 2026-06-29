@@ -96,9 +96,9 @@ jobs:
             echo
           } >> /tmp/digest.md
 
-          gh run list --limit 20 \
+          gh run list --limit 30 \
             --json workflowName,conclusion,status,createdAt,url,event \
-            --jq '.[] | select(.workflowName == "Twice-weekly SAM.gov mattress ingest" or .workflowName == "Twice-weekly portal email-alert ingest" or .workflowName == "Twice-weekly RSS/feed ingest") | "- \(.workflowName): \(.conclusion // .status) on \(.createdAt) ([run](\(.url)))"' \
+            --jq '.[] | select(.workflowName == "Twice-weekly SAM.gov mattress ingest" or .workflowName == "Daily email-alert ingest (IMAP)" or .workflowName == "Twice-weekly RSS/feed ingest") | "- \(.workflowName): \(.conclusion // .status) on \(.createdAt) ([run](\(.url)))"' \
             > /tmp/recent_runs.md
 
           if [ -s /tmp/recent_runs.md ]; then

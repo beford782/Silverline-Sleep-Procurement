@@ -66,7 +66,8 @@ jobs:
             python tools/ingest_sam.py "$@" \
               --posted-from "$POSTED_FROM" \
               --posted-to "$POSTED_TO" \
-              --allow-throttled-empty
+              --allow-throttled-empty \
+              --reject-log logs/rejects/_sam.csv
             echo "::endgroup::"
           }
           run_sweep --title "mattress"
@@ -180,7 +181,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git checkout -b "$BRANCH"
-          git add bids/active/_pipeline.csv leads/review/_lead_radar.csv
+          git add bids/active/_pipeline.csv leads/review/_lead_radar.csv logs/rejects/
           git commit -m "Twice-weekly SAM.gov ingest (${SCOPE}): posted ${POSTED_FROM}..${POSTED_TO}"
           git push -u origin "$BRANCH"
 

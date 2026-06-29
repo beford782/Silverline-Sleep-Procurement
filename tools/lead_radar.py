@@ -31,12 +31,13 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 import os
 import re
 import sys
 import tempfile
 from collections import Counter
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Iterable
 
@@ -45,6 +46,13 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_REVIEW = REPO_ROOT / "leads" / "review" / "_lead_radar.csv"
 DEFAULT_ARCHIVE = REPO_ROOT / "leads" / "archive" / "_lead_radar_archive.csv"
 TEMPLATE_HEADER = REPO_ROOT / "templates" / "lead_radar_tracker.csv"
+
+# Re-bid / contract-expiry calendar artifacts (written by the `calendar`
+# subcommand). The event payloads are what an operator/assistant later pushes
+# to Google Calendar; the idempotency ledger records which keys are already
+# scheduled so a future apply step only creates new events.
+DEFAULT_CALENDAR_EVENTS = REPO_ROOT / "leads" / "review" / "_calendar_events.json"
+DEFAULT_CALENDAR_STATE = REPO_ROOT / "leads" / "review" / "_calendar_state.json"
 
 # Reuse the canonical bid-pipeline helpers for promotion so the two trackers
 # never drift on id derivation or the active CSV's shape.
@@ -282,6 +290,254 @@ def write_lead_rows_atomic(path: Path, rows: Iterable[dict]) -> None:
         except OSError:
             pass
         raise
+
+
+# ---------------------------------------------------------------------
+# Re-bid / contract-expiry calendar
+# ---------------------------------------------------------------------
+# Turns dead "set a reminder ~6 mo prior" text in awarded_contract_watch notes
+# into dated prep-windows: prep_window = expiry - lead_time, surfaced in the
+# digest and emitted as a CI-safe event payload an operator/assistant can push
+# to Google Calendar. This module is STDLIB-ONLY and never touches the network
+# or any MCP tool — it only reads the Lead Radar CSV and reads/writes the local
+# JSON ledger. Pushing events to a calendar is an OPERATOR/ASSISTANT step (see
+# CALENDAR_HELP).
+
+# Prep-window lead times by source class (days before contract expiry that prep
+# should begin). Co-op / state-term vehicles need long runway (positioning,
+# portal repair, buyer touches); recurring federal channels move faster.
+CALENDAR_LEAD_TIME_COOP = 180
+CALENDAR_LEAD_TIME_FEDERAL = 60
+CALENDAR_LEAD_TIME_DEFAULT = 120
+
+# Co-op / state-term vehicle markers (matched in source+buyer, lowercased).
+_COOP_MARKERS = ("buyboard", "tips", "sourcewell", "omnia", "choice", "e&i")
+
+# The prep ladder that becomes the event description (and a good next_action).
+PREP_CHECKLIST = [
+    "Confirm spec & expiry with buyer contact.",
+    "Pull last award price + incumbent.",
+    "Register/repair portal as the LLC (blank UEI if SAM unresolved).",
+    "Buyer touch / get specified.",
+    "Draft response; create active pipeline row at expiry-30d.",
+]
+
+CALENDAR_HELP = """\
+calendar — surface awarded-contract re-bid windows as dated prep events.
+
+Selects awarded_contract_watch leads (and recurring federal channel rows),
+computes prep_window = expiry - lead_time, and writes CI-safe event payloads
+to leads/review/_calendar_events.json (or stdout with --stdout). A text table
+of upcoming prep windows is always printed (sorted by prep_window).
+
+Lead times by source class:
+  co-op / state-term (BuyBoard, TIPS, Sourcewell, OMNIA, Choice, E&I): 180 days
+  SAM / federal recurring channel:                                      60 days
+  default:                                                             120 days
+
+Rows with a blank expiry emit a WARN line and create NO event. Prep windows
+already in the past are still emitted, flagged OVERDUE, so nothing lapses.
+
+NO NETWORK / NO MCP happens here (CI stays green/stdlib-only). Pushing events
+to Google Calendar is an OPERATOR/ASSISTANT step:
+  1. Read leads/review/_calendar_events.json.
+  2. For each event with "already_scheduled": false, call the Google Calendar
+     MCP tool mcp__claude_ai_Google_Calendar__create_event (all-day event on
+     "start", using "title" and "description").
+  3. Record the returned event id back into leads/review/_calendar_state.json
+     under the event "key" so the next emit marks it already_scheduled.
+"""
+
+
+def parse_due(value: str) -> "date | None":
+    """Parse an ISO YYYY-MM-DD expiry; return None for blank/unparseable."""
+    value = (value or "").strip()
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def is_federal_recurring(row: dict) -> bool:
+    """True for a recurring federal (SAM.gov) demand-channel row."""
+    src = (row.get("source") or "").lower()
+    soln = (row.get("solicitation_number") or "").lower()
+    return ("sam.gov" in src or "federal" in src) and "recurring" in soln
+
+
+def is_calendar_candidate(row: dict) -> bool:
+    """Rows that belong on the re-bid calendar: awarded_contract_watch leads
+    plus cleanly-identifiable recurring federal channels."""
+    if (row.get("lead_type") or "") == "awarded_contract_watch":
+        return True
+    return is_federal_recurring(row)
+
+
+def calendar_lead_time_days(row: dict) -> int:
+    """Days before expiry that prep should begin, by source class."""
+    if is_federal_recurring(row):
+        return CALENDAR_LEAD_TIME_FEDERAL
+    blob = ((row.get("source") or "") + " " + (row.get("buyer") or "")).lower()
+    if "sam.gov" in blob or "federal" in blob:
+        return CALENDAR_LEAD_TIME_FEDERAL
+    if any(marker in blob for marker in _COOP_MARKERS):
+        return CALENDAR_LEAD_TIME_COOP
+    return CALENDAR_LEAD_TIME_DEFAULT
+
+
+def _event_title(row: dict) -> str:
+    buyer = (row.get("buyer") or "").strip()
+    soln = (row.get("solicitation_number") or "").strip()
+    title = (row.get("title") or "").strip()
+    head = " ".join(p for p in (buyer, soln) if p)
+    return f"[Re-bid prep] {head} — {title}".strip()
+
+
+def _event_description(row: dict, expiry: "date", prep_window: "date", lead_time: int) -> str:
+    lines = ["Re-bid / contract-expiry prep checklist:"]
+    for i, step in enumerate(PREP_CHECKLIST, 1):
+        lines.append(f"{i}. {step}")
+    lines.append("")
+    portal = (row.get("portal_url") or "").strip()
+    if portal:
+        lines.append(f"Portal: {portal}")
+    # win_factors / win_score are not part of the Lead Radar schema today, but
+    # include them when present (forward-compat); fit_score is the live signal.
+    win_score = (row.get("win_score") or "").strip()
+    win_factors = (row.get("win_factors") or "").strip()
+    fit_score = (row.get("fit_score") or "").strip()
+    if win_score:
+        lines.append(f"Win score: {win_score}")
+    if win_factors:
+        lines.append(f"Win factors: {win_factors}")
+    if fit_score:
+        lines.append(f"Fit score: {fit_score}")
+    lines.append(f"Contract expiry: {expiry.isoformat()}")
+    lines.append(f"Prep window opens (expiry - {lead_time}d): {prep_window.isoformat()}")
+    return "\n".join(lines)
+
+
+def build_event(row: dict, today: "date") -> dict:
+    """Build a calendar event payload for a candidate row with a parseable
+    expiry. Caller is responsible for filtering / setting already_scheduled."""
+    expiry = parse_due(row.get("due_date", ""))
+    if expiry is None:
+        raise ValueError("build_event requires a parseable due_date")
+    lead_time = calendar_lead_time_days(row)
+    prep_window = expiry - timedelta(days=lead_time)
+    lead_id = (row.get("lead_id") or "").strip()
+    return {
+        "key": f"{lead_id}:{expiry.isoformat()}",
+        "lead_id": lead_id,
+        "title": _event_title(row),
+        "start": prep_window.isoformat(),
+        "all_day": True,
+        "expiry": expiry.isoformat(),
+        "lead_time_days": lead_time,
+        "overdue": prep_window < today,
+        "source": (row.get("source") or "").strip(),
+        "buyer": (row.get("buyer") or "").strip(),
+        "solicitation_number": (row.get("solicitation_number") or "").strip(),
+        "portal_url": (row.get("portal_url") or "").strip(),
+        "next_action": PREP_CHECKLIST[0],
+        "description": _event_description(row, expiry, prep_window, lead_time),
+        "already_scheduled": False,
+    }
+
+
+def load_calendar_state(path: Path) -> dict:
+    """Read the idempotency ledger (key -> {event_id, created}); {} if absent."""
+    if not path.exists():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return data if isinstance(data, dict) else {}
+
+
+def build_calendar_payload(
+    rows: Iterable[dict],
+    today: "date",
+    horizon_days: int,
+    state: "dict | None" = None,
+) -> dict:
+    """Pure, deterministic: turn Lead Radar rows into a calendar payload.
+
+    Selects calendar candidates, emits events for those whose prep_window is
+    within now..now+horizon (and any already-passed prep window as OVERDUE),
+    flags already_scheduled from the ledger, and collects WARN entries for rows
+    with a blank/unparseable expiry. No network, no file I/O.
+    """
+    state = state or {}
+    horizon_end = today + timedelta(days=horizon_days)
+    events: list[dict] = []
+    warnings: list[dict] = []
+
+    for row in rows:
+        if not is_calendar_candidate(row):
+            continue
+        expiry = parse_due(row.get("due_date", ""))
+        if expiry is None:
+            if is_federal_recurring(row):
+                msg = "recurring federal channel — no fixed expiry; track via SAM saved search (no event)"
+            else:
+                msg = "expiry unknown — confirm via buyer (no event)"
+            warnings.append({
+                "lead_id": (row.get("lead_id") or "").strip(),
+                "buyer": (row.get("buyer") or "").strip(),
+                "solicitation_number": (row.get("solicitation_number") or "").strip(),
+                "message": msg,
+            })
+            continue
+        event = build_event(row, today)
+        # Within horizon, OR already overdue (always surface lapses).
+        prep_window = date.fromisoformat(event["start"])
+        if prep_window > horizon_end:
+            continue
+        event["already_scheduled"] = event["key"] in state
+        events.append(event)
+
+    events.sort(key=lambda e: (e["start"], e["key"]))
+    warnings.sort(key=lambda w: w["lead_id"])
+    return {
+        "generated": today.isoformat(),
+        "horizon_days": horizon_days,
+        "events": events,
+        "warnings": warnings,
+    }
+
+
+def _print_calendar_table(payload: dict) -> None:
+    events = payload["events"]
+    warnings = payload["warnings"]
+    print(
+        f"Re-bid prep windows (as of {payload['generated']}, "
+        f"horizon {payload['horizon_days']}d): {len(events)} event(s), "
+        f"{len(warnings)} warning(s)"
+    )
+    if events:
+        cols = ("PREP WINDOW", "STATUS", "EXPIRY", "LT", "BUYER", "SOLICITATION", "TITLE")
+        def status(e: dict) -> str:
+            if e["overdue"]:
+                return "OVERDUE"
+            return "scheduled" if e["already_scheduled"] else "new"
+        def trunc(s: str, n: int) -> str:
+            return s if len(s) <= n else s[: n - 1] + "…"
+        table = [[
+            e["start"], status(e), e["expiry"], str(e["lead_time_days"]),
+            trunc(e["buyer"], 36), trunc(e["solicitation_number"], 18),
+            trunc(e["title"], 44),
+        ] for e in events]
+        widths = [max(len(cols[i]), max((len(r[i]) for r in table), default=0)) for i in range(len(cols))]
+        print("  ".join(cols[i].ljust(widths[i]) for i in range(len(cols))))
+        print("  ".join("-" * widths[i] for i in range(len(cols))))
+        for r in table:
+            print("  ".join(r[i].ljust(widths[i]) for i in range(len(cols))))
+    else:
+        print("  (no prep windows in horizon)")
+    for w in warnings:
+        ref = w["lead_id"] or w.get("solicitation_number") or "(unknown)"
+        print(f"WARN: {ref}: {w['message']}")
 
 
 # ---------------------------------------------------------------------
@@ -530,6 +786,47 @@ def cmd_promote(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_calendar(args: argparse.Namespace) -> int:
+    review = Path(args.review)
+    _, rows = read_lead_rows(review)
+
+    if args.today:
+        try:
+            today = datetime.strptime(args.today, "%Y-%m-%d").date()
+        except ValueError as exc:
+            print(f"error: --today expected YYYY-MM-DD, got {args.today!r} ({exc})", file=sys.stderr)
+            return 1
+    else:
+        today = datetime.now().date()
+
+    if args.horizon < 0:
+        print("error: --horizon must be >= 0", file=sys.stderr)
+        return 1
+
+    state = load_calendar_state(Path(args.state))
+    payload = build_calendar_payload(rows, today, args.horizon, state)
+
+    _print_calendar_table(payload)
+
+    text = json.dumps(payload, indent=2, ensure_ascii=False)
+    if args.stdout:
+        print()
+        print(text)
+    else:
+        out = Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(text + "\n", encoding="utf-8")
+        print()
+        print(
+            f"Wrote {len(payload['events'])} event(s), "
+            f"{len(payload['warnings'])} warning(s) to {out}"
+        )
+        print("Operator/assistant: push 'already_scheduled: false' events to Google "
+              "Calendar via MCP, then record ids in "
+              f"{Path(args.state)} (see `calendar --help`).")
+    return 0
+
+
 # ---------------------------------------------------------------------
 # CLI plumbing
 # ---------------------------------------------------------------------
@@ -586,6 +883,27 @@ def build_parser() -> argparse.ArgumentParser:
              "Required: broad furniture/FF&E/co-op leads never auto-promote.",
     )
     p_promote.add_argument("--active", default=str(pipeline.DEFAULT_ACTIVE), help="Active bid pipeline CSV (default: %(default)s)")
+
+    p_cal = sub.add_parser(
+        "calendar",
+        help="Emit awarded-contract re-bid prep windows as dated calendar events.",
+        description=CALENDAR_HELP,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p_cal.set_defaults(func=cmd_calendar)
+    p_cal.add_argument("--emit", action="store_true", default=True,
+                       help="Emit prep windows (default; CI-safe, no network/MCP).")
+    p_cal.add_argument("--horizon", type=int, default=1825,
+                       help="Only include prep windows within now..now+DAYS (default: %(default)s ≈ 5y). "
+                            "Already-passed windows are always included as OVERDUE.")
+    p_cal.add_argument("--stdout", action="store_true",
+                       help="Print the event-payload JSON to stdout instead of writing --out.")
+    p_cal.add_argument("--out", default=str(DEFAULT_CALENDAR_EVENTS),
+                       help="Event-payload JSON path (default: %(default)s).")
+    p_cal.add_argument("--state", default=str(DEFAULT_CALENDAR_STATE),
+                       help="Idempotency ledger JSON (key -> event_id) (default: %(default)s).")
+    p_cal.add_argument("--today", default="",
+                       help="Override 'today' as YYYY-MM-DD (determinism/testing).")
 
     return parser
 

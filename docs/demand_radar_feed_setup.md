@@ -50,12 +50,14 @@ renovations → map the buying network (owner, mgmt co, FF&E firm, brand timelin
 portfolio). Most will be `channel`/`spec-position`, not direct sells — that's expected.*
 
 ```
-("property improvement plan" OR PIP OR "re-flag" OR reflag OR rebrand OR conversion OR "guestroom renovation" OR "soft goods" OR "soft-goods" OR "case goods" OR renovation) (hotel OR inn OR suites OR "extended stay" OR "extended-stay") (rooms OR keys OR guestrooms) <LOC>
+("property improvement plan" OR "re-flag" OR reflag OR rebrand OR "brand conversion" OR "hotel conversion" OR "guestroom renovation" OR "soft goods" OR "soft-goods" OR "case goods") (hotel OR inn OR suites OR "extended stay" OR "extended-stay") (rooms OR keys OR guestrooms) <LOC>
 ```
-Clone across `<LOC>` = `Houston` · `Dallas OR "Fort Worth"` · `Austin` · `"San Antonio"` · `Texas` (statewide).
+Clone across `<LOC>` = `Houston` · `("Dallas" OR "Fort Worth")` · `Austin` · `"San Antonio"` · `Texas` (statewide).
 
-> **Tuning:** if the broad `renovation` token floods, drop `OR renovation` and keep the
-> PIP / re-flag / conversion / soft-goods core — those are the spec-relevant signals you actually want.
+> **Already tightened (2026-06-29):** bare `PIP`, generic `renovation`, and bare `conversion` were removed to
+> cut noise — only the specific phrases stay (`"property improvement plan"`, `"brand conversion"`,
+> `"hotel conversion"`, `"guestroom renovation"`, plus re-flag / rebrand / soft-goods / case-goods). Do **not**
+> re-add the bare tokens. If a feed still floods, narrow the geo — don't broaden the triggers.
 
 ### PILOT B — Independent / Regional Hospitality  (direct-sale test) — **2 feeds**
 *Less brand-locked → more direct-sale potential. Misses some opps but what it finds is less channel-locked.*
@@ -63,7 +65,7 @@ Clone across `<LOC>` = `Houston` · `Dallas OR "Fort Worth"` · `Austin` · `"Sa
 ```
 ("boutique hotel" OR "independent hotel" OR "locally owned hotel" OR "locally-owned hotel" OR "family owned hotel" OR "extended stay hotel" OR "extended-stay hotel") ("renovation" OR "rebrand" OR "set to open" OR "now open" OR "under construction" OR "breaks ground") (rooms OR keys) <LOC>
 ```
-Clone across `<LOC>` = `Texas` (statewide) · `Houston`.  *(Swap Houston → `Dallas OR "Fort Worth"` if you prefer.)*
+Clone across `<LOC>` = `Texas` (statewide) · `Houston`.  *(Swap Houston → `("Dallas" OR "Fort Worth")` if you prefer.)*
 
 ### The 7 starting feeds + `feeds.json` labels
 Send me each RSS URL labeled by pilot+geo; I add them to `configs/feeds.json` as:

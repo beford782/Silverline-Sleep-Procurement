@@ -564,8 +564,9 @@ class CliTests(unittest.TestCase):
             )
 
         with mock.patch("urllib.request.urlopen", side_effect=raise_429), \
+             mock.patch("time.sleep"), \
              mock.patch.dict(os.environ, {"SAM_API_KEY": "fakekey"}, clear=False):
-            rc, _, err = self._run(
+            rc, out, err = self._run(
                 "--posted-from", "2026-05-01",
                 "--posted-to", "2026-05-14",
                 "--title", "mattress",
@@ -573,7 +574,45 @@ class CliTests(unittest.TestCase):
             )
         self.assertEqual(rc, 1)
         self.assertIn("HTTP 429", err)
+        # Throttle is surfaced distinctly (not swallowed as an empty week).
+        self.assertIn("SAM THROTTLED", out)
         self.assertEqual(_read_csv(self.active), [])
+
+    def test_reject_log_appends_rejected_rows(self) -> None:
+        # FIX 3: the SAM reject path used to DROP rows silently. With --reject-log
+        # the filtered-out item is written to an audit CSV (with reasons).
+        fixture = self.tmp / "reject_fixture.json"
+        fixture.write_text(json.dumps({
+            "totalRecords": 1, "limit": 50, "offset": 0,
+            "opportunitiesData": [{
+                "noticeId": "n-rej-1",
+                "solicitationNumber": "REJ-001",
+                "title": "Janitorial and custodial cleaning services",
+                "fullParentPathName": "GENERAL SERVICES ADMINISTRATION",
+                "postedDate": "2026-05-10",
+            }],
+        }), encoding="utf-8")
+        reject_log = self.tmp / "rejects.csv"
+        rc, out, err = self._run(
+            "--posted-from", "2026-05-01", "--posted-to", "2026-05-14",
+            "--fixture", str(fixture), "--active", str(self.active),
+            "--reject-log", str(reject_log),
+        )
+        self.assertEqual(rc, 0, err)
+        self.assertIn("rejected: 1", out)
+        self.assertIn("logged 1 rejected", out)
+        self.assertTrue(reject_log.exists())
+        logged = _read_csv(reject_log)
+        self.assertEqual(len(logged), 1)
+        self.assertEqual(logged[0]["solicitation_number"], "REJ-001")
+        # Re-running appends (audit trail), so the count grows.
+        rc2, _out2, err2 = self._run(
+            "--posted-from", "2026-05-01", "--posted-to", "2026-05-14",
+            "--fixture", str(fixture), "--active", str(self.active),
+            "--reject-log", str(reject_log),
+        )
+        self.assertEqual(rc2, 0, err2)
+        self.assertEqual(len(_read_csv(reject_log)), 2)
 
     def test_http_429_can_be_treated_as_empty_for_scheduled_runs(self) -> None:
         import urllib.error
@@ -588,6 +627,7 @@ class CliTests(unittest.TestCase):
             )
 
         with mock.patch("urllib.request.urlopen", side_effect=raise_429), \
+             mock.patch("time.sleep"), \
              mock.patch.dict(os.environ, {"SAM_API_KEY": "fakekey"}, clear=False):
             rc, out, err = self._run(
                 "--posted-from", "2026-05-01",
@@ -598,9 +638,87 @@ class CliTests(unittest.TestCase):
             )
         self.assertEqual(rc, 0, err)
         self.assertIn("HTTP 429", err)
+        # Even when treated as empty for unattended runs, throttling stays VISIBLE.
+        self.assertIn("SAM THROTTLED", out)
         self.assertIn("fetched: 0", out)
         self.assertIn("no new rows", out)
         self.assertEqual(_read_csv(self.active), [])
+
+
+class FetchPageRetryTests(unittest.TestCase):
+    """FIX 4: bounded retry/backoff on 429 + transient URLError, so a throttle
+    is distinguished from a genuinely empty week."""
+
+    def _ok_response(self, payload: dict):
+        resp = mock.MagicMock()
+        resp.__enter__.return_value = resp
+        resp.read.return_value = json.dumps(payload).encode("utf-8")
+        return resp
+
+    def test_retries_429_then_succeeds(self) -> None:
+        import urllib.error
+        payload = {"opportunitiesData": [], "totalRecords": 0, "limit": 50, "offset": 0}
+        calls = {"n": 0}
+
+        def urlopen_side(*_a, **_kw):
+            calls["n"] += 1
+            if calls["n"] < 3:
+                raise urllib.error.HTTPError(
+                    "u", 429, "Too Many Requests", {"Retry-After": "0"}, io.BytesIO(b""))
+            return self._ok_response(payload)
+
+        sleeps: list[float] = []
+        with mock.patch("urllib.request.urlopen", side_effect=urlopen_side):
+            out = ingest_sam.fetch_page("https://x", sleep=sleeps.append)
+        self.assertEqual(out, payload)
+        self.assertEqual(calls["n"], 3)       # 2 throttled + 1 success
+        self.assertEqual(len(sleeps), 2)      # one backoff per retry
+        self.assertTrue(all(s == 0 for s in sleeps))  # honored Retry-After: 0
+
+    def test_retries_transient_urlerror_then_succeeds(self) -> None:
+        import urllib.error
+        payload = {"opportunitiesData": [], "totalRecords": 0, "limit": 50, "offset": 0}
+        calls = {"n": 0}
+
+        def urlopen_side(*_a, **_kw):
+            calls["n"] += 1
+            if calls["n"] < 2:
+                raise urllib.error.URLError("temporary network blip")
+            return self._ok_response(payload)
+
+        with mock.patch("urllib.request.urlopen", side_effect=urlopen_side):
+            out = ingest_sam.fetch_page("https://x", sleep=lambda _s: None)
+        self.assertEqual(out, payload)
+        self.assertEqual(calls["n"], 2)
+
+    def test_persistent_429_raises_after_retries(self) -> None:
+        import urllib.error
+        calls = {"n": 0}
+
+        def urlopen_side(*_a, **_kw):
+            calls["n"] += 1
+            raise urllib.error.HTTPError(
+                "u", 429, "Too Many Requests", {"Retry-After": "0"}, io.BytesIO(b""))
+
+        with mock.patch("urllib.request.urlopen", side_effect=urlopen_side):
+            with self.assertRaises(urllib.error.HTTPError) as ctx:
+                ingest_sam.fetch_page("https://x", sleep=lambda _s: None)
+        self.assertEqual(ctx.exception.code, 429)
+        self.assertEqual(calls["n"], ingest_sam.DEFAULT_MAX_RETRIES)
+
+    def test_non_429_httperror_raises_without_retry(self) -> None:
+        import urllib.error
+        calls = {"n": 0}
+
+        def urlopen_side(*_a, **_kw):
+            calls["n"] += 1
+            raise urllib.error.HTTPError("u", 500, "Server Error", None, io.BytesIO(b""))
+
+        with mock.patch("urllib.request.urlopen", side_effect=urlopen_side):
+            with self.assertRaises(urllib.error.HTTPError) as ctx:
+                ingest_sam.fetch_page("https://x", sleep=lambda _s: None)
+        self.assertEqual(ctx.exception.code, 500)
+        self.assertEqual(calls["n"], 1)  # 5xx is a hard error, no retry
 
 
 if __name__ == "__main__":

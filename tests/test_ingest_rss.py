@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import argparse
 import io
+import json
 import sys
 import tempfile
 import unittest
+import urllib.error
 from contextlib import redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -251,6 +254,94 @@ class DemandCliTests(unittest.TestCase):
             self.assertEqual(len(rows), 3)
             # The active pipeline must be untouched by a pure demand run.
             self.assertFalse(active.exists())
+
+
+class FeedFailureTests(unittest.TestCase):
+    """FIX 1: a swallowed feed failure (403/timeout/renamed subdomain) is the
+    silent-miss mode. Every failure must be counted, surfaced, and (by default)
+    make the run exit non-zero so the workflow's failure alert fires."""
+
+    def _run(self, argv, side_effect):
+        out = io.StringIO()
+        with mock.patch.object(ingest_rss, "fetch_feed", side_effect=side_effect), \
+                redirect_stdout(out):
+            rc = ingest_rss.main(argv)
+        return rc, out.getvalue()
+
+    @staticmethod
+    def _http_403(url, timeout=30):
+        raise urllib.error.HTTPError(url, 403, "Forbidden", None, io.BytesIO(b""))
+
+    def test_feed_failure_exits_nonzero_and_warns(self):
+        with tempfile.TemporaryDirectory() as d:
+            active = Path(d) / "active.csv"
+            rc, out = self._run(
+                ["--feed", "https://tdcj.bonfirehub.com/opportunities/rss",
+                 "--source", "TDCJ Bonfire", "--active", str(active)],
+                self._http_403)
+        self.assertEqual(rc, 1)
+        self.assertIn("::warning::", out)
+        self.assertIn("TDCJ Bonfire", out)
+        self.assertIn("1 FAILED", out)
+        self.assertIn("HTTP 403", out)
+
+    def test_allow_feed_failures_opt_out_exits_zero(self):
+        with tempfile.TemporaryDirectory() as d:
+            active = Path(d) / "active.csv"
+            rc, out = self._run(
+                ["--feed", "https://tdcj.bonfirehub.com/opportunities/rss",
+                 "--source", "TDCJ Bonfire", "--active", str(active),
+                 "--allow-feed-failures"],
+                self._http_403)
+        self.assertEqual(rc, 0)
+        self.assertIn("1 FAILED", out)  # still reported, just not fatal
+
+    def test_partial_failure_accounting_and_summary(self):
+        good_xml = _text(RSS)
+
+        def fetch(url, timeout=30):
+            if "good" in url:
+                return good_xml
+            raise urllib.error.URLError("timed out")
+
+        with tempfile.TemporaryDirectory() as d:
+            cfg = Path(d) / "feeds.json"
+            cfg.write_text(json.dumps([
+                {"source": "Good Feed", "url": "https://good.example/rss"},
+                {"source": "Bad Feed", "url": "https://bad.example/rss"},
+            ]), encoding="utf-8")
+            rc, out = self._run(
+                ["--feeds-config", str(cfg), "--dry-run"], fetch)
+        self.assertEqual(rc, 1)  # one feed failed -> non-zero even on dry-run
+        self.assertIn("feeds: 2 total, 1 ok, 1 FAILED", out)
+        self.assertIn("Bad Feed", out)
+        # The good feed's entries were still fetched and counted.
+        self.assertIn("feed entries fetched: 3", out)
+
+    def test_all_feeds_ok_exits_zero(self):
+        def fetch(url, timeout=30):
+            return _text(RSS)
+
+        with tempfile.TemporaryDirectory() as d:
+            active = Path(d) / "active.csv"
+            rc, out = self._run(
+                ["--feed", "https://ok.example/rss", "--source", "OK Feed",
+                 "--active", str(active), "--dry-run"], fetch)
+        self.assertEqual(rc, 0)
+        self.assertIn("feeds: 1 total, 1 ok, 0 FAILED", out)
+
+    def test_unparseable_feed_is_a_failure(self):
+        def fetch(url, timeout=30):
+            return "not xml at all <<<"
+
+        with tempfile.TemporaryDirectory() as d:
+            active = Path(d) / "active.csv"
+            rc, out = self._run(
+                ["--feed", "https://garbage.example/rss", "--source", "Garbage",
+                 "--active", str(active)], fetch)
+        self.assertEqual(rc, 1)
+        self.assertIn("UNPARSEABLE", out)
+        self.assertIn("1 FAILED", out)
 
 
 if __name__ == "__main__":

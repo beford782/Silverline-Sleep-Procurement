@@ -14,6 +14,7 @@ narratives. Use --fail-on-warnings when you want warnings to fail too.
 from __future__ import annotations
 
 import argparse
+import csv
 import re
 import sys
 from dataclasses import dataclass
@@ -26,6 +27,8 @@ DEFAULT_ACTIVE = REPO_ROOT / "bids" / "active" / "_pipeline.csv"
 DEFAULT_ARCHIVE = REPO_ROOT / "bids" / "archive" / "_pipeline_archive.csv"
 DEFAULT_ACTIVE_DIR = REPO_ROOT / "bids" / "active"
 DEFAULT_ARCHIVE_DIR = REPO_ROOT / "bids" / "archive"
+DEFAULT_LEADS = REPO_ROOT / "leads" / "review" / "_lead_radar.csv"
+DEFAULT_DEMAND = REPO_ROOT / "leads" / "demand" / "_demand_radar.csv"
 
 OPEN_STATUSES = {"watching", "drafting", "submitted"}
 CLOSED_STATUSES = {"awarded", "lost", "no-bid", "cancelled"}
@@ -94,6 +97,91 @@ def _append_duplicate_id_findings(rows: list[dict], scope: str, findings: list[F
         findings.append(Finding("ERROR", "duplicate-id", f"{scope} has duplicate opportunity_id {oid!r}"))
 
 
+def _read_csv_rows(path: Path) -> list[dict]:
+    """Generic CSV read (header-agnostic) for the lead/demand radars.
+
+    Unlike pipeline.read_rows this does not enforce a canonical header, so the
+    data-integrity checks can run over the Lead Radar / Demand Radar CSVs
+    without coupling workflow_check to those schemas.
+    """
+    if not path.exists():
+        return []
+    with path.open("r", encoding="utf-8", newline="") as fh:
+        return list(csv.DictReader(fh))
+
+
+def _check_data_integrity(
+    rows: list[dict],
+    scope: str,
+    today: date,
+    findings: list[Finding],
+    *,
+    id_field: str,
+    title_field: str | None = "title",
+    no_future_date_fields: tuple[str, ...] = (),
+    posted_field: str | None = None,
+    due_field: str | None = None,
+    score_fields: tuple[str, ...] = (),
+) -> None:
+    """Cheap CSV data-integrity checks (all WARN, so CI is never broken by data).
+
+    - A date that should already have happened (posted/created/reviewed/seen)
+      but lands in the FUTURE is almost always a typo or a bad parse.
+    - posted_date AFTER due_date is an impossible ordering.
+    - fit_score / win_score must sit in 0..100.
+    These never fired before, so the audit's 6 future dates + 4 posted>due
+    inversions slipped through silently. Deadlines (due_date, question_deadline,
+    est_completion_date) are intentionally NOT future-checked — they belong in
+    the future.
+    """
+    for row in rows:
+        rid = (row.get(id_field) or "").strip() or "(missing id)"
+        title = (row.get(title_field) or "").strip() if title_field else ""
+        label = f"{rid} :: {title}" if title else rid
+
+        for field in no_future_date_fields:
+            d = _parse_date((row.get(field) or "").strip())
+            if d and d > today:
+                findings.append(Finding(
+                    "WARN", "future-date",
+                    f"{scope} {label}: {field}={row.get(field)!r} is in the future",
+                ))
+
+        if posted_field and due_field:
+            posted = _parse_date((row.get(posted_field) or "").strip())
+            due = _parse_date((row.get(due_field) or "").strip())
+            if posted and due and posted > due:
+                findings.append(Finding(
+                    "WARN", "date-inversion",
+                    f"{scope} {label}: {posted_field}={row.get(posted_field)} is after "
+                    f"{due_field}={row.get(due_field)}",
+                ))
+
+        for field in score_fields:
+            raw = (row.get(field) or "").strip()
+            if not raw:
+                continue
+            try:
+                value = float(raw)
+            except ValueError:
+                findings.append(Finding(
+                    "WARN", "score-not-numeric",
+                    f"{scope} {label}: {field}={raw!r} is not numeric",
+                ))
+                continue
+            if value < 0 or value > 100:
+                findings.append(Finding(
+                    "WARN", "score-out-of-range",
+                    f"{scope} {label}: {field}={raw} is outside 0..100",
+                ))
+
+        if title_field and not title:
+            findings.append(Finding(
+                "WARN", "missing-required-field",
+                f"{scope} {label}: missing required field {title_field!r}",
+            ))
+
+
 def _check_markdown_status(
     row: dict,
     md_path: Path,
@@ -121,6 +209,8 @@ def check_workflow(
     today: date,
     stale_days: int,
     require_active_markdown: bool = False,
+    leads_path: Path | None = None,
+    demand_path: Path | None = None,
 ) -> list[Finding]:
     _, active_rows = read_rows(active_path)
     _, archive_rows = read_rows(archive_path)
@@ -132,6 +222,31 @@ def check_workflow(
 
     _append_duplicate_id_findings(active_rows, "active pipeline", findings)
     _append_duplicate_id_findings(archive_rows, "archive pipeline", findings)
+
+    # Cheap CSV data-integrity checks across the pipeline + Lead/Demand radars.
+    # All WARN: they surface bad data in the digest/log without breaking CI.
+    for rows, scope in ((active_rows, "active pipeline"), (archive_rows, "archive pipeline")):
+        _check_data_integrity(
+            rows, scope, today, findings,
+            id_field="opportunity_id", title_field="title",
+            no_future_date_fields=("posted_date", "created_date", "last_reviewed"),
+            posted_field="posted_date", due_field="due_date",
+            score_fields=("fit_score", "win_score"),
+        )
+    if leads_path is not None:
+        _check_data_integrity(
+            _read_csv_rows(leads_path), "Lead Radar", today, findings,
+            id_field="lead_id", title_field="title",
+            no_future_date_fields=("posted_date", "created_date", "last_reviewed"),
+            posted_field="posted_date", due_field="due_date",
+            score_fields=("fit_score",),
+        )
+    if demand_path is not None:
+        _check_data_integrity(
+            _read_csv_rows(demand_path), "Demand Radar", today, findings,
+            id_field="demand_id", title_field="facility_name",
+            no_future_date_fields=("first_seen", "last_reviewed"),
+        )
 
     for oid in sorted(set(active_by_id) & set(archive_by_id)):
         findings.append(Finding("ERROR", "active-archive-duplicate", f"{oid!r} appears in both active and archive"))
@@ -229,6 +344,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--archive", default=str(DEFAULT_ARCHIVE), help="Archive pipeline CSV (default: %(default)s)")
     parser.add_argument("--active-dir", default=str(DEFAULT_ACTIVE_DIR), help="Active bid markdown directory")
     parser.add_argument("--archive-dir", default=str(DEFAULT_ARCHIVE_DIR), help="Archive bid markdown directory")
+    parser.add_argument("--leads", default=str(DEFAULT_LEADS), help="Lead Radar CSV for data-integrity checks (default: %(default)s)")
+    parser.add_argument("--demand", default=str(DEFAULT_DEMAND), help="Demand Radar CSV for data-integrity checks (default: %(default)s)")
     parser.add_argument("--today", type=_parse_iso_date, default=None, help="Date for stale-review checks (default: today)")
     parser.add_argument("--stale-days", type=int, default=14, help="Warn when active last_reviewed is older than this")
     parser.add_argument("--require-active-markdown", action="store_true", help="Treat every active row without markdown as an error")
@@ -250,6 +367,8 @@ def main(argv: list[str] | None = None) -> int:
             today=args.today or date.today(),
             stale_days=args.stale_days,
             require_active_markdown=args.require_active_markdown,
+            leads_path=Path(args.leads),
+            demand_path=Path(args.demand),
         )
     except (FileNotFoundError, OSError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)

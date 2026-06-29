@@ -95,3 +95,12 @@ jobs:
         run: |
           git fetch origin ${{ github.base_ref }}
           git diff --check origin/${{ github.base_ref }}...HEAD
+
+      - name: PII scan (newly added data lines only)
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          # Diff-scoped: blocks NEW street addresses / EINs / phone numbers from
+          # entering the pipeline + radar CSVs, without failing on the public
+          # buyer content already in their history. See tools/pii_lint.py.
+          python tools/pii_lint.py --diff-base origin/${{ github.base_ref }}

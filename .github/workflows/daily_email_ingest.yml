@@ -62,7 +62,8 @@ jobs:
           # keep the day-to-day overlap idempotent. Folder = the Gmail label the
           # operator routes portal alerts into.
           python tools/ingest_email.py --provider imap \
-            --imap-folder "Procurement/Alerts" --since-days 7
+            --imap-folder "Procurement/Alerts" --since-days 7 \
+            --reject-log logs/rejects/_email.csv
 
       - name: Re-score active pipeline
         id: ingest_diff
@@ -110,7 +111,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git checkout -b "$BRANCH"
-          git add bids/active/_pipeline.csv leads/review/_lead_radar.csv
+          git add bids/active/_pipeline.csv leads/review/_lead_radar.csv logs/rejects/
           git commit -m "Daily IMAP email-alert ingest (${scope}): ${TODAY}"
           git push -u origin "$BRANCH"
 

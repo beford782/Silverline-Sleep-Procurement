@@ -371,6 +371,15 @@ def main(argv: list[str] | None = None) -> int:
                         help="Where REVIEW-band items go: 'leads' (Lead Radar, default), "
                              "'active' (legacy), or 'reject-log'.")
     parser.add_argument("--reject-log", default=None, help="Optional CSV path to append rejected rows.")
+    parser.add_argument(
+        "--allow-feed-failures",
+        action="store_true",
+        help=(
+            "Exit 0 even when one or more feeds fail to fetch/parse. Default behavior "
+            "exits non-zero on ANY feed failure so a swallowed 403/timeout/renamed "
+            "feed (the silent-miss mode) trips the workflow's failure alert."
+        ),
+    )
     parser.add_argument("--dry-run", action="store_true", help="Show what would be added; do not write.")
     args = parser.parse_args(argv)
 
@@ -387,6 +396,9 @@ def main(argv: list[str] | None = None) -> int:
     existing_demand_archive = _read_existing_demand_or_empty(Path(args.demand_archive))
 
     entries: list[tuple] = []
+    feeds_total = 0
+    feeds_ok = 0
+    feed_failures: list[tuple[str, str]] = []
     if args.fixture:
         with open(args.fixture, "r", encoding="utf-8") as fh:
             for e in parse_feed(fh.read()):
@@ -396,17 +408,30 @@ def main(argv: list[str] | None = None) -> int:
         if not feeds:
             print("error: provide --feed/--source, --feeds-config, or --fixture", file=sys.stderr)
             return 2
+        feeds_total = len(feeds)
         for url, source, kind in feeds:
+            # A fetch failure (403, timeout, renamed subdomain) or unparseable
+            # body is the SILENT-MISS mode: left swallowed it produces zero rows
+            # and a green run. Account for every failure and surface it (per-feed
+            # ::warning:: + a structured summary), then exit non-zero below.
             try:
                 xml_text = fetch_feed(url)
-            except (urllib.error.URLError, urllib.error.HTTPError) as exc:
+            except (urllib.error.HTTPError, urllib.error.URLError) as exc:
+                msg = _feed_error_message(exc)
+                feed_failures.append((source, msg))
+                print(f"::warning::RSS feed FAILED: {source} ({url}): {msg}")
                 print(f"warn: skipping {source} ({url}): {exc}", file=sys.stderr)
                 continue
             try:
-                for e in parse_feed(xml_text):
-                    entries.append((e, source, kind))
+                parsed = parse_feed(xml_text)
             except ValueError as exc:
+                feed_failures.append((source, str(exc)))
+                print(f"::warning::RSS feed UNPARSEABLE: {source} ({url}): {exc}")
                 print(f"warn: {source}: {exc}", file=sys.stderr)
+                continue
+            feeds_ok += 1
+            for e in parsed:
+                entries.append((e, source, kind))
 
     new_rows, leads, demand, dupes, rejected = ingest(
         entries, existing_rows, today, existing_leads=existing_leads,
@@ -414,6 +439,11 @@ def main(argv: list[str] | None = None) -> int:
         existing_lead_archive=existing_lead_archive,
         existing_demand=existing_demand,
         existing_demand_archive=existing_demand_archive)
+    if not args.fixture:
+        failed_desc = ", ".join(f"{s}: {e}" for s, e in feed_failures)
+        print(f"feeds: {feeds_total} total, {feeds_ok} ok, "
+              f"{len(feed_failures)} FAILED: [{failed_desc}]")
+    feed_fail_rc = 1 if (feed_failures and not args.allow_feed_failures) else 0
     print(f"feed entries fetched: {len(entries)}")
     print(f"  active:   {len(new_rows)}")
     print(f"  leads:    {len(leads)} (review -> {args.review_target})")
@@ -433,7 +463,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.dry_run:
         print("(--dry-run: no files written)")
-        return 0
+        return feed_fail_rc
 
     wrote_anything = False
     if new_rows:
@@ -450,7 +480,15 @@ def main(argv: list[str] | None = None) -> int:
         wrote_anything = True
     if not wrote_anything:
         print("(no new rows to write)")
-    return 0
+    return feed_fail_rc
+
+
+def _feed_error_message(exc: Exception) -> str:
+    """Compact, human-readable cause for a failed feed (e.g. 'HTTP 403')."""
+    if isinstance(exc, urllib.error.HTTPError):
+        return f"HTTP {exc.code}"
+    reason = getattr(exc, "reason", None)
+    return str(reason) if reason is not None else str(exc)
 
 
 def _read_existing_or_empty(path: Path) -> list[dict]:

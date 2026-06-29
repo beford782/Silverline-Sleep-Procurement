@@ -32,7 +32,10 @@ jobs:
           python-version: "3.11"
 
       - name: Run RSS/feed ingest (configs/feeds.json)
-        run: python tools/ingest_rss.py --feeds-config configs/feeds.json
+        # Reject-log gives an audit trail of filtered-out items (silent-miss
+        # visibility). Any feed fetch/parse failure makes this step exit non-zero
+        # so the "Alert on failure" step fires instead of a green empty run.
+        run: python tools/ingest_rss.py --feeds-config configs/feeds.json --reject-log logs/rejects/_rss.csv
 
       - name: Detect whether ingest changed active pipeline or Lead Radar
         id: ingest_diff
@@ -130,7 +133,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git checkout -b "$BRANCH"
-          git add bids/active/_pipeline.csv leads/review/_lead_radar.csv leads/demand/_demand_radar.csv
+          git add bids/active/_pipeline.csv leads/review/_lead_radar.csv leads/demand/_demand_radar.csv logs/rejects/
           git commit -m "Twice-weekly RSS/feed ingest (${SCOPE}): ${TODAY}"
           git push -u origin "$BRANCH"
 

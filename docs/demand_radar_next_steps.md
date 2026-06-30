@@ -3,8 +3,8 @@
 - **For:** Blake / Continental Silverline Products, LLC
 - **Date:** 2026-06-30
 - **Status of inputs:** Demand Radar pilot is LIVE (7 feeds wired, PR #96 merged); **0 demand rows captured
-  yet**; **0 active bids**; SAM.gov legal-name correction (L.P.→LLC) **submitted and in GSA review**
-  (ref `INC-GSAFSD21285074`, ETA ~Jul 1–3).
+  yet**; **0 *submittable* bids (4 SAM-blocked `watching` rows in the active pipeline, not zero)**; SAM.gov
+  legal-name correction (L.P.→LLC) **submitted and in GSA review** (ref `INC-GSAFSD21285074`, ETA ~Jul 1–3).
 
 This plan supersedes an external review that proposed an 8-item / 5-PR tooling build. That review's *facts*
 were accurate, but its *sequencing* built cockpit/enrichment/buy-window machinery **before any real rows
@@ -45,7 +45,17 @@ No new tooling. Generate the rows that license Phase 2/3.
 - **1.4** Re-aim: treat **B** as the direct-lead lane, **A** as intel/spec-positioning, and add **one
   statewide Pilot C feed** to test the fast-cycle lane.
 
-**Exit gate:** ~20–30 triaged rows with outcome tags. Phases 2–3 stay closed until then.
+> **⏱ TRIPWIRE — don't let "wait for rows" become "wait forever."** A too-narrow Google Alert that returns
+> **zero** items looks identical to "no demand exists" — the same silent-miss failure mode the reliability
+> layer was built to kill (a feed that *errors* exits non-zero, but a feed that *successfully returns
+> nothing* is green). So set a hard date check: **if fewer than ~5 real Demand Radar rows are captured by
+> ≈2026-07-14 (2–3 ingest cycles), treat Google Alerts as the wrong/underperforming source** and prioritize
+> **better sources — the municipal permit open-data adapter (see `system_overview.md §7`) and hospitality
+> trade feeds — BEFORE building any more Demand Radar UI/tooling.** The lane underperforming is a
+> source problem, not a parsing problem.
+
+**Exit gate:** ~20–30 triaged rows with outcome tags. Phases 2–3 stay closed until then. (And the Jul-14
+tripwire above is the failure check, so an empty lane can't drift unnoticed.)
 
 ## Phase 2 — Thin tooling (gated on Phase 1 rows; typed-columns only)
 - **2.1** `demand_radar.py summary` additions over **existing typed columns**: "needs-triage" count,

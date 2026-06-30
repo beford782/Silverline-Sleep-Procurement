@@ -2,9 +2,14 @@
 
 - **For:** Blake / Continental Silverline Products, LLC
 - **Date:** 2026-06-28 · **Reframed:** 2026-06-29
+- **STATUS (2026-06-30): the pilot is LIVE.** All **7 feeds are created and wired** into
+  `configs/feeds.json` as `kind:"demand"` (PR #96, merged to main). The Mon/Thu ingest now reads them;
+  **0 demand rows captured so far** (feeds fill as Google finds matches). The feed-creation steps below are
+  retained as **reference** (for re-creating a feed, or adding Pilot C / new geos later). The live work now
+  is **§2 — triage each real hit by hand.**
 - **What:** The Demand Radar engine is built and merged (`tools/demand_signal.py`, `tools/demand_radar.py`,
-  `kind:"demand"` routing in `ingest_rss.py`, digest/email surfacing). It has **no demand feeds yet**.
-  This runbook is the one-time operator setup to feed it — mostly **creating Google Alerts as RSS**, which
+  `kind:"demand"` routing in `ingest_rss.py`, digest/email surfacing), now fed by 7 Google Alerts RSS feeds.
+  This runbook was the one-time operator setup to feed it — mostly **creating Google Alerts as RSS**, which
   only you can do (Google's Alert RSS URLs are generated in the Alerts UI; they can't be hand-built).
 - **How it flows once set up:** each feed → `ingest_rss.py` (demand lane) → `demand_signal.classify_demand`
   → `leads/demand/_demand_radar.csv` (keyed by estimated buy-window) → your digest/email "Demand Radar"
@@ -67,8 +72,9 @@ Clone across `<LOC>` = `Houston` · `("Dallas" OR "Fort Worth")` · `Austin` · 
 ```
 Clone across `<LOC>` = `Texas` (statewide) · `Houston`.  *(Swap Houston → `("Dallas" OR "Fort Worth")` if you prefer.)*
 
-### The 7 starting feeds + `feeds.json` labels
-Send me each RSS URL labeled by pilot+geo; I add them to `configs/feeds.json` as:
+### The 7 starting feeds + `feeds.json` labels  ✅ LIVE (wired 2026-06-30, PR #96)
+These 7 are already in `configs/feeds.json`. Kept here as the canonical label list (for re-creating a feed
+or matching a row's `source` back to its pilot/geo):
 ```json
 { "source": "Demand Radar: Pilot A PIP-Reflag Houston",      "url": "<RSS>", "kind": "demand" },
 { "source": "Demand Radar: Pilot A PIP-Reflag Dallas-FW",    "url": "<RSS>", "kind": "demand" },

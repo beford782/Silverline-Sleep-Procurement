@@ -138,11 +138,17 @@ Everything upstream (find → classify → rank → position → alert) is autom
 ## 7. Live vs. needs setup
 - **Live now:** public procurement lane (RSS + SAM + email), relevance classification, Lead Radar,
   win-ranking, readiness, digest, reliability alerts.
-- **Built, needs operator switch:** the **Demand Radar** engine + routing + surfacing are merged, but
-  there are **no demand feeds yet** — create the Google Alerts per
-  [`demand_radar_feed_setup.md`](demand_radar_feed_setup.md), then the URLs get wired into `feeds.json`
-  with `kind:"demand"`. That's the one switch to flip the private half on.
-- **Optional next builds:** municipal permit open-data adapter (earliest free private signal),
+- **Demand Radar — LIVE (pilot, collecting data):** the engine + routing + surfacing are merged **and
+  7 Texas-first Google Alerts RSS feeds are wired into `feeds.json` with `kind:"demand"`** (Pilot A hotel
+  PIP/re-flag ×5 + Pilot B independent hospitality ×2; PR #96, merged 2026-06-30). The Mon/Thu ingest now
+  reads them. **Current state: 0 demand rows captured** — feeds start empty and fill as Google finds
+  matches. **Next milestone:** the first ingest PR with real demand rows → **triage each by hand**
+  (route-to-market is manual in `next_action`/`notes`; see [`demand_radar_feed_setup.md`](demand_radar_feed_setup.md)
+  §2). No schema/tooling changes until ~20–50 real rows justify them. Pilot C (shelter/workforce) + geo
+  expansion are parked until A/B prove signal. The end-to-end plan is in
+  [`demand_radar_next_steps.md`](demand_radar_next_steps.md).
+- **Optional next builds:** municipal permit open-data adapter (earliest free private signal —
+  higher-signal than Google Alerts and the likely next build if the pilot is thin),
   construction-data email alerts (paid), incumbent/award-intel capture, buyer CRM.
 
 ## 8. Mental model

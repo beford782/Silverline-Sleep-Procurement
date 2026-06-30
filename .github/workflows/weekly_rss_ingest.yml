@@ -145,9 +145,10 @@ jobs:
           ## Reviewer checklist
           1. Open `bids/active/_pipeline.csv`; review each new row. Items flagged `HUMAN: confirm mattress scope` need a look on the portal.
           2. Open `leads/review/_lead_radar.csv`; review each new broad/ambiguous upstream signal before promotion.
-          3. Archive out-of-scope active rows with `python tools/pipeline.py move-to-archive <id> --status no-bid --next-action "No-bid archived" --note "<reason>"`, then amend this PR.
-          4. Archive dead Lead Radar rows with `python tools/lead_radar.py archive <lead-id> --status no-fit --note "<reason>"`.
-          5. Refine/assign owners on the keepers and merge.
+          3. **Demand Radar** — open `leads/demand/_demand_radar.csv`. For EACH new demand row, triage route-to-market by hand (see `docs/demand_radar_feed_setup.md` §2): pick a **bucket** (direct-local / channel / spec-position / market-intel / reject) + **route tag** + **next action**, capturing them MANUALLY in `next_action` / `notes` / `owner_operator` (no new columns yet). **Do NOT cold-sell branded hotel/property rows** before the route is mapped. Tag each row's end-state in `notes` (`route-mapped` / `conversation` / `quote` / `dead`) so we can measure conversion. Archive no-fit/stale rows with `python tools/demand_radar.py archive <id> --status no-fit --note "<reason>"`.
+          4. Archive out-of-scope active rows with `python tools/pipeline.py move-to-archive <id> --status no-bid --next-action "No-bid archived" --note "<reason>"`, then amend this PR.
+          5. Archive dead Lead Radar rows with `python tools/lead_radar.py archive <lead-id> --status no-fit --note "<reason>"`.
+          6. Refine/assign owners on the keepers and merge.
 
           ## CI note
           Commits authored by `GITHUB_TOKEN` do not trigger PR-event workflows. Push a follow-up commit or use "Re-run all checks".

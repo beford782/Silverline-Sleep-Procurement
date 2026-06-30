@@ -62,5 +62,12 @@
   {
     "source": "Bonfire: Mississippi IHL",
     "url": "https://msihl.bonfirehub.com/opportunities/rss"
-  }
+  },
+  { "source": "Demand Radar: Pilot A PIP-Reflag Houston", "url": "https://www.google.com/alerts/feeds/15568976994975873796/15172313877050616466", "kind": "demand" },
+  { "source": "Demand Radar: Pilot A PIP-Reflag Dallas-FW", "url": "https://www.google.com/alerts/feeds/15568976994975873796/2076750866331964021", "kind": "demand" },
+  { "source": "Demand Radar: Pilot A PIP-Reflag Austin", "url": "https://www.google.com/alerts/feeds/15568976994975873796/6821085205484721241", "kind": "demand" },
+  { "source": "Demand Radar: Pilot A PIP-Reflag San Antonio", "url": "https://www.google.com/alerts/feeds/15568976994975873796/2986559562589283106", "kind": "demand" },
+  { "source": "Demand Radar: Pilot A PIP-Reflag Texas", "url": "https://www.google.com/alerts/feeds/15568976994975873796/5198453200023349978", "kind": "demand" },
+  { "source": "Demand Radar: Pilot B Independent Houston", "url": "https://www.google.com/alerts/feeds/15568976994975873796/5524397529767177710", "kind": "demand" },
+  { "source": "Demand Radar: Pilot B Independent Texas", "url": "https://www.google.com/alerts/feeds/15568976994975873796/16337909455973850896", "kind": "demand" }
 ]

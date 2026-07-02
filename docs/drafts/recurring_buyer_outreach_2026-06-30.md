@@ -71,8 +71,8 @@ Texas-based institutional mattress manufacturer
 
 ## 2. Louisiana Prison Enterprises (the "DOC - PE" bids)  (REFRAMED → component supply)
 - **Primary contact (VERIFIED):** Claire Picou — OSP Assistant Director, the assigned **Procurement Agency
-  Liaison for Prison Enterprises** · **claire.picou@la.gov** · **225-342-5491**
-- **Fallbacks:** PE HQ **225-342-6633** (ask for the *materials/purchasing* buyer — NOT the sales desk);
+  Liaison for Prison Enterprises** · **claire.picou@la.gov**
+- **Fallbacks:** PE HQ main line via prisonenterprises.org (ask for the *materials/purchasing* buyer — NOT the sales desk);
   OSP help desk **doa-osphelpdesk@la.gov** / vendor registration **vendr_inq@la.gov**.
 - **Why reframed:** the "Mattress Units / Innerspring Unit / Mattress Supplies – DOC – PE" solicitations are
   **Prison Enterprises buying materials to build mattresses in-house**. Pitch **component supply**, not
@@ -97,8 +97,7 @@ Texas-based institutional mattress manufacturer
 ---
 
 ## 3a. City of Houston Fire Department — Twin XL mattresses & box springs  (AWARD/REBID follow-up)
-- **Contact (VERIFIED):** Angela Weatherspoon, City of Houston · **Angela.Weatherspoon@houstontx.gov** ·
-  **832-393-4242**
+- **Contact (VERIFIED):** Angela Weatherspoon, City of Houston · **Angela.Weatherspoon@houstontx.gov**
 - **Solicitation:** **INF-2026-0194** "Mattresses and Box Spring Bedding" — 80 ea Twin XL (38×80×11½,
   pillow/quilt top) + 80 box-spring foundations; 16 CFR 1633; delivery to HFD, 2707 Dalton, Houston 77017;
   closed **5/27/2026**, **AWARDED** (winner not public). Recurring (~2×/yr; prior INF-2025-0116, INF-2025-0447).
@@ -124,8 +123,7 @@ Texas-based institutional mattress manufacturer
 ---
 
 ## 3b. City of Austin Fire / EMS — Twin XL mattresses, box springs & bed frames  (we bid; AWARD follow-up)
-- **Contact (VERIFIED):** Diego Cruz-Garcia, City of Austin Purchasing · **diego.cruz-garcia@austintexas.gov**
-  · **512-978-0819** *(his initials = the "DCG" in the bid number)*
+- **Contact (VERIFIED):** Diego Cruz-Garcia, City of Austin Purchasing · **diego.cruz-garcia@austintexas.gov** *(his initials = the "DCG" in the bid number)*
 - **Solicitation:** **IFB 8300 DCG1033** "Mattresses and Box Spring Sets and Bed Frames" (Austin Fire + EMS);
   closed **4/23/2026**; award recommendation posted 5/12/2026. **CSP is VERIFIED among the 6 bidders.**
 
@@ -148,7 +146,7 @@ Texas-based institutional mattress manufacturer
 
 ## 4. Bernalillo County, NM — Correctional Mattresses (MDC)  (MARKET-INTEL; just awarded)
 - **Contact (VERIFIED):** Nathaniel Martinez, Buyer, Bernalillo County Purchasing ·
-  **natmartinez@bernco.gov** *(fallback: purchasing@bernco.gov · (505) 468-7013)*
+  **natmartinez@bernco.gov** *(fallback: purchasing@bernco.gov)*
 - **Solicitation:** **RFB 48-26-DC** "Correctional Mattresses" (MDC); closed 5/21/2026; **AWARDED 6/21/2026
   to MTJ American** (national correctional-mattress incumbent, NC). Prior cycle RFB 0031-22 (2022) →
   **~4-year price agreement → next realistic rebid ~2030** (market-check ~2028–2029).

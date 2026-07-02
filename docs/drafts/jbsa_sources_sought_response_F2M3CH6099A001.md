@@ -1,10 +1,20 @@
-# DRAFT — JBSA Tech Training Dorm Mattresses (Sources Sought) — Response for Operator Review
+# JBSA Tech Training Dorm Mattresses (Sources Sought) — Response — ✅ SUBMITTED 2026-07-02
 
-> **STATUS: DRAFT — DO NOT SUBMIT AUTOMATICALLY.** Operator (Blake) reviews and submits.
-> **HARD RULES:** Do **NOT** cite the pending UEI anywhere in the response — entity validation is still in
-> GSA review (ref `INC-GSAFSD21285074`). Do **NOT** represent the entity as an active/registered federal vendor.
-> A Sources Sought / RFI is **not a bid** — the goal is *visibility before the eventual solicitation*,
-> not an award commitment.
+> **STATUS: SUBMITTED 2026-07-02** by operator to **CS A1C Tristan Torres** (`tristan.torres@us.af.mil`)
+> and **CO N. Marie Phillips** (`norena.phillips@us.af.mil`) from silverlinesleep. Response was the completed
+> questionnaire below; CSP answered as a small-business **manufacturer**, Open Market, no CAGE/UEI cited
+> ("federal entity validation in progress"). This record is kept for the file and for the resulting
+> solicitation.
+>
+> **What it was:** the actual notice is a structured 11-question Sources Sought questionnaire (deadline
+> 02 JUL 2026 1:00pm CST) for **1,258 Twin XL blue nylon dorm innerspring mattresses** (inverted sealed seam,
+> bed-bug-proof, 16 CFR 1633, 36"×75") + delivery/install/one-for-one removal & disposal at JBSA Lackland
+> Bldg 6578. NAICS 337910, PSC 7210, small-business FFP.
+> **HARD RULES (still apply to any resulting solicitation):** do **NOT** cite the pending UEI (validation in
+> GSA review, ref `INC-GSAFSD21285074`); do **NOT** represent the entity as an active/registered federal
+> vendor. A Sources Sought / RFI is **not a bid** — this was a *positioning* touch before the eventual
+> solicitation. The capability-statement text below is superseded by the questionnaire response that was
+> actually sent; kept for reference.
 
 ## Opportunity
 - **Solicitation #:** F2M3CH6099A001

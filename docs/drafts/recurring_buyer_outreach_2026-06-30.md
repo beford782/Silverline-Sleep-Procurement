@@ -1,18 +1,39 @@
 # DRAFT — Recurring Mattress-Buyer Outreach (review before sending)
 
-> **STATUS: DRAFTS ONLY — DO NOT SEND.** Operator (Blake) reviews, fills the `[bracketed]` blanks, and sends.
-> **HARD RULES (all drafts):** Do **NOT** cite the UEI. Do **NOT** imply SAM/federal registration is active.
-> Keep it short and procurement-friendly. These are **state/local** buyers (SAM-independent) — the fastest
-> SAM-free path to a first win. Use a `silverlinesleep.com` reply address (not a legacy `restonichouston.com`
-> one). Context: `docs/demand_radar_next_steps.md` (Phase 0 — these recurring buys are the neglected revenue
-> motion identified in the 2026-06-30 backwards review).
+> **STATUS: DRAFTS ONLY — DO NOT SEND.** Operator (Blake) reviews, fills `[brackets]`, and sends **from
+> silverlinesleep** (never Gmail). **HARD RULES:** no UEI; don't imply SAM/federal registration is active
+> (moot here — all state/local). **Contacts researched & verified 2026-07-02** (see confidence flags).
+> Context: `docs/demand_radar_next_steps.md`. These recurring buys are the SAM-free revenue motion from the
+> 2026-06-30 backwards review.
 
-**The ask, common to every email:** (1) who won / is award info available, (2) rebid/renewal timing,
-(3) whether supplemental vendors / secondary awards / late vendor qualification are possible, (4) how to add
-**Continental Silverline Products, LLC** to the notification / vendor list for future mattress & bedding
-opportunities.
+---
 
-**Signature block to paste on each (operator to confirm):**
+## ⚠️ Headline discoveries from the 2026-07-02 contact research (read first)
+
+1. **We appear to already be BIDDING the Texas fire-department mattress buys — not missing them.**
+   - **City of Austin** IFB 8300 DCG1033 (Twin XL mattresses/box springs, Austin Fire + EMS, closed 4/23/2026):
+     **Continental Silverline Products, LLC is VERIFIED as one of 6 bidders** on the official Austin Finance
+     Online page. Award recommendation posted 5/12/2026.
+   - **City of Houston** INF-2026-0194 (80 Twin XL + box springs, Houston Fire Dept, closed 5/27/2026):
+     the logged-in BeaconBid account showed a **response submitted 5/20/2026 (confirmation RUASV)** — i.e.
+     we likely bid this too. **CONFIRM internally** before sending #3a.
+   - Implication: the Lead Radar "closed before sweep / historical" framing for these was **wrong** — these
+     are recurring municipal **fire-station** bunk-mattress buys we're already competing in. The ask shifts
+     from "please add us" to **"what was the award result, and when's the next run?"**
+
+2. **Louisiana "DOC - PE" = Prison Enterprises — they MANUFACTURE their own mattresses (inmate labor).**
+   On finished mattresses we're a **competitor, not a supplier**. The realistic opening is **supplying
+   components** (innerspring units, ticking, foam) or the vendor list — see #2, reframed.
+
+3. **Bernalillo County correctional mattresses just awarded to an incumbent (MTJ American, 6/21/2026),
+   ~4-year cycle → next rebid ~2030.** So #4 is **market-intel + next-cycle list**, not a near-term sale.
+
+---
+
+**Common asks:** (1) award result / who won, (2) rebid/renewal timing, (3) supplemental/secondary/late
+qualification, (4) add **Continental Silverline Products, LLC** to the notification/vendor list.
+
+**Signature block (paste on each; operator confirms):**
 ```
 [Name], Continental Silverline Products, LLC
 Texas-based institutional mattress manufacturer
@@ -21,134 +42,141 @@ Texas-based institutional mattress manufacturer
 
 ---
 
-## 1. LaPAC / Louisiana OSP — Statewide Mattresses & Box Springs  (FOLLOW-UP)
-- **Buyer:** Courtnee Viada, State of Louisiana — Office of State Procurement · **courtnee.viada@la.gov**
-- **Solicitation:** RFx **3000026215**, "Mattresses & Box Springs – Statewide," T-Number 90943, category 42191800.
-  12-month term + two possible 12-month extensions. Bid opened **2026-06-09** (closed before we saw it).
-- **Note:** A first outreach was already sent **2026-06-20**. This is a **polite follow-up**, not a cold email.
+## 1. LaPAC / Louisiana OSP — Statewide Mattresses & Box Springs  (FOLLOW-UP; ready to send)
+- **Contact:** Courtnee Viada, State of Louisiana — Office of State Procurement · **courtnee.viada@la.gov**
+  *(from our record; first outreach already sent 2026-06-20)*
+- **Solicitation:** RFx **3000026215**, "Mattresses & Box Springs – Statewide," T-Number 90943. 12-mo term +
+  two 12-mo extensions. Bid opened **2026-06-09**. *(This is the OSP statewide finished-mattress contract —
+  distinct from Prison Enterprises in #2.)*
 
 **Subject:** Following up — Statewide Mattresses & Box Springs (RFx 3000026215)
 
 > Hi Ms. Viada,
 >
-> Following up on my note from June 20 about the statewide Mattresses & Box Springs contract (RFx
-> 3000026215). I know the bid opened June 9, so I'm not asking to bid late — I'm trying to be ready for the
-> right moment.
+> Following up on my June 20 note about the statewide Mattresses & Box Springs contract (RFx 3000026215).
+> I know the bid opened June 9, so I'm not asking to bid late — just trying to be ready for the next window.
 >
 > Three quick questions when you have a minute:
 > 1. Has the contract been awarded, and is award information available?
-> 2. Do you know the renewal/rebid timing (I see the term allows two 12-month extensions)?
+> 2. Do you know the renewal/rebid timing (the term allows two 12-month extensions)?
 > 3. Is there any path for a supplemental or secondary vendor to be qualified during the term?
 >
 > Continental Silverline Products, LLC is a Texas-based institutional mattress manufacturer (dormitory,
-> correctional, healthcare, and FR/fluid-proof lines per 16 CFR 1633). Whatever the answer, could you add us
-> to the notification/vendor list so we catch the next mattress and bedding solicitation in time?
+> correctional, healthcare; FR/fluid-proof per 16 CFR 1633). Please add us to the notification/vendor list
+> so we catch the next mattress and bedding solicitation in time.
 >
-> Thank you,
-> [signature]
+> Thank you, [signature]
 
 ---
 
-## 2. Louisiana DOC — Recurring Mattress Buys  (contact TBD)
-- **Buyer:** Louisiana Department of Public Safety & Corrections — procurement (specific buyer **not yet known**).
-- **Evidence of cadence (from BidNet history):** "*Rebid* *Fax Bid* Mattress Units-DOC" (closed 2026-03-19),
-  "Mattress Supplies – DOC – PE" (closed 2026-03-24), "*Fax Bid* Mattress Innerspring Unit-DOC" (closed
-  2026-03-06). DOC buys correctional mattresses on a **recurring, roughly quarterly** basis.
-- **Operator action before sending:** find the DOC purchasing contact — these post via **LaPAC**, so Ms.
-  Viada (above) or the LaPAC posting can likely point to the DOC buyer; or check the DPS&C procurement page.
-  Send to `[DOC purchasing contact]` once identified.
+## 2. Louisiana Prison Enterprises (the "DOC - PE" bids)  (REFRAMED → component supply)
+- **Primary contact (VERIFIED):** Claire Picou — OSP Assistant Director, the assigned **Procurement Agency
+  Liaison for Prison Enterprises** · **claire.picou@la.gov**
+- **Fallbacks:** PE HQ main line via prisonenterprises.org (ask for the *materials/purchasing* buyer — NOT the sales desk);
+  OSP help desk **doa-osphelpdesk@la.gov** / vendor registration **vendr_inq@la.gov**.
+- **Why reframed:** the "Mattress Units / Innerspring Unit / Mattress Supplies – DOC – PE" solicitations are
+  **Prison Enterprises buying materials to build mattresses in-house**. Pitch **component supply**, not
+  finished mattresses (they make their own).
 
-**Subject:** Correctional mattress supply — vendor list & rebid timing (LA DOC)
+**Subject:** Component supply for Prison Enterprises mattress production — vendor list
 
-> Hello,
+> Hello Ms. Picou,
 >
-> I'm reaching out about the Department's recurring correctional mattress purchases (e.g., the "Mattress
-> Units – DOC" and "Mattress Innerspring Unit – DOC" solicitations earlier this year). I understand those
-> rounds have closed.
+> I understand Prison Enterprises manufactures its own mattresses and periodically solicits mattress
+> materials (e.g., the "Mattress Innerspring Unit" and "Mattress Supplies – DOC – PE" bids earlier this
+> year). Continental Silverline Products, LLC is a Texas-based mattress manufacturer, and we'd like to be
+> considered as a **component/materials supplier** (innerspring units, ticking, foam, and related inputs).
 >
-> Could you help me with three things:
-> 1. Is award information available for the most recent DOC mattress purchase?
-> 2. When does the Department typically rebid these (so I can be ready for the next cycle)?
-> 3. Is there a way to be added as a qualified or supplemental vendor for correctional mattress supply?
+> Could you help me with:
+> 1. Are those material solicitations awarded, and is award information available?
+> 2. When does Prison Enterprises typically re-solicit these materials?
+> 3. How do we get on the vendor/notification list for future mattress-material solicitations?
 >
-> Continental Silverline Products, LLC is a Texas-based manufacturer of institutional and correctional
-> mattresses (flame/fire-retardant and correctional-spec construction). Please add us to the notification/
-> vendor list for future mattress and bedding opportunities.
->
-> Thank you,
-> [signature]
+> Thank you, [signature]
 
 ---
 
-## 3. Texas State/Local — Twin XL Mattresses & Box Spring Bedding  (contact TBD)
-- **Buyer:** "Texas State & Local" agency (specific entity **not yet identified** — surfaced via BidNet Texas
-  Purchasing Group).
-- **Evidence:** "Mattresses and Box Spring Bedding" — **80 Twin XL** mattresses + box spring bedding,
-  published 2026-05-21, **closed 2026-05-27**; and "Mattresses and Box Spring Sets and Bed Frames"
-  (closed 2026-04-23).
-- **Operator action before sending:** open the closed solicitation in **BidNet Direct (Texas Purchasing
-  Group)** to get the issuing agency + buyer contact, then send to `[TX agency buyer]`.
+## 3a. City of Houston Fire Department — Twin XL mattresses & box springs  (AWARD/REBID follow-up)
+- **Contact (VERIFIED):** Angela Weatherspoon, City of Houston · **Angela.Weatherspoon@houstontx.gov**
+- **Solicitation:** **INF-2026-0194** "Mattresses and Box Spring Bedding" — 80 ea Twin XL (38×80×11½,
+  pillow/quilt top) + 80 box-spring foundations; 16 CFR 1633; delivery to HFD, 2707 Dalton, Houston 77017;
+  closed **5/27/2026**, **AWARDED** (winner not public). Recurring (~2×/yr; prior INF-2025-0116, INF-2025-0447).
+- **⚠️ CONFIRM FIRST:** we may have **already bid INF-2026-0194** (BeaconBid response 5/20/2026, conf.
+  RUASV). If so, frame as "following up on our submitted bid"; if not, drop that line.
 
-**Subject:** Twin XL mattresses & box spring bedding — award info and next solicitation
+**Subject:** Award result & next run — Mattresses and Box Spring Bedding (INF-2026-0194)
 
-> Hello,
+> Hi Ms. Weatherspoon,
 >
-> I'm following up on your recent "Mattresses and Box Spring Bedding" solicitation (the ~80 Twin XL set
-> requirement that closed in late May). I know it has closed — I'm just trying to be in position for the next
-> one.
+> I'm following up on the Fire Department's "Mattresses and Box Spring Bedding" bid, INF-2026-0194
+> (Twin XL mattresses and box springs), which closed May 27. *(If we bid: "We submitted a response and are
+> checking on the outcome.")*
 >
 > A few quick questions:
 > 1. Has it been awarded, and is award information available?
-> 2. Do you anticipate a similar mattress/bedding purchase on a recurring basis, and roughly when?
-> 3. Is there any supplemental-vendor or late-qualification path for the current need?
+> 2. HFD appears to buy these a couple of times a year — when is the next run expected?
+> 3. Is there a supplemental-vendor path for the current need, and how do we stay on the bid list?
 >
-> Continental Silverline Products, LLC is a Texas-based institutional mattress manufacturer (Twin XL, full,
-> queen; innerspring and polyfoam; FR/fluid-proof covers). Could you add us to the notification/vendor list
-> for future mattress and bedding solicitations?
->
-> Thank you,
-> [signature]
+> Continental Silverline Products, LLC is a Texas-based mattress manufacturer (Twin XL, innerspring, 16 CFR
+> 1633; local Houston delivery). Thank you, [signature]
 
 ---
 
-## 4. Bernalillo County, NM — Correctional Mattresses (MDC)  (Bonfire / County Purchasing)
-- **Buyer:** Bernalillo County, New Mexico — Purchasing (Metropolitan Detention Center need). Portal:
-  bernco.bonfirehub.com.
-- **Evidence:** RFB **48-26-DC** "Correctional Mattresses," ProjectID 233853, **closed 2026-05-21**,
-  `IsPublicAward = true` (so award data should be obtainable). High-fit recurring MDC replacement cycle.
-- **Operator action before sending:** get the County Purchasing contact / buyer of record for RFB 48-26-DC
-  (Bonfire portal or Bernalillo County Purchasing dept). Send to `[Bernalillo County Purchasing contact]`.
+## 3b. City of Austin Fire / EMS — Twin XL mattresses, box springs & bed frames  (we bid; AWARD follow-up)
+- **Contact (VERIFIED):** Diego Cruz-Garcia, City of Austin Purchasing · **diego.cruz-garcia@austintexas.gov** *(his initials = the "DCG" in the bid number)*
+- **Solicitation:** **IFB 8300 DCG1033** "Mattresses and Box Spring Sets and Bed Frames" (Austin Fire + EMS);
+  closed **4/23/2026**; award recommendation posted 5/12/2026. **CSP is VERIFIED among the 6 bidders.**
 
-**Subject:** Correctional Mattresses (RFB 48-26-DC) — award info and future notifications
+**Subject:** Award outcome & next solicitation — IFB 8300 DCG1033
 
-> Hello,
+> Hi Mr. Cruz-Garcia,
 >
-> I'm writing regarding RFB 48-26-DC, "Correctional Mattresses," which closed May 21. I understand it has
-> been awarded.
+> We submitted a bid on IFB 8300 DCG1033 (Mattresses, Box Spring Sets and Bed Frames) for Austin Fire/EMS,
+> which closed April 23. I'm following up on the outcome.
 >
-> Could you help with three quick questions:
-> 1. Is the award information available (vendor and price of record)?
-> 2. How often does the County / Metropolitan Detention Center repurchase correctional mattresses, and when
->    is the next cycle expected?
-> 3. Is there a supplemental-vendor or qualification path for future correctional mattress needs?
+> Three questions:
+> 1. Has the award been finalized, and can you share the result / bid tabulation?
+> 2. When do you anticipate the next mattress/bedding solicitation for Fire/EMS?
+> 3. Anything we can do to strengthen our position for the next run?
+>
+> Continental Silverline Products, LLC — Texas-based mattress manufacturer, Austin-area delivery.
+> Thank you, [signature]
+
+---
+
+## 4. Bernalillo County, NM — Correctional Mattresses (MDC)  (MARKET-INTEL; just awarded)
+- **Contact (VERIFIED):** Nathaniel Martinez, Buyer, Bernalillo County Purchasing ·
+  **natmartinez@bernco.gov** *(fallback: purchasing@bernco.gov)*
+- **Solicitation:** **RFB 48-26-DC** "Correctional Mattresses" (MDC); closed 5/21/2026; **AWARDED 6/21/2026
+  to MTJ American** (national correctional-mattress incumbent, NC). Prior cycle RFB 0031-22 (2022) →
+  **~4-year price agreement → next realistic rebid ~2030** (market-check ~2028–2029).
+- **Highest-value move:** request the **public bid tabulation** to learn the winning price point, and get on
+  the next-cycle list. Not a near-term sale.
+
+**Subject:** RFB 48-26-DC award / bid tabulation & future notifications
+
+> Hi Mr. Martinez,
+>
+> I'm following up on RFB 48-26-DC, "Correctional Mattresses," which I understand was awarded in June.
+>
+> Could you help with:
+> 1. Is the bid tabulation / award result publicly available? I'd appreciate a copy or a link.
+> 2. Is this a multi-year price agreement, and when is the next rebid/market check anticipated?
+> 3. Please add Continental Silverline Products, LLC to the vendor/notification list for future correctional
+>    mattress solicitations for the County / Metropolitan Detention Center.
 >
 > Continental Silverline Products, LLC is a Texas-based manufacturer of correctional and institutional
-> mattresses (flame/fire-retardant, correctional-spec, fluid-proof). Please add us to the County's
-> notification/vendor list for mattress and bedding opportunities so we can respond on time to the next RFB.
->
-> Thank you,
-> [signature]
+> mattresses (flame/fire-retardant, correctional-spec, fluid-proof). Thank you, [signature]
 
 ---
 
-## Out of scope for these drafts
-- **Federal BOP (FCI) recurring mattresses** — excluded on purpose: federal channel is **SAM-gated** and
-  these drafts must not imply SAM is active. Pursue via the federal lane once SAM is active (and even then,
-  via the open SAM.gov solicitation, not a cold email about a closed RFQ).
-- **Norix BN Furniture (LaPAC 3000026264)** — brand-name Norix vehicle, no mattress scope; not a fit.
+## Out of scope
+- **Federal BOP (FCI) recurring mattresses** — SAM-gated; not in these state/local drafts.
+- **Norix BN Furniture (LaPAC 3000026264)** — brand-name Norix, no mattress scope; not a fit.
 
 ## Operator pre-send checklist (every email)
-- [ ] Fill the `[bracketed]` contact/name/phone blanks; for #2/#3/#4, identify the buyer first.
-- [ ] Confirm reply-to is a `silverlinesleep.com` address.
-- [ ] Confirm **no UEI** and **no "we're a registered federal vendor"** language.
-- [ ] Send #1 (LaPAC/Viada) now — it's a warm follow-up; the others after their contact is found.
+- [ ] **#3a first:** confirm whether we already bid Houston INF-2026-0194 (BeaconBid conf. RUASV); adjust wording.
+- [ ] Fill `[brackets]`; reply-to a `silverlinesleep.com` address.
+- [ ] Confirm **no UEI** and no "registered federal vendor" language.
+- [ ] Send order suggestion: **#1 (warm) & #3b (we bid Austin, verified) first**, then #3a after confirming,
+      then #2 (PE component reframe) and #4 (market-intel).

@@ -10,16 +10,15 @@
 
 ## ⚠️ Headline discoveries from the 2026-07-02 contact research (read first)
 
-1. **We appear to already be BIDDING the Texas fire-department mattress buys — not missing them.**
-   - **City of Austin** IFB 8300 DCG1033 (Twin XL mattresses/box springs, Austin Fire + EMS, closed 4/23/2026):
-     **Continental Silverline Products, LLC is VERIFIED as one of 6 bidders** on the official Austin Finance
-     Online page. Award recommendation posted 5/12/2026.
+1. **We are BIDDING — and WINNING — the Texas fire-department mattress buys, not missing them.**
+   - **🏆 City of Austin** IFB 8300 DCG1033 (Twin XL mattresses/box springs, Austin Fire + EMS, closed
+     4/23/2026): **CSP WON this bid** (operator-confirmed 2026-07-02) — awaiting next steps (PO / delivery).
+     This is the funnel's first confirmed win.
    - **City of Houston** INF-2026-0194 (80 Twin XL + box springs, Houston Fire Dept, closed 5/27/2026):
-     the logged-in BeaconBid account showed a **response submitted 5/20/2026 (confirmation RUASV)** — i.e.
-     we likely bid this too. **CONFIRM internally** before sending #3a.
+     **CSP submitted a bid (operator-confirmed 2026-07-02)** — awaiting the award result.
    - Implication: the Lead Radar "closed before sweep / historical" framing for these was **wrong** — these
-     are recurring municipal **fire-station** bunk-mattress buys we're already competing in. The ask shifts
-     from "please add us" to **"what was the award result, and when's the next run?"**
+     are recurring municipal **fire-station** bunk-mattress buys we already compete in and can win. The ask
+     shifts from "please add us" to **"next steps on our award / when's the next run?"**
 
 2. **Louisiana "DOC - PE" = Prison Enterprises — they MANUFACTURE their own mattresses (inmate labor).**
    On finished mattresses we're a **competitor, not a supplier**. The realistic opening is **supplying
@@ -96,21 +95,20 @@ Texas-based institutional mattress manufacturer
 
 ---
 
-## 3a. City of Houston Fire Department — Twin XL mattresses & box springs  (AWARD/REBID follow-up)
+## 3a. City of Houston Fire Department — Twin XL mattresses & box springs  (we BID; award follow-up)
 - **Contact (VERIFIED):** Angela Weatherspoon, City of Houston · **Angela.Weatherspoon@houstontx.gov**
 - **Solicitation:** **INF-2026-0194** "Mattresses and Box Spring Bedding" — 80 ea Twin XL (38×80×11½,
   pillow/quilt top) + 80 box-spring foundations; 16 CFR 1633; delivery to HFD, 2707 Dalton, Houston 77017;
   closed **5/27/2026**, **AWARDED** (winner not public). Recurring (~2×/yr; prior INF-2025-0116, INF-2025-0447).
-- **⚠️ CONFIRM FIRST:** we may have **already bid INF-2026-0194** (BeaconBid response 5/20/2026, conf.
-  RUASV). If so, frame as "following up on our submitted bid"; if not, drop that line.
+- **✅ CONFIRMED (operator, 2026-07-02): CSP submitted a bid on INF-2026-0194.** Frame as following up on our
+  submitted bid; awaiting the outcome.
 
 **Subject:** Award result & next run — Mattresses and Box Spring Bedding (INF-2026-0194)
 
 > Hi Ms. Weatherspoon,
 >
-> I'm following up on the Fire Department's "Mattresses and Box Spring Bedding" bid, INF-2026-0194
-> (Twin XL mattresses and box springs), which closed May 27. *(If we bid: "We submitted a response and are
-> checking on the outcome.")*
+> We submitted a bid on the Fire Department's "Mattresses and Box Spring Bedding" requirement, INF-2026-0194
+> (Twin XL mattresses and box springs), which closed May 27. I'm following up on the outcome.
 >
 > A few quick questions:
 > 1. Has it been awarded, and is award information available?
@@ -122,25 +120,28 @@ Texas-based institutional mattress manufacturer
 
 ---
 
-## 3b. City of Austin Fire / EMS — Twin XL mattresses, box springs & bed frames  (we bid; AWARD follow-up)
+## 3b. City of Austin Fire / EMS — Twin XL mattresses, box springs & bed frames  (🏆 WON — next-steps check-in)
 - **Contact (VERIFIED):** Diego Cruz-Garcia, City of Austin Purchasing · **diego.cruz-garcia@austintexas.gov** *(his initials = the "DCG" in the bid number)*
 - **Solicitation:** **IFB 8300 DCG1033** "Mattresses and Box Spring Sets and Bed Frames" (Austin Fire + EMS);
-  closed **4/23/2026**; award recommendation posted 5/12/2026. **CSP is VERIFIED among the 6 bidders.**
+  closed **4/23/2026**; award recommendation posted 5/12/2026.
+- **🏆 CSP WON this bid (operator-confirmed 2026-07-02) — awaiting next steps (award finalization / PO /
+  delivery coordination).** So this is NOT a "did we win" ask — it's a light next-steps check-in with the
+  buyer. Send only if you want to nudge; otherwise wait for the City's PO. Reframe below.
 
-**Subject:** Award outcome & next solicitation — IFB 8300 DCG1033
+**Subject:** IFB 8300 DCG1033 — next steps / delivery coordination
 
 > Hi Mr. Cruz-Garcia,
 >
-> We submitted a bid on IFB 8300 DCG1033 (Mattresses, Box Spring Sets and Bed Frames) for Austin Fire/EMS,
-> which closed April 23. I'm following up on the outcome.
+> Thank you — we're glad to be selected on IFB 8300 DCG1033 (Mattresses, Box Spring Sets and Bed Frames) for
+> Austin Fire/EMS. I want to make sure we're ready on our end.
 >
-> Three questions:
-> 1. Has the award been finalized, and can you share the result / bid tabulation?
-> 2. When do you anticipate the next mattress/bedding solicitation for Fire/EMS?
-> 3. Anything we can do to strengthen our position for the next run?
+> Could you let me know:
+> 1. Expected timing for the purchase order / notice to proceed?
+> 2. Any paperwork or vendor-setup steps you need from us to finalize?
+> 3. Preferred delivery/coordination contact and schedule once the PO issues?
 >
-> Continental Silverline Products, LLC — Texas-based mattress manufacturer, Austin-area delivery.
-> Thank you, [signature]
+> We'll be ready to deliver on your timeline. Continental Silverline Products, LLC — Texas-based mattress
+> manufacturer, Austin-area delivery. Thank you, [signature]
 
 ---
 

@@ -31,9 +31,26 @@ fallbacks only.
    copy the 16-char value. Confirm IMAP is on (Gmail Settings → Forwarding and
    POP/IMAP → **Enable IMAP**).
 2. **Gmail label + filter.** Create a label **`Procurement/Alerts`**. Add a
-   Gmail filter matching the portal sender domains *and* `subject:[PROC-ALERT]`
+   Gmail filter matching the portal sender domains **OR** `subject:[PROC-ALERT]`
    → **Apply label** `Procurement/Alerts`, **Never send to Spam**. (This is the
    `--imap-folder` the workflow reads.)
+
+   > **Must be OR, not AND** (verified the hard way, 2026-07-05): forwarded
+   > alerts arrive **from `beford@silverlinesleep.com`** with the
+   > `[PROC-ALERT]` subject tag, while direct portal alerts arrive from a
+   > portal domain **without** the tag. A filter requiring both matches
+   > nothing, the label stays empty forever, and the daily ingest fetches 0.
+   > In Gmail: Settings → Filters → Create new filter → put this in **"Has
+   > the words"** (leave From empty):
+   >
+   > ```text
+   > subject:"[PROC-ALERT]" OR from:(ionwave.net OR bonfirehub.com OR gobonfire.com OR demandstar.com OR bidnetdirect.com OR buyboard.com OR txsmartbuy.gov OR bidsync.com OR publicpurchase.com OR eunasolutions.com)
+   > ```
+   >
+   > then check **Apply the label: Procurement/Alerts** and **Never send it
+   > to Spam**. Also tick "Apply filter to matching conversations" so any
+   > already-received alerts get labeled retroactively (the daily run looks
+   > back 7 days).
 3. **Point editable portals at Gmail.** On each portal whose notification
    address can be changed, set it to **blake.e.ford@gmail.com** and confirm the
    mattress/bedding commodity codes (NIGP 205, NAICS 337910) are selected.

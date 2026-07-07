@@ -1,89 +1,76 @@
 # Resume prompt — Silverline-Sleep-Procurement
 
 Copy the block below into a new Claude Code session to pick up work. Keep it
-current as the project evolves (it replaced an older, stale handoff).
+current as the project evolves. (Sessions with persistent memory get most of
+this automatically — MEMORY.md is the authoritative "start here"; this file is
+the fallback for memory-less sessions and human onboarding.)
 
 ```text
 You are resuming work on the Silverline-Sleep-Procurement repository — a static,
 stdlib-Python procurement toolkit that surfaces contract MATTRESS opportunities
 (federal/state/local/private) into one human-reviewed pipeline. Vendor: Continental
-Silverline (Houston TX; brands Restonic/Spring Air/Silverline Sleep; institutional/
-dormitory/correctional/medical/fire-retardant mattresses; service geography
-TX/OK/LA/MS/AR/NM). Final bid submission is always manual/human.
+Silverline Products, LLC (Houston TX; brands Restonic/Spring Air/Silverline Sleep;
+institutional/dormitory/correctional/medical/fire-retardant mattresses; service
+geography TX/OK/LA/MS/AR/NM). Final bid submission is always manual/human.
 
-Work branch: claude/serene-darwin-v8xfbq. Trunk: main.
-GitHub: beford782/silverline-sleep-procurement (use mcp__github__* tools; no gh CLI).
+Trunk: main (work on claude/* branches, PR to merge; auto-ingest uses auto/*).
 
 ## Hard constraints
 - Standard-library Python only (third-party needs approval).
-- No portal scraping / no browser automation. Public/documented APIs, RSS, or email only.
-- No automatic bid submission. No committed secrets/credentials/private contacts/machine paths.
-- Markdown/CSV/JSON/HTML over binary. Preserve procurement terminology.
-- Branch + PR for non-trivial work; DO NOT open a PR unless asked.
+- No portal scraping / no browser automation for data collection. Public APIs,
+  RSS, or email only. (Operator-assisted browser sessions for REGISTRATIONS are OK.)
+- No automatic bid submission. No committed secrets/credentials/private contacts/
+  machine paths. Legal entity is the LLC — never "L.P." (dissolved 2015 predecessor).
+- All outbound business email goes from silverlinesleep.com — keep outreach as
+  markdown drafts in docs/drafts/; never stage/send via Gmail.
 - Audit gate before every commit:
-    python -m unittest discover -s tests
+    python -m unittest discover -s tests        (475 pass as of 2026-07-07)
     python -m compileall -q tools tests
     python -m json.tool on every committed JSON
     python tools/validate_vendor_profile.py vendor-profiles/continental_silverline.profile.json
     python tools/workflow_check.py
-    machine-path / personal-name leak grep over committed py/md/json/csv
+    machine-path / personal-name / PII leak grep over committed files
       (exact regex lives in .github/workflows/ci.yml — do not paste it into a
       committed .md file or it self-matches the grep)
 
-## Architecture (the core idea)
+## Architecture (two lanes + one gate)
 Every channel feeds raw items into ONE central mattress-relevance filter
-(tools/relevance.py) that gates the pipeline: ACCEPT (write), REVIEW (write +
-"HUMAN: confirm scope" flag), REJECT (drop). Channels are pluggable adapters.
+(tools/relevance.py): ACCEPT -> bids/active/_pipeline.csv, REVIEW -> Lead Radar
+(leads/review/_lead_radar.csv), REJECT -> logs/rejects/. Channels are pluggable
+adapters. Lane 1 = public procurement (SAM API twice-weekly, RSS/Bonfire
+twice-weekly, email alerts daily via Gmail IMAP). Lane 2 = private Demand Radar
+(Google Alerts RSS, kind:"demand" in configs/feeds.json) — pre-RFP construction/
+renovation signals for sales outreach, NOT biddable solicitations; triage is
+manual in next_action/notes. Reliability: per-run failure emails, zero-message
+watchdog, healthchecks.io dead-man's-switch, Monday digest on issue #43.
+Re-bid prep windows: lead_radar.py calendar -> Google Calendar via MCP, state
+ledger leads/review/_calendar_state.json.
 
-## Merged to main (PRs #19, #20)
-- tools/relevance.py — classifier: whole-word/phrase matching; NAICS 337910 / PSC 7210 =
-  strong; six-state geography demotion; require_procurement guard + noise-host filter for
-  web sources. Tests: tests/test_relevance.py.
-- tools/ingest_sam.py — SAM.gov federal API, relevance-gated. Workflow weekly_sam_ingest.yml
-  (needs SAM_API_KEY secret).
-- tools/ingest_email.py — portal commodity-alert emails; backends --provider graph (Outlook/
-  M365, GRAPH_* secrets) and gmail (GMAIL_*); --check, --fixture. Workflow weekly_email_ingest.yml.
-  Setup: docs/email_ingest_setup.md.
-- tools/ingest_rss.py — RSS/Atom (Bonfire /opportunities/rss, Google Alerts w/ redirect-unwrap),
-  relevance-gated. configs/feeds.json (public Bonfire feeds: Harris County, UT Austin, UT Health
-  San Antonio). Workflow weekly_rss_ingest.yml (no secrets). Smoke-tested live 2026-06-17:
-  53 open bids -> 0 mattress -> no PR (correct).
-- validate_vendor_profile.py --schema works in any arg position.
-- Tinker AFB Sources Sought triaged to no-bid (specified Purple brand; Continental doesn't make it).
+## Where state lives (read these, not stale docs)
+- python tools/dashboard.py            — live pipeline + deadlines
+- docs/active_registrations.md         — registration/vendor-number ledger
+- leads/review/_lead_radar.csv         — watch/research signals
+- docs/demand_radar_next_steps.md      — Demand Radar plan (data-gated; don't
+  build cockpit/enrichment before 20-50 real rows exist)
+- GitHub issue #43 (digest) + open automation PRs
 
-## On branch claude/serene-darwin-v8xfbq, NOT yet merged
-- .github/workflows/cleanup_auto_branches.yml — auto-deletes disposable auto/* ingest branches
-  when their PR closes.
-- Removed tools/legacy/ (non-procurement DreamFinder leftovers) + its test; refreshed this HANDOFF.
+## Status snapshot (2026-07-07 — verify against the sources above)
+- SAM.gov: registration SUBMITTED under the corrected LLC name (UEI XF73FG8CVMX1).
+  Awaiting IRS TIN match -> DLA CAGE -> Active (ETA ~07-09..07-21). POC must
+  answer any dla.mil email promptly. Do NOT cite the UEI until Active. When
+  Active: record CAGE in the ledger, unblock pipeline rows, resume Choice
+  Partners/HCDE registration.
+- Pipeline: 2 active rows (JBSA dorm mattresses — Sources Sought answered,
+  watching for RFQ; Army 411th CSB W51LL526QA005 — due 2026-07-10, likely
+  no-bid since SAM won't be Active in time).
+- First WIN: City of Austin Fire/EMS IFB 8300 DCG1033 (confirmed 2026-07-02),
+  awaiting PO/delivery — outreach postponed by operator. Houston HFD bid
+  submitted, award unknown — postponed. LaPAC statewide lost to Grand Bedding;
+  re-bid watch 2027 (prep window on calendar).
+- Email pipe: fixed 07-05/06 (Gmail filter OR-expression + Outlook rule repaired);
+  issue #108 open ~1 week watching organic volume — if still silent, portal
+  alert subscriptions are the next suspect.
 
-## Pipeline state
-0 active rows. Federal (SAM) + state/local-web (RSS/Bonfire) funnels are LIVE, run Mondays, and
-stay silent unless a real mattress bid appears (then a triage PR). ~243 tests pass.
-
-## Open decisions / next steps (priority order)
-1. EMAIL ROUTING (highest mattress hit-rate; unresolved). Alerts live in Outlook
-   (beford@silverlinesleep.com); Azure/Graph admin consent off the table (owner has no privileged
-   tenant role). Options: (a) forward Outlook->Gmail then ingest via --provider gmail or on-demand
-   "pull my alerts" sweeps through the connected Gmail (works now, no OAuth); (b) change the
-   notification email to blake.e.ford@gmail.com on the top ~5 portals.
-2. Add more Bonfire/portal feeds to configs/feeds.json for breadth (need the operator's registered
-   subdomains, e.g. University of Houston, City of Houston).
-3. Open the cleanup PR for the branch items above when asked.
-4. Optional later adapters (all gated by relevance.py): USASpending awards API (free, no key —
-   lead-gen: who already buys mattresses, best path into private); Oklahoma data.ok.gov CKAN
-   "Statewide Contracts & Solicitations" dataset (only in-region state with a real machine feed);
-   Socrata Discovery (big-city open-bid datasets); paid GovSpend API ($8.5k+/yr, SLED, no private);
-   IonWave per-sender email parser (lower priority now the central filter exists).
-
-## Research already done (don't redo)
-No nationwide API for state/local/private open solicitations. SAM=federal API; USASpending=federal
-awards (free). State/local mostly email-only (OK CKAN is the lone in-region machine feed; TX ESBD/
-LA/MS/AR/NM none). Aggregators: only GovSpend self-serve API (paid, no private); DemandStar/BidNet/
-BidPrime/Periscope/Euna = email-only. Bonfire = only e-proc platform with public per-portal RSS.
-Private sector has no central feed (GPO/approved-supplier rosters like Avendra/BirchStreet are how
-it's won). Codes: NAICS 337910 (mattress mfg), PSC 7210 (household furnishings=mattresses/bedding),
-PSC 7105 (furniture/beds).
-
-Start by: git log --oneline -8; git status; python tools/dashboard.py; python -m unittest discover -s tests.
-Then confirm the email-routing decision (#1) with the operator before building further.
+Start by: git log --oneline -10; gh pr list; python tools/dashboard.py;
+then read MEMORY.md / docs/active_registrations.md before acting.
 ```

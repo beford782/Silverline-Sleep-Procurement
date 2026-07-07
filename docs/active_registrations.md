@@ -16,7 +16,7 @@
 
 | Buyer / vehicle | Platform | Status | Account ID | Commodity setup | Notes |
 |---|---|---|---|---|---|
-| **SAM.gov** (all federal contracts) | SAM.gov | 🔴 **WRONG-NAMED WIP — FSD / validation decision needed** | UEI **XF73FG8CVMX1** is tied to a Work-In-Progress record that displays **L.P.** | NAICS 337910/337127; PSC 7210/7105 | **VERIFIED 2026-06-28:** SAM displays `CONTINENTAL SILVERLINE PRODUCTS, L.P.`; status Work-In-Progress; no CAGE; no banking entered. Do **NOT** complete EFT/banking and do **NOT** cite this UEI. Next action: use [`sam_fsd_entity_correction_ticket.md`](sam_fsd_entity_correction_ticket.md) or one self-service LLC validation attempt to determine whether the name can be corrected vs. a fresh UEI is required. Saved-search alerts stay on. Runbook: [`sam_uei_unblock_runbook.md`](sam_uei_unblock_runbook.md) |
+| **SAM.gov** (all federal contracts) | SAM.gov | 🟡 **SUBMITTED — awaiting IRS TIN + DLA CAGE validation** | UEI **XF73FG8CVMX1**, record name **Continental Silverline Products, LLC** (corrected) | NAICS 337910 (primary, Small Business Y); PSC 7210/7105 (US-made); Disaster Response Registry opted in | **2026-07-07: registration SUBMITTED under the corrected LLC name.** GSA approved the L.P.→LLC entity-validation correction (INC-GSAFSD21285074) the same morning; operator re-validated, all sections completed (incl. taxpayer + banking, operator-entered), submitted. Next: IRS TIN/name match (~2 business days) → DLA CAGE assignment (2–10 business days) → **Active** (email at each step; ETA ~2026-07-09 to ~2026-07-21). ⚠️ Government Business POC must answer any email from a **dla.mil** address promptly or the registration bounces back to WIP. Do **NOT** cite the UEI on bids until status = Active. |
 
 ## Texas — state & home market
 
@@ -35,7 +35,7 @@
 | **Region 4 ESC / OMNIA** | IonWave | ✅ confirmed (2026-06-22) | — | mattress, bedding, beds, bed frame, dorm | Gateway to OMNIA (mattress category proven) |
 | **E&I Cooperative Services** | JAGGAER | ✅ complete (2026-06-22) | — | mattress, bedding, furniture, dorm/residence hall | Higher-ed; University Sleep Products mattress contract |
 | **Sourcewell** | Sourcewell Procurement Portal | ✅ confirmed (2026-06-24) | — | furniture/dorm | Monitor 2027 furniture re-bid |
-| **Choice Partners / HCDE** | IonWave | 🟡 deferred | — | FF&E, dorm furniture | Was UEI-gated; do **not** use UEI `XF73FG8CVMX1` while SAM is wrong-named. Proceed as the LLC only if the UEI field can stay blank/optional; otherwise pause until SAM/FSD clarifies a valid LLC UEI. |
+| **Choice Partners / HCDE** | IonWave | 🟡 deferred — resume when SAM Active | — | FF&E, dorm furniture | Was UEI-gated; the L.P. issue is resolved (SAM record corrected to LLC, registration submitted 2026-07-07). Register once SAM status = Active and cite UEI `XF73FG8CVMX1` then. |
 | **BuyBoard** (TASB) | IonWave | ⬜ target | — | NIGP 205/420 | Contract #767 names dormitory furniture; register to be positioned |
 | **HGACBuy** | — | ⛔ skip | — | — | No furniture/mattress category exists |
 
@@ -79,8 +79,8 @@
 - **Keep it current:** when a new registration completes (or a portal issues a vendor number), update the matching row here **and** the source's Lead Radar note so the two stay in sync.
 
 ### Open registration tasks (next up)
-1. **Resolve SAM.gov for the LLC.** The current WIP record displays the wrong nonexistent L.P. name under UEI `XF73FG8CVMX1` — **do NOT complete EFT/banking on it** and **do NOT cite the UEI**. Use the FSD ticket draft or one self-service LLC Entity Validation attempt to determine whether this UEI can be corrected or a fresh LLC UEI is required. Saved-search alerts (NAICS 337910 / PSC 7210 / mattress) stay enabled.
-2. **Keep Choice Partners / HCDE deferred** if the portal requires a SAM UEI; proceed as the LLC only if the UEI field can stay blank/optional.
+1. **Watch SAM.gov validation emails.** ~~Resolve SAM.gov for the LLC~~ ✅ **SUBMITTED 2026-07-07** under the corrected LLC name. Remaining: IRS TIN match → DLA CAGE → Active (ETA ~07-09 to ~07-21). Government Business POC must reply promptly to any **dla.mil** email or the registration returns to WIP. When Active: record the CAGE code here, then unblock the 4 gated pipeline rows.
+2. **Choice Partners / HCDE — resume once SAM is Active** (the UEI becomes citable then). Was deferred on the wrong-named-UEI risk, which is now resolved.
 3. **BuyBoard** vendor application (position for contract #767, dormitory furniture).
 4. ~~**New Mexico** — Euna/Bonfire NM-SPD registration~~ ✅ **verified 2026-06-28**. Euna/NM-SPD already shows LLC; no L.P. correction is needed.
 5. **Fix the legal entity everywhere** (L.P. → LLC) per [`research/entity_correction_plan_2026-06-27.md`](research/entity_correction_plan_2026-06-27.md): repo done; online portals are the operator checklist (SAM first).

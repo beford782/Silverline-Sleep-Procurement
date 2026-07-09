@@ -64,6 +64,19 @@ When you change `vendor-profiles/vendor_profile.schema.json`:
   `.editorconfig`).
 - Filenames: kebab-case or snake_case, no spaces, lowercase.
 
+## Pre-commit gate — one command
+
+Run the whole local audit gate (byte-compile, JSON parse, tests, vendor-profile
+validation, workflow drift check, machine-path leak scan, diff-scoped PII lint
+— the same checks CI runs) with:
+
+```sh
+python tools/qa_check.py
+```
+
+Add `--fail-on-warnings` to make workflow-check warnings fatal too. Run it
+before every commit; a clean `qa_check: OK` means CI will pass.
+
 ## Pull requests
 
 - Keep PRs focused. Restructuring is fine in one PR; mixing

@@ -1,6 +1,6 @@
 {
   "_comment": {
-    "sam_active": "SAM.gov registration Active (federal eligibility). Currently false: UEI is on a wrong-named WIP record; do not cite. Gates all federal/SAM buys (see win_score.py + readiness.py).",
+    "sam_active": "SAM.gov registration Active (federal eligibility). Currently false: registration SUBMITTED 2026-07-07 under the corrected LLC name, awaiting DLA CAGE assignment; flip to true when SAM status = Active. Gates all federal/SAM buys (see win_score.py + readiness.py).",
     "cfr_1633": "Can certify finished mattresses to 16 CFR Part 1633 open-flame flammability (required for institutional/correctional specs).",
     "cal_tb_117": "Can meet California Technical Bulletin 117 (TB 117) flammability where specified.",
     "fr_fluid_proof_covers": "Can supply fire-retardant / fluid-proof mattress covers (correctional / med-surg requirement).",

@@ -87,6 +87,12 @@ or matching a row's `source` back to its pilot/geo):
 Keep the `Demand Radar: ` prefix and `Pilot A/B/C` slug exactly (the digest groups on them). Existing
 procurement feeds need no change (absent `kind` defaults to `procurement`).
 
+> ⚠️ **Never rename a feed's `source` after rows exist** (applies to ALL feeds, procurement
+> included). The `source` string is slugified into derived `opportunity_id`/`lead_id` values and
+> into the `sol:{source}:{soln}` dedup key — renaming it changes future ids, so previously-ingested
+> items re-enter as "new" duplicates. To rebrand a feed, retire the old entry and add a new one, or
+> accept the one-time dedup break knowingly.
+
 ### PILOT C — Shelters / Workforce / Crew Housing  — **HOLD until the first batch is reviewed**
 *Likely the most directly actionable (least brand/GPO lock-in, fast 1–9 mo cycles), but add it after Pilot A/B
 prove out. When you do, start with ONE statewide-Texas alert (these items are sparse + the broad terms are

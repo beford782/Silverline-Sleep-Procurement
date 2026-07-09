@@ -30,7 +30,7 @@
 | **Texas SOS File Number** | **0802357166** (public) |
 | **Registered agent** | **C T Corporation System**, 1999 Bryan St, Ste 900, Dallas, TX 75201 (public) |
 | **Status** | Active (Right to Transact Business in TX: Active) |
-| **SAM.gov UEI** | **NONE valid for bids yet.** UEI `XF73FG8CVMX1` is attached to a SAM Work-In-Progress record that displays the wrong nonexistent L.P. name. Do **not** cite it on bids or complete SAM banking until the FSD / Entity Validation path resolves whether it can be corrected to the LLC or must be superseded. |
+| **SAM.gov UEI** | **`XF73FG8CVMX1` — not citable on bids until status = Active.** The L.P. name problem is RESOLVED: GSA corrected the entity record to the LLC (2026-07-07) and the full registration was **submitted the same day** under "Continental Silverline Products, LLC". IRS TIN match passed; DLA CAGE review answered 2026-07-09; awaiting CAGE assignment → Active. Live status: [`active_registrations.md`](active_registrations.md). |
 | **DUNS** | Deprecated by the federal government (2022) - leave blank; the UEI replaces it. |
 | **Primary NAICS** | **337910** - Mattress Manufacturing |
 | **Secondary NAICS** | **337127** - Institutional (Public Building) Furniture Manufacturing |

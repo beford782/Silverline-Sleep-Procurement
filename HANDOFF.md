@@ -23,7 +23,9 @@ Trunk: main (work on claude/* branches, PR to merge; auto-ingest uses auto/*).
   machine paths. Legal entity is the LLC — never "L.P." (dissolved 2015 predecessor).
 - All outbound business email goes from silverlinesleep.com — keep outreach as
   markdown drafts in docs/drafts/; never stage/send via Gmail.
-- Audit gate before every commit:
+- Audit gate before every commit — one command runs it all:
+    python tools/qa_check.py
+  (equivalent to the individual checks below)
     python -m unittest discover -s tests        (475 pass as of 2026-07-07)
     python -m compileall -q tools tests
     python -m json.tool on every committed JSON

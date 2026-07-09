@@ -124,7 +124,7 @@ through `relevance.py` and route by decision band:
 
 | Relevance band | Destination | Notes |
 | --- | --- | --- |
-| `ACCEPT` | `bids/active/_pipeline.csv` | Clear mattress / product-fit signal. |
+| `ACCEPT` | `bids/active/_pipeline.csv` | Clear mattress / product-fit signal. In scheduled ingests this lands via an `auto/*` PR that a **human must merge** — nothing reaches `main` automatically. |
 | `REVIEW` | `leads/review/_lead_radar.csv` | Broad / ambiguous upstream signal — **default route**. |
 | `REJECT` | *(dropped)* | Never enters the active pipeline **or** Lead Radar. |
 

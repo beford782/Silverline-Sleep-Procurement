@@ -119,4 +119,7 @@ beford@silverlinesleep.com
 - [ ] After sending: note the date sent below and update
       `docs/active_registrations.md` (or ask Claude to).
 
-**Sent:** _[date/time]_
+**Sent:** ✅ 2026-07-09 (operator-confirmed), in-thread reply from silverlinesleep.com with
+subject retained. Attachments: Certificate of Formation + Certificate of Merger + Comptroller
+LLC ACTIVE status screenshot (on-page timestamp 2026-07-09 07:39:55). Well inside the
+3-business-day window. Awaiting CAGE assignment → SAM Active.

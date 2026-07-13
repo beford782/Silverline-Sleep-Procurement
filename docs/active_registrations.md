@@ -1,7 +1,7 @@
 # Active Registrations Ledger — Continental Silverline Products, LLC
 
 - **For:** Blake / Continental Silverline Products, LLC (Houston, TX)
-- **Last updated:** 2026-06-28
+- **Last updated:** 2026-07-13
 - **Purpose:** Single source of truth for **where we are registered to bid**, so any new pursuit can pull the right portal, login, and commodity setup at a glance. Consolidates registration status previously scattered across `leads/review/_lead_radar.csv` notes and `vendor-profiles/`.
 
 > **Notification mailbox:** all portals point to the business mailbox **beford@silverlinesleep.com**, which forwards into the ingest funnel (Power Automate → `ingest_email.py` → `relevance.py` → pipeline/Lead Radar). See [`email_ingest_setup.md`](email_ingest_setup.md).
@@ -70,6 +70,7 @@
 | **University of Oklahoma** | JAGGAER (OUHSC) | ✅ complete (2026-06-24) | — | mattress/dorm/residence hall | Norman housing base |
 | **Oklahoma State University** | JAGGAER (OSU) | ✅ complete (2026-06-24) | — | mattress/dorm/residence hall | Stillwater residential system |
 | **Louisiana State University** | LaPAC (dept enrollment) | ✅ via LaPAC | — | dorm/student-housing FF&E | LSU posts via LaPAC; enrolled suppliers get notices |
+| **UT Austin** | UT Austin Vendor Portal (Procurement Services) + ESBD agency code **721** | ⬜ target — VMO intro meeting done | — | mattress/dorm/residence hall; UHD (Housing & Dining) | VMO intro meeting held; follow-up email 2026-07-13 with portal/resource list. Register on the vendor portal, add ESBD agency-721 saved search (ESBD already ✅). UHD = housing buyer; minor projects <$10M post via Planning, Design & Construction. HBP 7.5.2 D1 lets UT buy from existing contracts → E&I / TIPS / Region 4-OMNIA are alternate routes. Category mgr contact (Med/Lab/Nat Sci): Michelle Bernal. Lead Radar: `ut-austin-vendor-portal-uhd-watch` |
 
 ---
 
@@ -82,6 +83,7 @@
 1. **Watch SAM.gov validation emails.** ~~Resolve SAM.gov for the LLC~~ ✅ **SUBMITTED 2026-07-07** under the corrected LLC name. Remaining: IRS TIN match → DLA CAGE → Active (ETA ~07-09 to ~07-21). Government Business POC must reply promptly to any **dla.mil** email or the registration returns to WIP. When Active: record the CAGE code here, then unblock the 4 gated pipeline rows.
 2. **Choice Partners / HCDE — resume once SAM is Active** (the UEI becomes citable then). Was deferred on the wrong-named-UEI risk, which is now resolved.
 3. **BuyBoard** vendor application (position for contract #767, dormitory furniture).
+3a. **UT Austin vendor portal** — register (VMO follow-up received 2026-07-13) and add an ESBD saved search for agency code **721**; then identify the UHD/housing FF&E buyer (only the Med/Lab category manager contact is in hand).
 4. ~~**New Mexico** — Euna/Bonfire NM-SPD registration~~ ✅ **verified 2026-06-28**. Euna/NM-SPD already shows LLC; no L.P. correction is needed.
 5. **Fix the legal entity everywhere** (L.P. → LLC) per [`research/entity_correction_plan_2026-06-27.md`](research/entity_correction_plan_2026-06-27.md): repo done; online portals are the operator checklist (SAM first).
 

@@ -4,7 +4,7 @@ _Draft generated 2026-07-14 from `vendor-profiles/continental_silverline.profile
 
 | Field | Value |
 | --- | --- |
-| Status | drafting |
+| Status | no-bid |
 | Buyer | DEPT OF DEFENSE DEPT OF THE NAVY NAVSUP NAVSUP GLOBAL LOGISTICS SUPPORT NAVSUP FLC NORFOLK NAVSUP FLT LOG CTR NORFOLK |
 | Solicitation # | N0018926QL265 |
 | Portal | SAM.gov |
@@ -116,9 +116,10 @@ assignment pending (ETA ~07-21). Prep the quote now; **submit only if SAM flips 
 
 ## 7. Decision
 
-- **Suggested:** bid — **conditional on SAM Active by 2026-07-20 and spec confirmation (Q1 above)**
-- **Reason:** Exact NAICS 337910 small-business set-aside, 100-unit fixed-price supply buy,
-  recurring requirement (last bought 2022), email-quote submission = low bid cost. Only gates are
-  SAM activation timing and MIL-spec core/fire-cert capability.
-- **Next action:** Blake — confirm MIL-spec capability + rough unit price; watch SAM status daily;
-  if Active by 07-19, finalize and email quote — due **2026-07-20 14:00 ET**.
+- **FINAL: NO-BID** (operator decision, Blake, 2026-07-14)
+- **Reason:** Out of region (Annapolis MD — freight from Houston) combined with low volume
+  (100 units; 2022 award anchor ≈ $62k total to incumbent Chestnut Ridge Foam). The core is
+  specialty MIL-PRF-20092M Ty II Cl 5 cellular rubber — new sourcing we don't have, against a
+  vertically integrated FR-foam incumbent. Margin doesn't support the setup cost. SAM-activation
+  timing (Active gate vs 07-20 deadline) was a secondary risk but not the deciding factor.
+- **Re-compete:** NOT tracking — declined on fit (geography + volume), which won't change.

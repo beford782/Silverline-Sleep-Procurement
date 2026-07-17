@@ -1,7 +1,7 @@
 # Active Registrations Ledger — Continental Silverline Products, LLC
 
 - **For:** Blake / Continental Silverline Products, LLC (Houston, TX)
-- **Last updated:** 2026-07-13
+- **Last updated:** 2026-07-17
 - **Purpose:** Single source of truth for **where we are registered to bid**, so any new pursuit can pull the right portal, login, and commodity setup at a glance. Consolidates registration status previously scattered across `leads/review/_lead_radar.csv` notes and `vendor-profiles/`.
 
 > **Notification mailbox:** all portals point to the business mailbox **beford@silverlinesleep.com**, which forwards into the ingest funnel (Power Automate → `ingest_email.py` → `relevance.py` → pipeline/Lead Radar). See [`email_ingest_setup.md`](email_ingest_setup.md).
@@ -16,7 +16,7 @@
 
 | Buyer / vehicle | Platform | Status | Account ID | Commodity setup | Notes |
 |---|---|---|---|---|---|
-| **SAM.gov** (all federal contracts) | SAM.gov | 🟡 **SUBMITTED — awaiting IRS TIN + DLA CAGE validation** | UEI **XF73FG8CVMX1**, record name **Continental Silverline Products, LLC** (corrected) | NAICS 337910 (primary, Small Business Y); PSC 7210/7105 (US-made); Disaster Response Registry opted in | **2026-07-07: registration SUBMITTED under the corrected LLC name.** GSA approved the L.P.→LLC entity-validation correction (INC-GSAFSD21285074) the same morning; operator re-validated, all sections completed (incl. taxpayer + banking, operator-entered), submitted. IRS TIN match passed; **2026-07-09: DLA CAGE review letter received AND answered same day** — response sent in-thread with Formation cert + Merger cert + same-day Comptroller ACTIVE-status screenshot (details in [`drafts/dla_cage_response_XF73FG8CVMX1_2026-07-09.md`](drafts/dla_cage_response_XF73FG8CVMX1_2026-07-09.md); explained legacy CAGE 19865 = same business pre-merger, no open federal contracts under prior names). Then CAGE assignment → **Active**. Do **NOT** cite the UEI on bids until status = Active. |
+| **SAM.gov** (all federal contracts) | SAM.gov | ✅ **ACTIVE (2026-07-17)** | UEI **XF73FG8CVMX1**, record name **Continental Silverline Products, LLC** (corrected); CAGE **[record code here — from the SAM activation notice]** | NAICS 337910 (primary, Small Business Y); PSC 7210/7105 (US-made); Disaster Response Registry opted in | **2026-07-17: registration ACTIVE — UEI is now citable on federal bids.** History: 2026-07-07 registration SUBMITTED under the corrected LLC name. GSA approved the L.P.→LLC entity-validation correction (INC-GSAFSD21285074) the same morning; operator re-validated, all sections completed (incl. taxpayer + banking, operator-entered), submitted. IRS TIN match passed; **2026-07-09: DLA CAGE review letter received AND answered same day** — response sent in-thread with Formation cert + Merger cert + same-day Comptroller ACTIVE-status screenshot (details in [`drafts/dla_cage_response_XF73FG8CVMX1_2026-07-09.md`](drafts/dla_cage_response_XF73FG8CVMX1_2026-07-09.md); explained legacy CAGE 19865 = same business pre-merger, no open federal contracts under prior names). Then CAGE assignment → **Active**. Do **NOT** cite the UEI on bids until status = Active. |
 
 ## Texas — state & home market
 
@@ -35,7 +35,7 @@
 | **Region 4 ESC / OMNIA** | IonWave | ✅ confirmed (2026-06-22) | — | mattress, bedding, beds, bed frame, dorm | Gateway to OMNIA (mattress category proven) |
 | **E&I Cooperative Services** | JAGGAER | ✅ complete (2026-06-22) | — | mattress, bedding, furniture, dorm/residence hall | Higher-ed; University Sleep Products mattress contract |
 | **Sourcewell** | Sourcewell Procurement Portal | ✅ confirmed (2026-06-24) | — | furniture/dorm | Monitor 2027 furniture re-bid |
-| **Choice Partners / HCDE** | IonWave | 🟡 deferred — resume when SAM Active | — | FF&E, dorm furniture | Was UEI-gated; the L.P. issue is resolved (SAM record corrected to LLC, registration submitted 2026-07-07). Register once SAM status = Active and cite UEI `XF73FG8CVMX1` then. |
+| **Choice Partners / HCDE** | IonWave | 🟡 **UNBLOCKED — register now** (SAM Active 2026-07-17) | — | FF&E, dorm furniture | Was UEI-gated; gate cleared 2026-07-17 (SAM Active under the LLC). Register on IonWave and cite UEI `XF73FG8CVMX1`. |
 | **BuyBoard** (TASB) | IonWave | ⬜ target | — | NIGP 205/420 | Contract #767 names dormitory furniture; register to be positioned |
 | **HGACBuy** | — | ⛔ skip | — | — | No furniture/mattress category exists |
 
@@ -80,8 +80,8 @@
 - **Keep it current:** when a new registration completes (or a portal issues a vendor number), update the matching row here **and** the source's Lead Radar note so the two stay in sync.
 
 ### Open registration tasks (next up)
-1. **Watch SAM.gov validation emails.** ~~Resolve SAM.gov for the LLC~~ ✅ **SUBMITTED 2026-07-07** under the corrected LLC name. Remaining: IRS TIN match → DLA CAGE → Active (ETA ~07-09 to ~07-21). Government Business POC must reply promptly to any **dla.mil** email or the registration returns to WIP. When Active: record the CAGE code here, then unblock the 4 gated pipeline rows.
-2. **Choice Partners / HCDE — resume once SAM is Active** (the UEI becomes citable then). Was deferred on the wrong-named-UEI risk, which is now resolved.
+1. ~~Watch SAM.gov validation emails~~ ✅ **ACTIVE 2026-07-17.** Registration complete under the LLC; UEI `XF73FG8CVMX1` is citable on bids. Remaining housekeeping: **record the CAGE code in the Federal table above** (from the activation notice in the silverlinesleep.com inbox). Pipeline unblocked same day (JBSA row + recurring federal channels).
+2. **Choice Partners / HCDE — register now** (unblocked 2026-07-17; cite the UEI).
 3. **BuyBoard** vendor application (position for contract #767, dormitory furniture).
 3a. **UT Austin vendor portal** — register (VMO follow-up received 2026-07-13) and add an ESBD saved search for agency code **721**; then identify the UHD/housing FF&E buyer (only the Med/Lab category manager contact is in hand).
 4. ~~**New Mexico** — Euna/Bonfire NM-SPD registration~~ ✅ **verified 2026-06-28**. Euna/NM-SPD already shows LLC; no L.P. correction is needed.

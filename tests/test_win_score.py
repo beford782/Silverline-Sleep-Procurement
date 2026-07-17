@@ -78,13 +78,18 @@ class WinProbabilityTests(unittest.TestCase):
         self.assertLess(wp, 0.06)
         self.assertGreater(wp, 0.0)
 
-    def test_sam_federal_blocked_is_zero(self) -> None:
-        # capabilities.json ships sam_active=false, so a federal/SAM buy -> 0.
-        self.assertFalse(win_score.sam_active())
-        wp = win_score.win_probability(
-            row(title="Bed mattress", source="SAM.gov", buyer="Dept of Defense Army"),
-            TODAY)
-        self.assertEqual(wp, 0.0)
+    def test_sam_federal_gate(self) -> None:
+        # SAM not Active zeroes a federal/SAM buy; Active does not. The shipped
+        # config went Active 2026-07-17, so pin the cache to test both sides.
+        fed = row(title="Bed mattress", source="SAM.gov", buyer="Dept of Defense Army")
+        old = win_score._SAM_ACTIVE_CACHE
+        try:
+            win_score._SAM_ACTIVE_CACHE = False
+            self.assertEqual(win_score.win_probability(fed, TODAY), 0.0)
+            win_score._SAM_ACTIVE_CACHE = True
+            self.assertGreater(win_score.win_probability(fed, TODAY), 0.0)
+        finally:
+            win_score._SAM_ACTIVE_CACHE = old
 
     def test_past_due_sinks(self) -> None:
         wp = win_score.win_probability(

@@ -92,7 +92,8 @@ class RequirementsAndBlockersTests(unittest.TestCase):
 class LoadCapabilitiesTests(unittest.TestCase):
     def test_loads_real_file(self) -> None:
         caps = readiness.load_capabilities()
-        self.assertFalse(caps["sam_active"])
+        # SAM registration Active since 2026-07-17.
+        self.assertTrue(caps["sam_active"])
         self.assertTrue(caps["cfr_1633"])
         self.assertIn("Restonic", caps["brand_authorizations"])
 
@@ -230,7 +231,11 @@ class CliTests(unittest.TestCase):
         rc, out = self._run("annotate", "--active", str(active), "--today", "2026-06-28")
         self.assertEqual(rc, 0, out)
         _, rows = pipeline.read_rows(active)
-        self.assertEqual(rows[0]["compliance_blocker"], "SAM not Active")
+        # Real capabilities have sam_active=true (2026-07-17), so the federal
+        # row is not blocked; the write is proven by the stamped gate columns.
+        self.assertEqual(rows[0]["gate_status"], "bid_ready")
+        self.assertEqual(rows[0]["compliance_blocker"], "")
+        self.assertEqual(rows[0]["last_reviewed"], "2026-06-28")
 
 
 if __name__ == "__main__":

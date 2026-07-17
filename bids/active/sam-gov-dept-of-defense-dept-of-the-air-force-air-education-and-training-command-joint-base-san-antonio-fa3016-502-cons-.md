@@ -29,12 +29,13 @@ and **submitted by the operator 2026-07-02** — no UEI cited (RFI ≠ bid).
   buyer's replies to the Sources Sought response.
 - When it posts: set `due_date`, re-run scoring, and make the bid/no-bid
   call. In-region + direct dorm-mattress product fit = presumptive **bid**,
-  provided the SAM registration is **Active** by then (submitted 2026-07-07;
-  CAGE pending as of 2026-07-09 — see
+  and the SAM registration went **Active 2026-07-17** — no registration gate
+  remains (see
   [`docs/active_registrations.md`](../../docs/active_registrations.md)).
 
 ## 3. Gate status
 
-`sam_registration_pending` is the only blocker; specs pending until the RFQ
-publishes. No other eligibility blockers identified (CONUS, dock delivery,
-no installation component expected for a mattress buy).
+**SAM registration ACTIVE as of 2026-07-17** — `sam_registration_pending`
+cleared. Remaining: `specs_pending` until the RFQ publishes. No other
+eligibility blockers identified (CONUS, dock delivery, no installation
+component expected for a mattress buy).

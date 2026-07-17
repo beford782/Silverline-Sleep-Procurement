@@ -1,6 +1,6 @@
 {
   "_comment": {
-    "sam_active": "SAM.gov registration Active (federal eligibility). Currently false: registration SUBMITTED 2026-07-07 under the corrected LLC name, awaiting DLA CAGE assignment; flip to true when SAM status = Active. Gates all federal/SAM buys (see win_score.py + readiness.py).",
+    "sam_active": "SAM.gov registration Active (federal eligibility). TRUE since 2026-07-17: registration Active under Continental Silverline Products, LLC (UEI XF73FG8CVMX1). Gates all federal/SAM buys (see win_score.py + readiness.py).",
     "cfr_1633": "Can certify finished mattresses to 16 CFR Part 1633 open-flame flammability (required for institutional/correctional specs).",
     "cal_tb_117": "Can meet California Technical Bulletin 117 (TB 117) flammability where specified.",
     "fr_fluid_proof_covers": "Can supply fire-retardant / fluid-proof mattress covers (correctional / med-surg requirement).",
@@ -8,7 +8,7 @@
     "bonding": "Can post payment/performance bonds when a solicitation requires bonding. Currently false.",
     "brand_authorizations": "Brands we are authorized to supply against a brand-name/sole-source spec. A spec naming a brand NOT in this list is an eligibility blocker."
   },
-  "sam_active": false,
+  "sam_active": true,
   "cfr_1633": true,
   "cal_tb_117": true,
   "fr_fluid_proof_covers": true,

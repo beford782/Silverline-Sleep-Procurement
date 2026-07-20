@@ -23,6 +23,7 @@ if str(TOOLS) not in sys.path:
 import ingest_sam  # noqa: E402
 import pipeline  # noqa: E402
 import lead_radar  # noqa: E402
+import win_score  # noqa: E402
 
 
 def _read_csv(path: Path) -> list[dict]:
@@ -37,7 +38,8 @@ class RecordMappingTests(unittest.TestCase):
         self.records = self.payload["opportunitiesData"]
 
     def test_record_to_row_maps_documented_fields(self) -> None:
-        row = ingest_sam.record_to_row(self.records[0], today="2026-05-14")
+        with mock.patch.object(win_score, "_SAM_ACTIVE_CACHE", False):
+            row = ingest_sam.record_to_row(self.records[0], today="2026-05-14")
         self.assertEqual(row["source"], "SAM.gov")
         self.assertEqual(row["solicitation_number"], "15B30025R00000001")
         self.assertEqual(row["title"], self.records[0]["title"])
@@ -65,6 +67,15 @@ class RecordMappingTests(unittest.TestCase):
         # No PII fields leaked into the row.
         for k, v in row.items():
             self.assertNotIn("@", v, f"unexpected email-like content in {k!r}: {v!r}")
+
+    def test_record_to_row_omits_sam_gate_when_sam_active(self) -> None:
+        # With SAM registration Active (configs/capabilities.json sam_active),
+        # new rows must not be stamped with the stale sam_registration_pending.
+        with mock.patch.object(win_score, "_SAM_ACTIVE_CACHE", True):
+            row = ingest_sam.record_to_row(self.records[0], today="2026-05-14")
+        self.assertEqual(row["compliance_blocker"], "specs_pending")
+        self.assertEqual(row["procurement_risk"], "blocker")
+        self.assertEqual(row["gate_status"], "blocked")
 
     def test_record_to_row_handles_missing_optional_fields(self) -> None:
         sparse = {

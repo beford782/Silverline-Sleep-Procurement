@@ -70,6 +70,7 @@ from pipeline import (  # noqa: E402
 )
 import relevance  # noqa: E402
 import lead_radar  # noqa: E402
+import win_score  # noqa: E402
 
 
 SAM_SEARCH_URL = "https://api.sam.gov/opportunities/v2/search"
@@ -278,6 +279,17 @@ def _normalize_posted_date(value: str) -> str:
         return value[:10] if len(value) >= 10 else value
 
 
+def _initial_blockers() -> str:
+    """Blockers stamped on a freshly ingested row. Every new row starts gated on
+    unread specs; the SAM registration gate applies only while
+    configs/capabilities.json says sam_active is false (win_score.sam_active)."""
+    blockers = []
+    if not win_score.sam_active():
+        blockers.append("sam_registration_pending")
+    blockers.append("specs_pending")
+    return "; ".join(blockers)
+
+
 def record_to_row(record: dict, today: str) -> dict:
     """Map a SAM.gov opportunity record onto a pipeline CSV row dict."""
     solicitation_number = (record.get("solicitationNumber") or "").strip()
@@ -311,7 +323,7 @@ def record_to_row(record: dict, today: str) -> dict:
         "notes": (record.get("type") or "").strip(),
         "procurement_risk": "blocker",
         "gate_status": "blocked",
-        "compliance_blocker": "sam_registration_pending; specs_pending",
+        "compliance_blocker": _initial_blockers(),
     })
     return row
 

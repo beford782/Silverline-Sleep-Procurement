@@ -39,3 +39,11 @@ and **submitted by the operator 2026-07-02** — no UEI cited (RFI ≠ bid).
 cleared. Remaining: `specs_pending` until the RFQ publishes. No other
 eligibility blockers identified (CONUS, dock delivery, no installation
 component expected for a mattress buy).
+
+## 4. Inspection log
+
+- 2026-07-23: Checked SAM/public web results for `F2M3CH6099A001`,
+  `JBSA Tech Training Dorm Mattresses`, and Building 6578 references. Found
+  only the original Sources Sought and third-party mirrors; no follow-on
+  RFQ/solicitation found yet. Keep watching SAM and email replies from
+  FA3016 502 CONS.

@@ -26,56 +26,104 @@ Texas-based institutional mattress manufacturer · NAICS 337910
 
 ---
 
-## 1. JBSA Lackland — Tech Training Dorm Mattresses (RFQ timeline)  (✅ UNBLOCKED — ready to send)
+## 1. JBSA Lackland — Tech Training Dorm Mattresses (RFQ timeline)  (✅ SENT-READY — clipboard 2026-08-03)
 
 - **To:** Tristan Torres (CS, A1C) — `tristan.torres@us.af.mil`
 - **Cc:** N. Marie Phillips (Contracting Officer) — `norena.phillips@us.af.mil`
 - **Ref:** Sources Sought **F2M3CH6099A001** — JBSA Tech Training Dorm Mattresses, Bldg 6578
-- **Our history:** questionnaire submitted **2026-07-02** (answered as small-business **manufacturer**,
-  Open Market). Requirement as described: **1,258 Twin XL** blue nylon innerspring, inverted sealed seam,
-  bed-bug-proof, 16 CFR 1633, plus delivery/install and one-for-one removal & disposal. NAICS 337910,
-  PSC 7210, small-business FFP.
-- **Status check before sending:** as of the 2026-07-23 inspection, no follow-on RFQ had posted. Re-check
-  SAM for F2M3CH6099A001 first — if the RFQ **has** posted, don't send this; switch to bidding it.
-- **Why now:** we responded to market research a month ago and our eligibility position has materially
-  changed since (SAM Active). That is a legitimate, non-pestering reason to make contact.
+- **Send as a REPLY in the existing thread** (subject "re: Sources Sought Notice – JBSA Tech Training Dorm
+  Mattresses Building 6578") so the history carries.
 
-**Subject:** Continental Silverline Products, LLC — F2M3CH6099A001 (JBSA Dorm Mattresses) follow-up
+### ⚠️ Real thread history — corrected 2026-08-03 (operator supplied the actual emails)
 
-> Ms. Phillips / A1C Torres,
+The first version of this draft assumed the 07-02 questionnaire was our only touch. **Wrong.** Blake had
+already emailed these POCs directly:
+
+1. **2026-06-27 12:11 PM** — intro email from Blake: introduced CSP as a Houston mattress factory, asked
+   permission to bid, and **asked one open spec question: how tall (thick) the mattress should be**
+   ("I see the other size information"). No recorded answer.
+2. **2026-07-02** — Sources Sought questionnaire submitted (small-business **manufacturer**, Open Market).
+3. **Undated, after the above** — a second short follow-up: *"just wanted to follow up to make sure y'all
+   did not need any other information from me."* Also no recorded answer.
+
+**Implication that shaped this email:** this is the **third or fourth touch** and the previous two went
+quiet. A generic "checking in" would read as pestering and would likely be ignored again. The email must
+carry a **new, material fact** — which it now does: SAM Active + UEI + CAGE, which retires the one
+qualifier that was on the July 2 submission. That is the entire reason to write.
+
+**Tone note:** Blake's own voice with these POCs is warm and direct ("happy Saturday", "y'all"). The
+earlier formal draft was stiffer than his established register mid-thread. The version below matches him.
+
+### Verified on SAM 2026-08-03 (signed-in session)
+
+- Notice **Inactive** since **Jul 17, 2026** (automatic — "15 days after response date").
+- **Version: Current Record 2026-06-26 14:58:46** — never amended.
+- **Related Notice: (blank)** — no follow-on RFQ linked. Body still reads "There is no solicitation or
+  funding currently available."
+- Notice says **"projected to be a small business set-aside"**; Original Set Aside = Total Small Business
+  (FAR 19.5) → hence the "still tracking as a set-aside?" phrasing.
+- **NAICS 337910 size standard = 1,000 employees.** CSP at 80 is comfortably inside it.
+- POCs confirmed current: Torres (831-889-2611), Phillips. Office: 1655 Selfridge Ave Bldg 5450, JBSA
+  Lackland TX 78236-5286.
+- ⚠️ **Residual gap:** SAM's keyword search would not execute in that session (four approaches tried), so
+  a follow-on posted under a *different* notice number is not ruled out. Low risk (Related Notice blank +
+  we are a known respondent), not zero.
+
+### Email as sent to clipboard 2026-08-03
+
+> Good afternoon Ms. Phillips and A1C Torres,
 >
-> Continental Silverline Products, LLC responded to the Sources Sought questionnaire for
-> **F2M3CH6099A001**, JBSA Tech Training Dorm Mattresses (Bldg 6578), on 2 July 2026. I'm writing with a
-> brief status update and one question.
+> Following up on the JBSA Tech Training Dorm Mattresses requirement (Bldg 6578) with an update that
+> clears the one open item from our Sources Sought response.
 >
-> Since our response, our SAM.gov registration has been completed and is **Active**. Our **UEI is
-> XF73FG8CVMX1** and our **CAGE code is 22NH3**, registered as Continental Silverline Products, LLC, a
-> small business under **NAICS 337910**. Any eligibility qualification in our earlier submission no longer
-> applies — we are fully registered and able to receive a federal award.
+> Continental Silverline Products, LLC is now fully registered and Active in SAM.gov:
 >
-> We remain a strong fit for this requirement. We are a Texas mattress manufacturer located roughly
-> [drive time] from Lackland, we build institutional dormitory innerspring mattresses to the construction
-> described in the questionnaire, and we certify finished mattresses to **16 CFR Part 1633**. Manufacturing
-> in-region also means we can support the delivery, installation, and one-for-one removal and disposal
-> scope without subcontracting the logistics out of state.
+>     UEI:   XF73FG8CVMX1
+>     CAGE:  22NH3
+>     NAICS: 337910 - Mattress Manufacturing (small business)
 >
-> My question: **can you share the anticipated timeline for the resulting solicitation** — roughly when the
-> RFQ is expected to post, and whether the acquisition strategy is still tracking as a small-business
-> set-aside? If there is a distribution or interested-vendors list for this requirement, we would like to
-> be included.
+> When we submitted the questionnaire on July 2nd our federal registration was still in process. That is
+> complete now, so there is no remaining barrier to us receiving an award on this one.
 >
-> Happy to provide a capability statement, product specifications, or samples if that would help your
+> We think we are a strong fit. We manufacture mattresses in our own factory in downtown Houston, roughly
+> three hours from Lackland. We build institutional dormitory innerspring mattresses to the construction
+> described in the draft SOW and certify finished mattresses to 16 CFR Part 1633. Being in-region also
+> means we can handle the delivery, installation, and the removal and disposal of the 1,258 old
+> mattresses ourselves, rather than subcontracting that logistics out of state.
+>
+> Two questions when you have a moment:
+>
+> 1. Is there an anticipated timeline for the RFQ, and is the acquisition still tracking as a small
+>    business set-aside? If there is a distribution or interested-vendors list for this requirement, we
+>    would appreciate being added to it.
+>
+> 2. If the mattress thickness has been settled since the draft SOW, I would like to make sure we are
+>    building to the right spec.
+>
+> Happy to send a capability statement, product specifications, or samples if any of that would help your
 > market research.
 >
-> Respectfully,
-> [signature block]
+> Thanks so much,
+>
+> [operator's standard signature block — name / Silverline Sleep / address / office + mobile]
+
+> ℹ️ **Signature redacted in this file on purpose.** This repo is **public**, and `tools/pii_lint.py` only
+> scans the pipeline/radar CSVs — it does **not** scan `docs/`, so it will not catch contact details
+> pasted into a draft. The version actually sent carries Blake's full signature; it just does not need to
+> live in a public repo.
+
+**Why question 2 is in there:** it re-raises Blake's unanswered 2026-06-27 height question, but phrased
+forward ("if it has been settled since the draft SOW") so it reads as building to spec rather than as
+"you never answered me." It also gives the CO an easy concrete thing to reply to, which matters after
+two silent touches.
 
 **Operator checklist**
 - [x] ~~Record the CAGE code~~ ✅ `22NH3`, recorded 2026-08-03.
-- [ ] Re-check SAM: has the RFQ posted? If yes → bid it instead of sending this.
-- [ ] Fill `[drive time]` (Houston→Lackland is ~3 hrs; confirm which plant serves it).
-- [ ] Confirm the identifiers read exactly `XF73FG8CVMX1` / `22NH3` (not legacy CAGE 19865).
-- [ ] Send from silverlinesleep. Log the send date in the pipeline row.
+- [x] ~~Re-check SAM~~ ✅ 2026-08-03: no follow-on RFQ linked; notice inactive and unamended.
+- [x] ~~Fill drive time~~ ✅ "roughly three hours" (Houston→Lackland ≈197 mi). Adjust if a different
+      plant serves it.
+- [ ] Optional, closes the residual gap: search SAM for `JBSA dorm mattresses` while signed in.
+- [ ] Send from silverlinesleep as a REPLY in the existing thread. Log the send date in the pipeline row.
 
 ---
 

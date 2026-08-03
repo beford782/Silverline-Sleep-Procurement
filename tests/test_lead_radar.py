@@ -531,16 +531,41 @@ class DeadlineTests(unittest.TestCase):
     def test_closed_lead_never_reported_even_when_overdue(self) -> None:
         rows = [self._row(lead_id="closed", status="no-fit", due_date="2026-01-01")]
         report = lead_radar.triage_deadlines(rows, self.TODAY, 10)
-        self.assertEqual(report["overdue"], [])
+        self.assertEqual(report["missed"], [])
+        self.assertEqual(report["arrived_closed"], [])
         self.assertEqual(report["undated"], [])
 
-    def test_overdue_bucket_and_negative_day_count(self) -> None:
-        rows = [self._row(lead_id="missed", status="watching", due_date="2026-07-22")]
+    def test_missed_bucket_and_negative_day_count(self) -> None:
+        # Held from before the deadline until after it: a real miss.
+        rows = [self._row(lead_id="missed", status="watching",
+                          created_date="2026-07-13", due_date="2026-07-22")]
         report = lead_radar.triage_deadlines(rows, self.TODAY, 10)
-        self.assertEqual(len(report["overdue"]), 1)
-        days, row = report["overdue"][0]
+        self.assertEqual(len(report["missed"]), 1)
+        days, row = report["missed"][0]
         self.assertEqual(days, -12)
         self.assertEqual(row["lead_id"], "missed")
+
+    def test_row_ingested_after_its_deadline_is_not_a_miss(self) -> None:
+        # A sweep picking up an already-closed solicitation as a historical
+        # re-bid signal was never actionable, so it must not read as a miss.
+        rows = [self._row(lead_id="historical", status="watching",
+                          created_date="2026-06-21", due_date="2026-05-21")]
+        report = lead_radar.triage_deadlines(rows, self.TODAY, 10)
+        self.assertEqual(report["missed"], [])
+        self.assertEqual([r["lead_id"] for _, r in report["arrived_closed"]], ["historical"])
+
+    def test_created_same_day_as_due_is_a_miss(self) -> None:
+        # Ingested on the closing day: it WAS actionable, however briefly.
+        rows = [self._row(lead_id="sameday", status="watching",
+                          created_date="2026-05-21", due_date="2026-05-21")]
+        report = lead_radar.triage_deadlines(rows, self.TODAY, 10)
+        self.assertEqual([r["lead_id"] for _, r in report["missed"]], ["sameday"])
+
+    def test_blank_created_date_counts_as_missed_not_hidden(self) -> None:
+        rows = [self._row(lead_id="nocreated", status="watching",
+                          created_date="", due_date="2026-05-21")]
+        report = lead_radar.triage_deadlines(rows, self.TODAY, 10)
+        self.assertEqual([r["lead_id"] for _, r in report["missed"]], ["nocreated"])
 
     def test_due_soon_includes_today_and_window_edge(self) -> None:
         rows = [
@@ -550,7 +575,7 @@ class DeadlineTests(unittest.TestCase):
         ]
         report = lead_radar.triage_deadlines(rows, self.TODAY, 10)
         self.assertEqual([r["lead_id"] for _, r in report["due_soon"]], ["today", "edge"])
-        self.assertEqual(report["overdue"], [])
+        self.assertEqual(report["missed"], [])
 
     def test_undated_open_rows_collected(self) -> None:
         rows = [self._row(lead_id="nodate", status="reviewing", due_date="")]
@@ -561,7 +586,7 @@ class DeadlineTests(unittest.TestCase):
         rows = [self._row(lead_id="junk", status="watching", due_date="see portal")]
         report = lead_radar.triage_deadlines(rows, self.TODAY, 10)
         self.assertEqual([r["lead_id"] for r in report["undated"]], ["junk"])
-        self.assertEqual(report["overdue"], [])
+        self.assertEqual(report["missed"], [])
 
     def test_sorted_most_urgent_first(self) -> None:
         rows = [
@@ -571,7 +596,7 @@ class DeadlineTests(unittest.TestCase):
             self._row(lead_id="older", status="watching", due_date="2025-01-01"),
         ]
         report = lead_radar.triage_deadlines(rows, self.TODAY, 10)
-        self.assertEqual([r["lead_id"] for _, r in report["overdue"]], ["older", "old"])
+        self.assertEqual([r["lead_id"] for _, r in report["missed"]], ["older", "old"])
         self.assertEqual([r["lead_id"] for _, r in report["due_soon"]], ["a", "b"])
 
     def test_zero_window_reports_only_today(self) -> None:
@@ -588,7 +613,7 @@ class DeadlineTests(unittest.TestCase):
             rc = lead_radar.main(["deadlines", "--today", "2026-08-03"])
         self.assertEqual(rc, 0)
         out = buf.getvalue()
-        self.assertIn("OVERDUE", out)
+        self.assertIn("MISSED", out)
         self.assertIn("DUE WITHIN 10 DAYS", out)
 
     def test_cli_rejects_bad_today_and_negative_window(self) -> None:

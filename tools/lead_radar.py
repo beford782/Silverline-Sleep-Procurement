@@ -375,12 +375,21 @@ def triage_deadlines(rows: Iterable[dict], today: "date", window_days: int) -> d
     """Bucket open leads by response deadline.
 
     Open leads only: the point is to catch a live row before its window shuts.
-    'overdue' is a missed window (due < today) and stays listed until someone
-    closes the row, because a silently-expired lead is the failure this guards
-    against. 'undated' rows are the blind spot -- ingest captured no due_date,
-    so nothing can ever warn about them.
+
+    A past deadline is only a MISS if we were holding the row while the window
+    closed (created_date <= due_date). Sweeps routinely ingest already-closed
+    solicitations on purpose -- they are kept as historical re-bid signals and
+    marked 'MONITOR: do not promote' -- and those were never actionable, so
+    calling them misses would put ~7 permanent false alarms at the top of every
+    digest and train the reader to skip the section. They are counted as
+    'arrived_closed' instead. A blank created_date is treated as a miss so an
+    undated row cannot hide.
+
+    'undated' rows are the blind spot -- ingest captured no due_date, so
+    nothing can ever warn about them.
     """
-    overdue: list[tuple[int, dict]] = []
+    missed: list[tuple[int, dict]] = []
+    arrived_closed: list[tuple[int, dict]] = []
     due_soon: list[tuple[int, dict]] = []
     undated: list[dict] = []
 
@@ -393,18 +402,24 @@ def triage_deadlines(rows: Iterable[dict], today: "date", window_days: int) -> d
             continue
         days = (due - today).days
         if days < 0:
-            overdue.append((days, row))
+            created = parse_due(row.get("created_date", ""))
+            if created is not None and created > due:
+                arrived_closed.append((days, row))
+            else:
+                missed.append((days, row))
         elif days <= window_days:
             due_soon.append((days, row))
 
-    # Most urgent first; overdue sorts oldest-miss first so the worst is on top.
-    overdue.sort(key=lambda dr: (dr[0], dr[1].get("lead_id", "")))
+    # Most urgent first; misses sort oldest first so the worst is on top.
+    missed.sort(key=lambda dr: (dr[0], dr[1].get("lead_id", "")))
+    arrived_closed.sort(key=lambda dr: (dr[0], dr[1].get("lead_id", "")))
     due_soon.sort(key=lambda dr: (dr[0], dr[1].get("lead_id", "")))
     undated.sort(key=lambda r: r.get("lead_id", ""))
     return {
         "today": today.isoformat(),
         "window_days": window_days,
-        "overdue": overdue,
+        "missed": missed,
+        "arrived_closed": arrived_closed,
         "due_soon": due_soon,
         "undated": undated,
     }
@@ -895,10 +910,13 @@ def cmd_deadlines(args: argparse.Namespace) -> int:
         return 1
 
     report = triage_deadlines(rows, today, args.window)
-    overdue, due_soon, undated = report["overdue"], report["due_soon"], report["undated"]
+    missed, due_soon = report["missed"], report["due_soon"]
+    arrived_closed, undated = report["arrived_closed"], report["undated"]
 
     print(f"Lead Radar response deadlines (as of {report['today']}, window {args.window}d)")
-    print(f"{len(overdue)} overdue, {len(due_soon)} due soon, {len(undated)} open with no due date")
+    print(f"{len(missed)} missed, {len(due_soon)} due soon, "
+          f"{len(undated)} open with no due date "
+          f"({len(arrived_closed)} historical rows ingested already-closed, not counted)")
     print()
 
     def print_block(label: str, entries: list, empty: str) -> None:
@@ -927,15 +945,22 @@ def cmd_deadlines(args: argparse.Namespace) -> int:
         print()
 
     print_block(
-        f"OVERDUE - response window already closed while the lead sat open ({len(overdue)}):",
-        overdue,
-        "(none)",
+        f"MISSED - we held this row while its window closed ({len(missed)}):",
+        missed,
+        "(none) - nothing expired on our watch",
     )
     print_block(
         f"DUE WITHIN {args.window} DAYS - act or close ({len(due_soon)}):",
         due_soon,
         "(none)",
     )
+    if arrived_closed:
+        print(f"Ingested already-closed, kept as historical re-bid signal ({len(arrived_closed)}) "
+              "- not misses:")
+        for _, row in arrived_closed:
+            print(f"  due {row.get('due_date', ''):<12} fit {row.get('fit_score', ''):<4} "
+                  f"{(row.get('title') or '')[:56]}")
+        print()
 
     # A dateless 'watching' row is usually a standing channel/portal watch that
     # never has a deadline -- listing all of them would bury the real gap. Only
@@ -953,9 +978,10 @@ def cmd_deadlines(args: argparse.Namespace) -> int:
     print(f"  (+{undated_watching} dateless 'watching' rows: standing channel/portal watches, expected)")
     print()
 
-    if overdue:
-        print("Overdue rows are misses: decide bid/no-bid and set status to a terminal")
-        print("value (no-fit/stale/archived) so they stop reappearing here.")
+    if missed:
+        print("A missed row means the funnel held a live lead until its window shut.")
+        print("Close it to a terminal status (no-fit/stale/archived) AND fix whatever")
+        print("let it sit -- the status change alone just hides the next one.")
     return 0
 
 

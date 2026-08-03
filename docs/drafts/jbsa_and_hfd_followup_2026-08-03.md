@@ -8,13 +8,14 @@
 > federal work.** The old "no UEI / don't imply federal registration" rule is **retired** — for #1 (JBSA)
 > citing it is the entire point of the email.
 >
+> **CAGE resolved 2026-08-03: `22NH3`** — confirmed on the SAM entity record and now in
+> `docs/active_registrations.md`. It is a **new** code issued to the LLC. **Do NOT cite `19865`** — that is
+> the legacy pre-merger record DLA flagged as a co-location on 2026-07-09.
+>
 > **Still hard rules:**
-> - **Do NOT cite a CAGE code.** It was assigned during activation but is still unrecorded in
->   `docs/active_registrations.md:19` (`[record code here]`). Pull it from the activation notice in the
->   silverlinesleep inbox and add it to the ledger **before** sending #1 — a CO may ask for it.
 > - **Do NOT imply we hold a contract or submitted a bid on JBSA.** We answered a *Sources Sought
 >   questionnaire* (market research) on 2026-07-02. No solicitation has posted.
-> - Houston (#2) is **municipal** — UEI/SAM are irrelevant there; don't raise them.
+> - Houston (#2) is **municipal** — UEI/SAM/CAGE are irrelevant there; don't raise them.
 
 **Signature block (paste on each; operator confirms phone):**
 ```
@@ -25,7 +26,7 @@ Texas-based institutional mattress manufacturer · NAICS 337910
 
 ---
 
-## 1. JBSA Lackland — Tech Training Dorm Mattresses (RFQ timeline)  (READY; send after CAGE is recorded)
+## 1. JBSA Lackland — Tech Training Dorm Mattresses (RFQ timeline)  (✅ UNBLOCKED — ready to send)
 
 - **To:** Tristan Torres (CS, A1C) — `tristan.torres@us.af.mil`
 - **Cc:** N. Marie Phillips (Contracting Officer) — `norena.phillips@us.af.mil`
@@ -48,9 +49,9 @@ Texas-based institutional mattress manufacturer · NAICS 337910
 > brief status update and one question.
 >
 > Since our response, our SAM.gov registration has been completed and is **Active**. Our **UEI is
-> XF73FG8CVMX1**, registered as Continental Silverline Products, LLC, a small business under **NAICS
-> 337910**. Any eligibility qualification in our earlier submission no longer applies — we are fully
-> registered and able to receive a federal award.
+> XF73FG8CVMX1** and our **CAGE code is 22NH3**, registered as Continental Silverline Products, LLC, a
+> small business under **NAICS 337910**. Any eligibility qualification in our earlier submission no longer
+> applies — we are fully registered and able to receive a federal award.
 >
 > We remain a strong fit for this requirement. We are a Texas mattress manufacturer located roughly
 > [drive time] from Lackland, we build institutional dormitory innerspring mattresses to the construction
@@ -70,10 +71,10 @@ Texas-based institutional mattress manufacturer · NAICS 337910
 > [signature block]
 
 **Operator checklist**
-- [ ] Record the CAGE code in `docs/active_registrations.md` first.
+- [x] ~~Record the CAGE code~~ ✅ `22NH3`, recorded 2026-08-03.
 - [ ] Re-check SAM: has the RFQ posted? If yes → bid it instead of sending this.
 - [ ] Fill `[drive time]` (Houston→Lackland is ~3 hrs; confirm which plant serves it).
-- [ ] Confirm UEI reads exactly `XF73FG8CVMX1`.
+- [ ] Confirm the identifiers read exactly `XF73FG8CVMX1` / `22NH3` (not legacy CAGE 19865).
 - [ ] Send from silverlinesleep. Log the send date in the pipeline row.
 
 ---

@@ -30,7 +30,8 @@
 | **Texas SOS File Number** | **0802357166** (public) |
 | **Registered agent** | **C T Corporation System**, 1999 Bryan St, Ste 900, Dallas, TX 75201 (public) |
 | **Status** | Active (Right to Transact Business in TX: Active) |
-| **SAM.gov UEI** | **`XF73FG8CVMX1` — not citable on bids until status = Active.** The L.P. name problem is RESOLVED: GSA corrected the entity record to the LLC (2026-07-07) and the full registration was **submitted the same day** under "Continental Silverline Products, LLC". IRS TIN match passed; DLA CAGE review answered 2026-07-09; awaiting CAGE assignment → Active. Live status: [`active_registrations.md`](active_registrations.md). |
+| **SAM.gov UEI** | **`XF73FG8CVMX1` — ✅ ACTIVE 2026-07-17, citable on federal bids.** Registered as "Continental Silverline Products, LLC". History: GSA corrected the entity record from the L.P. (2026-07-07), registration submitted the same day, IRS TIN match passed, DLA CAGE review answered 2026-07-09 → CAGE assigned → Active. **Expires 2027-07-07** (annual renewal). Live status: [`active_registrations.md`](active_registrations.md). |
+| **CAGE code** | **`22NH3`** (recorded 2026-08-03). Cite alongside the UEI on federal bids. ⚠️ **Not** `19865` — that is the legacy CAGE of the pre-merger "CONTINENTAL SILVER-LINE PRODUCTS" record, which DLA raised as a co-location question during the 2026-07-09 review; it is outdated and must not be cited. |
 | **DUNS** | Deprecated by the federal government (2022) - leave blank; the UEI replaces it. |
 | **Primary NAICS** | **337910** - Mattress Manufacturing |
 | **Secondary NAICS** | **337127** - Institutional (Public Building) Furniture Manufacturing |

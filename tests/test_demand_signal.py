@@ -135,5 +135,45 @@ class RelevanceUntouchedTests(unittest.TestCase):
         self.assertIn("mattresses", v.matched_include)
 
 
+class FeedNameGeographyTests(unittest.TestCase):
+    """A feed name is a saved search, not a place: it must not set geography."""
+
+    TX_FEED = "Pilot B - independent Texas hotel"
+
+    def test_feed_name_does_not_stamp_state(self) -> None:
+        # Real 2026-07-30 regression: this story is datelined Peoria, but the
+        # Texas-named feed carrying it stamped the row location=TX.
+        v = demand_signal.classify_demand(
+            "Peoria greenlights $7.3M renovation of Main Street storefronts",
+            source=self.TX_FEED,
+        )
+        self.assertEqual(v.states, [])
+
+    def test_feed_name_does_not_stamp_state_on_out_of_region_story(self) -> None:
+        v = demand_signal.classify_demand(
+            "New boutique hotel opens in Aspen, Colorado with 90 rooms",
+            source=self.TX_FEED,
+        )
+        self.assertIn("CO", v.states)
+        self.assertNotIn("TX", v.states)
+
+    def test_state_still_detected_from_article_text(self) -> None:
+        v = demand_signal.classify_demand(
+            "Holiday Inn Express in Spring, TX begins a 109-room renovation",
+            source="Pilot A - hotel PIP",
+        )
+        self.assertIn("TX", v.states)
+
+    def test_out_of_region_reason_survives_the_fix(self) -> None:
+        # Geography still drives the out-of-region downgrade; only the SOURCE
+        # of the geography changed.
+        v = demand_signal.classify_demand(
+            "220-room hotel in Buffalo, New York completes a full renovation "
+            "of all guest rooms, opening 2027",
+            source="Pilot A - hotel PIP",
+        )
+        self.assertIn("NY", v.states)
+
+
 if __name__ == "__main__":
     unittest.main()

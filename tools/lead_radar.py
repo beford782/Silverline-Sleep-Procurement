@@ -81,6 +81,11 @@ LEAD_HEADER = [
 DATE_FIELDS = ("posted_date", "due_date", "created_date", "last_reviewed")
 
 STATUS_VALUES = ("watching", "reviewing", "promoted", "archived", "no-fit", "stale")
+# Statuses where the lead is still live and a response window still matters.
+OPEN_LEAD_STATUSES = ("watching", "reviewing")
+# Default look-ahead for `deadlines`: far enough out to still act on a federal
+# RFQ (they commonly post with ~2 weeks to respond), short enough to stay quiet.
+DEADLINE_WINDOW_DAYS = 10
 LEAD_TYPE_VALUES = (
     "co-op_contract_vehicle",
     "broad_furniture_ffe",
@@ -358,6 +363,51 @@ def parse_due(value: str) -> "date | None":
         return datetime.strptime(value, "%Y-%m-%d").date()
     except ValueError:
         return None
+
+
+def is_open_lead(row: dict) -> bool:
+    """True while a lead can still be acted on. promoted/archived/no-fit/stale
+    are terminal, so they never raise a deadline alarm."""
+    return (row.get("status") or "").strip().lower() in OPEN_LEAD_STATUSES
+
+
+def triage_deadlines(rows: Iterable[dict], today: "date", window_days: int) -> dict:
+    """Bucket open leads by response deadline.
+
+    Open leads only: the point is to catch a live row before its window shuts.
+    'overdue' is a missed window (due < today) and stays listed until someone
+    closes the row, because a silently-expired lead is the failure this guards
+    against. 'undated' rows are the blind spot -- ingest captured no due_date,
+    so nothing can ever warn about them.
+    """
+    overdue: list[tuple[int, dict]] = []
+    due_soon: list[tuple[int, dict]] = []
+    undated: list[dict] = []
+
+    for row in rows:
+        if not is_open_lead(row):
+            continue
+        due = parse_due(row.get("due_date", ""))
+        if due is None:
+            undated.append(row)
+            continue
+        days = (due - today).days
+        if days < 0:
+            overdue.append((days, row))
+        elif days <= window_days:
+            due_soon.append((days, row))
+
+    # Most urgent first; overdue sorts oldest-miss first so the worst is on top.
+    overdue.sort(key=lambda dr: (dr[0], dr[1].get("lead_id", "")))
+    due_soon.sort(key=lambda dr: (dr[0], dr[1].get("lead_id", "")))
+    undated.sort(key=lambda r: r.get("lead_id", ""))
+    return {
+        "today": today.isoformat(),
+        "window_days": window_days,
+        "overdue": overdue,
+        "due_soon": due_soon,
+        "undated": undated,
+    }
 
 
 def is_federal_recurring(row: dict) -> bool:
@@ -827,6 +877,88 @@ def cmd_calendar(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_deadlines(args: argparse.Namespace) -> int:
+    review = Path(args.review)
+    _, rows = read_lead_rows(review)
+
+    if args.today:
+        try:
+            today = datetime.strptime(args.today, "%Y-%m-%d").date()
+        except ValueError as exc:
+            print(f"error: --today expected YYYY-MM-DD, got {args.today!r} ({exc})", file=sys.stderr)
+            return 1
+    else:
+        today = datetime.now().date()
+
+    if args.window < 0:
+        print("error: --window must be >= 0", file=sys.stderr)
+        return 1
+
+    report = triage_deadlines(rows, today, args.window)
+    overdue, due_soon, undated = report["overdue"], report["due_soon"], report["undated"]
+
+    print(f"Lead Radar response deadlines (as of {report['today']}, window {args.window}d)")
+    print(f"{len(overdue)} overdue, {len(due_soon)} due soon, {len(undated)} open with no due date")
+    print()
+
+    def print_block(label: str, entries: list, empty: str) -> None:
+        print(label)
+        if not entries:
+            print(f"  {empty}")
+            print()
+            return
+        cols = ("DAYS", "DUE", "STATUS", "FIT", "TYPE", "SOLICITATION", "TITLE")
+        table = []
+        for days, row in entries:
+            table.append((
+                (f"+{days}" if days > 0 else str(days)),
+                row.get("due_date", ""),
+                row.get("status", ""),
+                row.get("fit_score", ""),
+                row.get("lead_type", ""),
+                (row.get("solicitation_number") or "")[:24],
+                (row.get("title") or "")[:52],
+            ))
+        widths = [max(len(c), max((len(r[i]) for r in table), default=0)) for i, c in enumerate(cols)]
+        print("  " + "  ".join(c.ljust(widths[i]) for i, c in enumerate(cols)))
+        print("  " + "  ".join("-" * widths[i] for i in range(len(cols))))
+        for r in table:
+            print("  " + "  ".join(r[i].ljust(widths[i]) for i in range(len(cols))))
+        print()
+
+    print_block(
+        f"OVERDUE - response window already closed while the lead sat open ({len(overdue)}):",
+        overdue,
+        "(none)",
+    )
+    print_block(
+        f"DUE WITHIN {args.window} DAYS - act or close ({len(due_soon)}):",
+        due_soon,
+        "(none)",
+    )
+
+    # A dateless 'watching' row is usually a standing channel/portal watch that
+    # never has a deadline -- listing all of them would bury the real gap. Only
+    # 'reviewing' rows (someone is actively triaging one) are named, because
+    # there a missing due_date means nothing can ever warn about it.
+    undated_reviewing = [r for r in undated if (r.get("status") or "").lower() == "reviewing"]
+    undated_watching = len(undated) - len(undated_reviewing)
+    print(f"NO DUE DATE, IN TRIAGE - undateable and unwatchable ({len(undated_reviewing)}):")
+    if not undated_reviewing:
+        print("  (none)")
+    else:
+        for row in undated_reviewing:
+            print(f"  {row.get('lead_id', '')[:72]}")
+            print(f"      {(row.get('title') or '')[:88]}")
+    print(f"  (+{undated_watching} dateless 'watching' rows: standing channel/portal watches, expected)")
+    print()
+
+    if overdue:
+        print("Overdue rows are misses: decide bid/no-bid and set status to a terminal")
+        print("value (no-fit/stale/archived) so they stop reappearing here.")
+    return 0
+
+
 # ---------------------------------------------------------------------
 # CLI plumbing
 # ---------------------------------------------------------------------
@@ -842,6 +974,16 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_list = sub.add_parser("list", help="Print review leads sorted by due_date.")
     p_list.set_defaults(func=cmd_list)
+
+    p_dl = sub.add_parser(
+        "deadlines",
+        help="Open leads that are overdue, due soon, or missing a due date.",
+    )
+    p_dl.set_defaults(func=cmd_deadlines)
+    p_dl.add_argument("--window", type=int, default=DEADLINE_WINDOW_DAYS,
+                      help="Flag open leads due within DAYS (default: %(default)s).")
+    p_dl.add_argument("--today", default="",
+                      help="Override 'today' as YYYY-MM-DD (determinism/testing).")
 
     p_add = sub.add_parser("add", help="Append a new lead row.")
     p_add.set_defaults(func=cmd_add)

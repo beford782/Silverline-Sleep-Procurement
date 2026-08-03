@@ -512,5 +512,91 @@ class CalendarCliTests(_CliCase):
         self.assertTrue(payload["events"][0]["already_scheduled"])
 
 
+class DeadlineTests(unittest.TestCase):
+    """Response-window escalation: overdue / due-soon / undated bucketing."""
+
+    TODAY = date(2026, 8, 3)
+
+    def _row(self, **over: str) -> dict:
+        row = {k: "" for k in lead_radar.LEAD_HEADER}
+        row.update(over)
+        return row
+
+    def test_open_statuses_only(self) -> None:
+        for status in ("watching", "reviewing"):
+            self.assertTrue(lead_radar.is_open_lead(self._row(status=status)), status)
+        for status in ("promoted", "archived", "no-fit", "stale"):
+            self.assertFalse(lead_radar.is_open_lead(self._row(status=status)), status)
+
+    def test_closed_lead_never_reported_even_when_overdue(self) -> None:
+        rows = [self._row(lead_id="closed", status="no-fit", due_date="2026-01-01")]
+        report = lead_radar.triage_deadlines(rows, self.TODAY, 10)
+        self.assertEqual(report["overdue"], [])
+        self.assertEqual(report["undated"], [])
+
+    def test_overdue_bucket_and_negative_day_count(self) -> None:
+        rows = [self._row(lead_id="missed", status="watching", due_date="2026-07-22")]
+        report = lead_radar.triage_deadlines(rows, self.TODAY, 10)
+        self.assertEqual(len(report["overdue"]), 1)
+        days, row = report["overdue"][0]
+        self.assertEqual(days, -12)
+        self.assertEqual(row["lead_id"], "missed")
+
+    def test_due_soon_includes_today_and_window_edge(self) -> None:
+        rows = [
+            self._row(lead_id="today", status="watching", due_date="2026-08-03"),
+            self._row(lead_id="edge", status="watching", due_date="2026-08-13"),
+            self._row(lead_id="beyond", status="watching", due_date="2026-08-14"),
+        ]
+        report = lead_radar.triage_deadlines(rows, self.TODAY, 10)
+        self.assertEqual([r["lead_id"] for _, r in report["due_soon"]], ["today", "edge"])
+        self.assertEqual(report["overdue"], [])
+
+    def test_undated_open_rows_collected(self) -> None:
+        rows = [self._row(lead_id="nodate", status="reviewing", due_date="")]
+        report = lead_radar.triage_deadlines(rows, self.TODAY, 10)
+        self.assertEqual([r["lead_id"] for r in report["undated"]], ["nodate"])
+
+    def test_unparseable_due_date_counts_as_undated_not_overdue(self) -> None:
+        rows = [self._row(lead_id="junk", status="watching", due_date="see portal")]
+        report = lead_radar.triage_deadlines(rows, self.TODAY, 10)
+        self.assertEqual([r["lead_id"] for r in report["undated"]], ["junk"])
+        self.assertEqual(report["overdue"], [])
+
+    def test_sorted_most_urgent_first(self) -> None:
+        rows = [
+            self._row(lead_id="b", status="watching", due_date="2026-08-10"),
+            self._row(lead_id="a", status="watching", due_date="2026-08-05"),
+            self._row(lead_id="old", status="watching", due_date="2026-01-01"),
+            self._row(lead_id="older", status="watching", due_date="2025-01-01"),
+        ]
+        report = lead_radar.triage_deadlines(rows, self.TODAY, 10)
+        self.assertEqual([r["lead_id"] for _, r in report["overdue"]], ["older", "old"])
+        self.assertEqual([r["lead_id"] for _, r in report["due_soon"]], ["a", "b"])
+
+    def test_zero_window_reports_only_today(self) -> None:
+        rows = [
+            self._row(lead_id="today", status="watching", due_date="2026-08-03"),
+            self._row(lead_id="tomorrow", status="watching", due_date="2026-08-04"),
+        ]
+        report = lead_radar.triage_deadlines(rows, self.TODAY, 0)
+        self.assertEqual([r["lead_id"] for _, r in report["due_soon"]], ["today"])
+
+    def test_cli_runs_against_committed_radar(self) -> None:
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = lead_radar.main(["deadlines", "--today", "2026-08-03"])
+        self.assertEqual(rc, 0)
+        out = buf.getvalue()
+        self.assertIn("OVERDUE", out)
+        self.assertIn("DUE WITHIN 10 DAYS", out)
+
+    def test_cli_rejects_bad_today_and_negative_window(self) -> None:
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.assertEqual(lead_radar.main(["deadlines", "--today", "08/03/2026"]), 1)
+            self.assertEqual(lead_radar.main(["deadlines", "--window", "-1"]), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

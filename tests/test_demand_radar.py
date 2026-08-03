@@ -318,5 +318,81 @@ class OutreachTests(_CliCase):
         self.assertEqual(rc, 1)
 
 
+class HeadlineCleaningTests(unittest.TestCase):
+    """Google Alerts markup must not reach facility_name."""
+
+    def test_strips_bold_tags(self) -> None:
+        self.assertEqual(
+            demand_radar.clean_headline("<b>Boutique hotel</b> Providence sold for $10.25M"),
+            "Boutique hotel Providence sold for $10.25M",
+        )
+
+    def test_unescapes_entities(self) -> None:
+        self.assertEqual(
+            demand_radar.clean_headline("New &#39;Extended Stay Hotel&#39; in Cork City"),
+            "New 'Extended Stay Hotel' in Cork City",
+        )
+
+    def test_entity_encoded_tag_cannot_survive(self) -> None:
+        # Unescape runs first, so a tag smuggled in as entities is still stripped.
+        self.assertEqual(demand_radar.clean_headline("a &lt;b&gt;x&lt;/b&gt; z"), "a x z")
+
+    def test_collapses_whitespace_and_handles_blank(self) -> None:
+        self.assertEqual(demand_radar.clean_headline("a\n  b\tc"), "a b c")
+        self.assertEqual(demand_radar.clean_headline(""), "")
+
+    def test_plain_headline_unchanged(self) -> None:
+        self.assertEqual(demand_radar.clean_headline("Hotel opens"), "Hotel opens")
+
+
+class CrossFeedDedupTests(unittest.TestCase):
+    """One article carried by two saved-search feeds is one signal."""
+
+    URL = "https://www.hospitalitynet.org/news/4133712/axis-design.html"
+
+    def _row(self, **over: str) -> dict:
+        row = {k: "" for k in demand_radar.DEMAND_HEADER}
+        row.update(over)
+        return row
+
+    def test_same_url_different_feed_and_location_shares_a_key(self) -> None:
+        # The 2026-07-30 duplicate: identical article, two feeds, and the
+        # phantom TX on one copy kept the facloc key from matching.
+        a = self._row(demand_id="d-houston-axis", signal_source="Pilot B - houston",
+                      segment="hotel", facility_name="AXIS advances", location="",
+                      source_url=self.URL)
+        b = self._row(demand_id="d-texas-axis", signal_source="Pilot B - texas",
+                      segment="hotel", facility_name="AXIS advances", location="TX",
+                      source_url=self.URL)
+        self.assertTrue(demand_radar.demand_match_keys(a) & demand_radar.demand_match_keys(b))
+
+    def test_different_articles_do_not_collide(self) -> None:
+        a = self._row(demand_id="a", facility_name="Hotel A", source_url=self.URL)
+        b = self._row(demand_id="b", facility_name="Hotel B",
+                      source_url="https://example.com/other-story")
+        self.assertFalse(demand_radar.demand_match_keys(a) & demand_radar.demand_match_keys(b))
+
+    def test_blank_url_adds_no_key(self) -> None:
+        keys = demand_radar.demand_match_keys(self._row(demand_id="x", source_url=""))
+        self.assertFalse(any(k.startswith("url:") for k in keys))
+
+    def test_blank_urls_do_not_make_unrelated_rows_match(self) -> None:
+        a = self._row(demand_id="a", facility_name="Hotel A", location="TX", source_url="")
+        b = self._row(demand_id="b", facility_name="Hotel B", location="OK", source_url="")
+        self.assertFalse(demand_radar.demand_match_keys(a) & demand_radar.demand_match_keys(b))
+
+    def test_url_normalization(self) -> None:
+        n = demand_radar.normalize_source_url
+        base = "example.com/a/b"
+        for variant in (
+            "https://example.com/a/b", "http://example.com/a/b",
+            "https://www.example.com/a/b", "https://example.com/a/b/",
+            "https://example.com/a/b?utm_source=feed", "https://example.com/a/b#top",
+            "HTTPS://Example.com/A/B",
+        ):
+            self.assertEqual(n(variant), base, variant)
+        self.assertEqual(n(""), "")
+
+
 if __name__ == "__main__":
     unittest.main()

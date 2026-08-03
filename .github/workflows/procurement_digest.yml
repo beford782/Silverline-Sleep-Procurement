@@ -58,6 +58,12 @@ jobs:
             python tools/readiness.py backlog
             echo '```'
             echo
+            echo "## ⏰ Response deadlines — act or close"
+            echo
+            echo '```text'
+            python tools/lead_radar.py deadlines
+            echo '```'
+            echo
             echo "## Current Lead Radar"
             echo
             echo '```text'
@@ -111,7 +117,8 @@ jobs:
             echo
             echo "## What to do"
             echo
-            echo "- If there are open automation PRs, review those first."
+            echo "- **Response deadlines first.** Anything under \`DUE WITHIN\` needs a bid/no-bid call now; anything under \`OVERDUE\` is a missed window that should be closed to a terminal status (\`no-fit\`/\`stale\`/\`archived\`) so the list stays honest."
+            echo "- If there are open automation PRs, review those next — merge them the day they land, since two open ingest runs will collide on overlapping windows."
             echo "- Active pipeline rows are confirmed bid candidates; Lead Radar rows are watch/research signals."
             echo "- Demand Radar rows are pre-RFP private-sector construction signals for human outreach (sales), NOT biddable solicitations."
             echo "- Re-bid prep windows are dated prep-start reminders for expiring awarded contracts. Pushing them to Google Calendar is an operator/assistant step: read \`leads/review/_calendar_events.json\` and create each \`already_scheduled: false\` event via the Google Calendar MCP tool, then record its id in \`leads/review/_calendar_state.json\`."

@@ -287,7 +287,15 @@ def classify_demand(text: str, source: str = "",
     year, quarter = _parse_date(blob)
     est_completion_date = year
     est_buy_window = _buy_window(year, quarter)
-    states = relevance.detect_states(blob)
+    # Geography comes from the ARTICLE ONLY, never from `blob`. A demand feed
+    # name is a saved search ("Pilot B - independent Texas hotel"), not a
+    # place: folding it in stamped every story that feed returned as TX,
+    # including ones datelined Peoria and Cork. Out-of-region noise wearing an
+    # in-region label is worse than no label, because it draws real outreach.
+    # (relevance.classify DOES fold buyer/source into its own state detection,
+    # and that stays correct there -- a solicitation on the Texas ESBD portal
+    # really is a Texas buy.)
+    states = relevance.detect_states(text or "")
 
     def verdict(decision: str, conf: int, reasons: list[str]) -> DemandVerdict:
         return DemandVerdict(

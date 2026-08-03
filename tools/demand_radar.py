@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import html
 import os
 import re
 import sys
@@ -101,6 +102,21 @@ def demand_id_for(source: str, segment: str, facility_name: str, location: str) 
     return re.sub(r"-+", "-", raw).strip("-") or "untitled"
 
 
+def clean_headline(text: str) -> str:
+    """Strip feed markup out of a headline before it becomes facility_name.
+
+    Google Alerts wraps matched terms in <b>...</b> and escapes punctuation
+    (&#39;, &amp;), so raw titles land in the CSV as
+    '<b>Boutique hotel</b> Providence sold for $10.25M'. Unescape entities
+    first, then drop tags, so an entity that decodes into a tag cannot survive.
+    """
+    if not text:
+        return ""
+    out = html.unescape(text)
+    out = re.sub(r"<[^>]+>", "", out)
+    return re.sub(r"\s+", " ", out).strip()
+
+
 # ---------------------------------------------------------------------
 # DemandVerdict -> row mapping
 # ---------------------------------------------------------------------
@@ -122,7 +138,7 @@ def build_demand_row(entry_title: str, source: str, verdict, today: str = "",
     states = getattr(verdict, "states", []) or []
     reasons = getattr(verdict, "reasons", []) or []
 
-    facility_name = entry_title or ""
+    facility_name = clean_headline(entry_title)
     location = ", ".join(states)
     scale = f"{scale_value} {scale_unit}".strip() if scale_value is not None else ""
 
@@ -176,7 +192,32 @@ def demand_match_keys(row: dict) -> set[str]:
     if derived and derived != "untitled":
         keys.add(f"demand:{derived.lower()}")
     keys.add(f"facloc:{facility.lower()}:{location.lower()}")
+
+    # One article syndicated to several saved-search feeds is ONE signal. The
+    # derived and facloc keys both mix in feed-dependent fields (source,
+    # detected location), so two feeds returning the same story produced two
+    # rows. The URL is the same no matter which feed carried it, so key on it
+    # directly rather than hoping the parsed fields agree.
+    url = normalize_source_url(row.get("source_url") or "")
+    if url:
+        keys.add(f"url:{url}")
     return keys
+
+
+def normalize_source_url(url: str) -> str:
+    """Lowercase host+path form of a URL for dedup.
+
+    Drops the scheme, a leading 'www.', any query string or fragment, and a
+    trailing slash, so the same article tracked through two feeds (which may
+    append their own tracking params) collapses to one key.
+    """
+    u = (url or "").strip()
+    if not u:
+        return ""
+    u = re.sub(r"^[a-z][a-z0-9+.-]*://", "", u, flags=re.I)
+    u = u.split("#", 1)[0].split("?", 1)[0]
+    u = re.sub(r"^www\.", "", u, flags=re.I)
+    return u.rstrip("/").lower()
 
 
 # ---------------------------------------------------------------------

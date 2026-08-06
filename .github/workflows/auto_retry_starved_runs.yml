@@ -1,0 +1,66 @@
+name: Auto-retry runner-starved runs
+
+# GitHub-side Actions outages (e.g. the 2026-08-06 "Incident with Actions")
+# can cancel a scheduled run before ANY step executes. The job annotation
+# reads "The job was not acquired by Runner of type hosted even after
+# multiple attempts". That failure mode bypasses every in-workflow alert
+# step (nothing ever runs), so the ingest silently doesn't happen that day
+# unless a human notices the notification email and clicks "Re-run".
+#
+# This workflow IS that click. It fires when a watched scheduled workflow
+# completes, checks for the starvation signature (every job cancelled with
+# zero steps started), and re-queues the run. Because this job needs a
+# runner too, it inherently waits out the outage: it sits in the queue and
+# only executes once the pool recovers - exactly when a retry can succeed.
+#
+# Guardrails:
+#   - only the starvation signature is retried; real step failures are NOT
+#     (those already alert loudly via their own failure steps)
+#   - retries stop once a run reaches attempt 3, so nothing loops forever
+
+on:
+  workflow_run:
+    workflows:
+      - "Daily email-alert ingest (IMAP)"
+      - "Procurement ingest digest"
+      - "Twice-weekly RSS/feed ingest"
+      - "Twice-weekly SAM.gov mattress ingest"
+      - "Email-ingest pipe watchdog"
+      - "Cleanup auto-ingest branches"
+    types: [completed]
+
+permissions:
+  actions: write
+
+jobs:
+  retry:
+    name: Re-queue if the run never got a runner
+    if: github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Detect runner starvation and re-run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          WF_NAME: ${{ github.event.workflow_run.name }}
+        run: |
+          if [ "$ATTEMPT" -ge 3 ]; then
+            echo "::warning::${WF_NAME} run ${RUN_ID} is already at attempt ${ATTEMPT}; giving up on auto-retry. Once https://www.githubstatus.com is green, use 'Re-run all jobs' manually."
+            exit 0
+          fi
+          # Starvation signature: every job in the attempt was cancelled
+          # without a single step starting (steps array empty). A run where
+          # any step actually executed is a real failure - leave it to that
+          # workflow's own failure alerting.
+          starved=$(gh api "repos/${GH_REPO}/actions/runs/${RUN_ID}/attempts/${ATTEMPT}/jobs" \
+            --jq 'if (.jobs | length) == 0 then true
+                  else ([.jobs[] | (.conclusion == "cancelled") and ((.steps | length) == 0)] | all)
+                  end')
+          if [ "$starved" != "true" ]; then
+            echo "Run ${RUN_ID} attempt ${ATTEMPT} executed steps before failing - not a runner-starvation cancel. Skipping (its own failure alerting applies)."
+            exit 0
+          fi
+          echo "Run ${RUN_ID} (${WF_NAME}) attempt ${ATTEMPT} was cancelled before any step ran - runner starvation. Re-queuing."
+          gh run rerun "${RUN_ID}"

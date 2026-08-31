@@ -229,9 +229,7 @@ class GenericModeTests(unittest.TestCase):
         tmp = Path(tempfile.mkdtemp())
         try:
             body = tmp / "digest.md"
-            body.write_text("# Procurement ingest digest - 2026-08-31
-
-hello", encoding="utf-8")
+            body.write_text("# Procurement ingest digest - 2026-08-31 hello", encoding="utf-8")
             rc, out, _ = self._run("--subject", "[Silverline] Procurement digest 2026-08-31",
                                    "--body-file", str(body), "--dry-run")
             self.assertEqual(rc, 0)

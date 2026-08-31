@@ -188,6 +188,25 @@ jobs:
           gh issue comment "$DIGEST_ISSUE" --body-file /tmp/digest.md
           echo "Posted digest comment to issue #${DIGEST_ISSUE}"
 
+      # Direct email copy to the operator's working mailbox (DIGEST_EMAIL_TO
+      # secret), independent of GitHub notification routing - the operator had
+      # been hand-forwarding digests there. Self-notification over the
+      # established Gmail app-password channel; non-fatal like every notify
+      # send (the #43 GitHub notification email remains the backstop).
+      - name: Email digest copy to the operator
+        if: steps.guard.outputs.skip != 'true'
+        shell: bash
+        env:
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          DIGEST_EMAIL_TO: ${{ secrets.DIGEST_EMAIL_TO }}
+        run: |
+          python tools/notify_push.py \
+            --subject "[Silverline] Procurement digest $(date -u +%F)" \
+            --body-file /tmp/digest.md \
+            --to "$DIGEST_EMAIL_TO" \
+            || echo "::warning::digest email copy failed (see log); the #43 notification email is unaffected"
+
       # Dead-man's-switch: ping healthchecks.io ONLY on success, so a missed
       # or failed Mon/Thu digest raises an alert that does not depend on
       # GitHub's scheduler or notification email. No-op until the operator

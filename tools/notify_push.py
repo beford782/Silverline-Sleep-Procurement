@@ -22,6 +22,8 @@ Usage:
     python tools/notify_push.py --pr-url https://github.com/.../pull/123
     # preview without sending (CI / testing)
     python tools/notify_push.py --created-date 2026-06-27 --dry-run
+    # generic mode: send an arbitrary subject + body file (e.g. the Mon/Thu digest)
+    python tools/notify_push.py --subject "[Silverline] Procurement digest 2026-08-31" --body-file /tmp/digest.md
 
 Stdlib only (smtplib, email).
 """
@@ -214,6 +216,10 @@ def main(argv: list[str] | None = None) -> int:
                         help="Number of consecutive zero-fetch runs, for a --watchdog alert.")
     parser.add_argument("--to", default=None,
                         help="Recipient (default: NOTIFY_EMAIL_TO env, else GMAIL_ADDRESS).")
+    parser.add_argument("--subject", default=None,
+                        help="Generic mode: subject for an arbitrary email (requires --body-file).")
+    parser.add_argument("--body-file", default=None,
+                        help="Generic mode: text/markdown file to send as the body (requires --subject).")
     parser.add_argument("--smtp-host", default="smtp.gmail.com")
     parser.add_argument("--smtp-port", type=int, default=465)
     parser.add_argument("--dry-run", action="store_true",
@@ -222,7 +228,21 @@ def main(argv: list[str] | None = None) -> int:
 
     created_date = args.created_date or datetime.now().date().isoformat()
 
-    if args.watchdog:
+    if args.subject or args.body_file:
+        # Generic mode: ship an already-built document (e.g. the Mon/Thu
+        # digest the workflow wrote to /tmp/digest.md). Flag misuse is a
+        # developer error and exits 2; a missing body file at runtime is
+        # non-fatal by design (warn + exit 0, like every other send problem).
+        if not (args.subject and args.body_file):
+            print("error: --subject and --body-file must be used together.", file=sys.stderr)
+            return 2
+        body_path = Path(args.body_file)
+        if not body_path.exists():
+            print(f"notify: WARNING - body file not found: {body_path}; skipping email "
+                  "(this did not fail the run).", file=sys.stderr)
+            return 0
+        subject, body = args.subject, body_path.read_text(encoding="utf-8")
+    elif args.watchdog:
         subject, body = build_watchdog_email(args.window, args.run_url)
     elif args.failure:
         subject, body = build_failure_email(created_date, args.run_url)

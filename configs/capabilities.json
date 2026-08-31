@@ -6,7 +6,8 @@
     "fr_fluid_proof_covers": "Can supply fire-retardant / fluid-proof mattress covers (correctional / med-surg requirement).",
     "gpo_eligibility": "GPO / co-op award eligibility by vehicle. true = we can sell under that vehicle. E&I is registered/complete; the rest are not yet eligible.",
     "bonding": "Can post payment/performance bonds when a solicitation requires bonding. Currently false.",
-    "brand_authorizations": "Brands we are authorized to supply against a brand-name/sole-source spec. A spec naming a brand NOT in this list is an eligibility blocker."
+    "brand_authorizations": "Brands we are authorized to supply against a brand-name/sole-source spec. A spec naming a brand NOT in this list is an eligibility blocker.",
+    "set_aside_eligibility": "SAM typeOfSetAside codes CSP can claim: SBA = total small business, SBP = partial small business (NAICS 337910 size standard 1,000 employees; CSP ~80). Any other code on a notice (8A, 8AN, HZC, HZS, SDVOSBC, SDVOSBS, WOSB, EDWOSB, VSA, LAS, IEE, ISBEE, ...) is an eligibility blocker: CSP cannot prime it, so ingest blocks the row on arrival (see ingest_sam.py + readiness.py)."
   },
   "sam_active": true,
   "cfr_1633": true,
@@ -14,5 +15,6 @@
   "fr_fluid_proof_covers": true,
   "gpo_eligibility": {"E&I": true, "DSSI": false, "Vizient": false, "Premier": false, "HealthTrust": false},
   "bonding": false,
-  "brand_authorizations": ["Restonic", "Spring Air"]
+  "brand_authorizations": ["Restonic", "Spring Air"],
+  "set_aside_eligibility": ["SBA", "SBP"]
 }

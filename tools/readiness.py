@@ -56,6 +56,8 @@ DEFAULT_CAPS: dict = {
     },
     "bonding": False,
     "brand_authorizations": ["Restonic", "Spring Air"],
+    # SAM typeOfSetAside codes we can claim: total / partial small business.
+    "set_aside_eligibility": ["SBA", "SBP"],
 }
 
 # Closed / terminal rows are not "open" pipeline — they cannot be unlocked, so
@@ -108,6 +110,16 @@ TB_117_RE = re.compile(
     re.I,
 )
 
+# Set-aside eligibility. SAM ingest stamps "Set-aside: CODE (description)" into
+# notes from the notice's typeOfSetAside; a code outside
+# caps["set_aside_eligibility"] is a hard blocker -- a set-aside we cannot
+# claim (8(a), HUBZone, SDVOSB, WOSB, Buy Indian ISBEE/IEE, local-area) is not
+# something price or spec can unlock. The label must carry a colon and the
+# code must be an upper-case token, so prose such as "total small-business
+# set-aside, NAICS 449110" or "no set-aside declared" never matches.
+SET_ASIDE_RE = re.compile(r"[Ss]et[\s\-]?[Aa]side:\s*([A-Z0-9]{2,12})(?![A-Za-z0-9])")
+SET_ASIDE_NONE = {"NONE", "NA"}
+
 
 @dataclass(frozen=True)
 class Requirement:
@@ -115,8 +127,8 @@ class Requirement:
 
     label   — human description of what the opportunity requires.
     cap_key — which capability gates it: "sam_active" / "brand" / "gpo" /
-              "bonding" / "cfr_1633" / "cal_tb_117".
-    detail  — brand or GPO name (for the brand/gpo cap_keys).
+              "bonding" / "cfr_1633" / "cal_tb_117" / "set_aside".
+    detail  — brand / GPO name / set-aside code (brand, gpo, set_aside).
     blocker — the message emitted when the requirement is NOT met.
     """
 
@@ -184,6 +196,28 @@ def _matched_gpos(text: str) -> list[str]:
     return [name for name, rx in _GPO_PATTERNS if rx.search(text or "")]
 
 
+def _matched_set_asides(text: str) -> list[str]:
+    """Distinct set-aside codes stamped in the text, first-seen order."""
+    out: list[str] = []
+    for m in SET_ASIDE_RE.finditer(text or ""):
+        code = m.group(1).upper()
+        if code in SET_ASIDE_NONE or code in out:
+            continue
+        out.append(code)
+    return out
+
+
+def set_aside_ineligible(code: str, caps: "dict | None" = None) -> bool:
+    """True when a SAM typeOfSetAside code is one we cannot claim. Blank and
+    NONE mean open competition (False). Used by ingest to block on arrival."""
+    code = (code or "").strip().upper()
+    if not code or code in SET_ASIDE_NONE:
+        return False
+    caps = caps if caps is not None else load_capabilities()
+    eligible = {str(c).upper() for c in (caps.get("set_aside_eligibility") or [])}
+    return code not in eligible
+
+
 def _detect(row: dict) -> list[Requirement]:
     """All eligibility requirements detected for an opportunity (no caps)."""
     text = _req_text(row)
@@ -192,6 +226,11 @@ def _detect(row: dict) -> list[Requirement]:
     if FEDERAL_RE.search(_federal_text(row)):
         reqs.append(Requirement("SAM Active (federal)", "sam_active", "",
                                 "SAM not Active"))
+
+    for code in _matched_set_asides(text):
+        reqs.append(Requirement(
+            f"set-aside eligibility: {code}", "set_aside", code,
+            f"set-aside: {code} (not eligible)"))
 
     for brand in _matched_brands(text):
         reqs.append(Requirement(
@@ -223,6 +262,9 @@ def _is_met(req: Requirement, caps: dict) -> bool:
         return req.detail.lower() in authorized
     if req.cap_key == "gpo":
         return bool((caps.get("gpo_eligibility") or {}).get(req.detail, False))
+    if req.cap_key == "set_aside":
+        eligible = {str(c).upper() for c in (caps.get("set_aside_eligibility") or [])}
+        return req.detail.upper() in eligible
     return bool(caps.get(req.cap_key, False))
 
 

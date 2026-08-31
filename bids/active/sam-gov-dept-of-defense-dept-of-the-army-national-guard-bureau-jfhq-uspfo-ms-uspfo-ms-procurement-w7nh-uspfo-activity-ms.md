@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Status | drafting |
+| Status | submitted |
 | Buyer | Mississippi Air National Guard — Combat Readiness Training Center, Gulfport MS (USPFO MS, W50S7K) |
 | Solicitation # | W50S7K26A005 |
 | Portal | SAM.gov (email-back RFQ — no portal submission) |
@@ -82,3 +82,9 @@ hand and no portal registration is needed.
 - 2026-08-10 posted; 2026-08-13 surfaced by SAM ingest (PR #152), both
   attachments read, gates cleared (`specs_pending` removed), moved to
   `drafting` with BID recommendation. Pricing is the open item.
+- 2026-08-31 operator confirmed the 6-CLIN quote was emailed to both POCs
+  before the 08-19 deadline (exact send date / quoted total not recorded in
+  the repo - add when known). Moved `drafting` -> `submitted`; quotes valid
+  60 days (~2026-10-18). Follow up with the POCs on 2026-09-15 if no award
+  notice. Note: this row sat 12 days past due unflagged because the digest
+  deadline scan covers Lead Radar only, not the active pipeline.

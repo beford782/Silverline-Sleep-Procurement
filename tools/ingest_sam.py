@@ -70,6 +70,7 @@ from pipeline import (  # noqa: E402
 )
 import relevance  # noqa: E402
 import lead_radar  # noqa: E402
+import readiness  # noqa: E402
 import win_score  # noqa: E402
 
 
@@ -290,6 +291,16 @@ def _initial_blockers() -> str:
     return "; ".join(blockers)
 
 
+def _set_aside_note(code: str, desc: str) -> str:
+    """Stamp the notice's set-aside into notes so readiness.py can gate on it
+    (and re-derive the blocker on every annotate pass, not just at ingest)."""
+    code = (code or "").strip().upper()
+    if not code:
+        return ""
+    desc = (desc or "").strip()
+    return f"Set-aside: {code} ({desc})" if desc else f"Set-aside: {code}"
+
+
 def record_to_row(record: dict, today: str) -> dict:
     """Map a SAM.gov opportunity record onto a pipeline CSV row dict."""
     solicitation_number = (record.get("solicitationNumber") or "").strip()
@@ -300,6 +311,32 @@ def record_to_row(record: dict, today: str) -> dict:
     label = solicitation_number or notice_id or title
     parts = [slugify("SAM.gov"), slugify(buyer), slugify(label)]
     opportunity_id = re.sub(r"-+", "-", "-".join(p for p in parts if p)).strip("-")[:120]
+
+    # Set-aside: the relevance gate scores NAICS/PSC/keywords and cannot see
+    # eligibility, so a Buy Indian (ISBEE) or 8(a) mattress buy scores fit 95
+    # and lands in the active pipeline. Decide it on arrival instead: stamp the
+    # code into notes (readiness.py re-derives the blocker from it) and, when
+    # it is a set-aside we cannot claim, block the row with a no-bid next_action.
+    # The row stays visible rather than being dropped, so a human archives it
+    # with the reason and a channel-partner route is not lost.
+    set_aside_code = (record.get("typeOfSetAside") or "").strip().upper()
+    set_aside_desc = (record.get("typeOfSetAsideDescription") or "").strip()
+    notes = (record.get("type") or "").strip()
+    if set_aside_code:
+        notes = " | ".join(p for p in (notes, _set_aside_note(set_aside_code, set_aside_desc)) if p)
+    blockers = _initial_blockers()
+    next_action = (
+        "Triage: clear procurement blockers, read solicitation attachments, "
+        "confirm specs, then decide bid/no-bid"
+    )
+    if readiness.set_aside_ineligible(set_aside_code):
+        blockers = "; ".join(p for p in (f"set_aside_ineligible:{set_aside_code}", blockers) if p)
+        next_action = (
+            f"NO-BID CANDIDATE: {set_aside_code} set-aside"
+            + (f" ({set_aside_desc})" if set_aside_desc else "")
+            + " - CSP cannot claim it, so it cannot prime. Archive no-bid with the "
+            "reason unless an eligible partner primes with CSP as the manufacturer."
+        )
 
     row = {k: "" for k in CANONICAL_HEADER}
     row.update({
@@ -314,16 +351,13 @@ def record_to_row(record: dict, today: str) -> dict:
         "due_date": _normalize_due_date(record.get("responseDeadLine") or ""),
         "delivery_location": _extract_place_of_performance(record.get("placeOfPerformance")),
         "commodity_terms": _extract_commodity_terms(record),
-        "next_action": (
-            "Triage: clear procurement blockers, read solicitation attachments, "
-            "confirm specs, then decide bid/no-bid"
-        ),
+        "next_action": next_action,
         "created_date": today,
         "last_reviewed": today,
-        "notes": (record.get("type") or "").strip(),
+        "notes": notes,
         "procurement_risk": "blocker",
         "gate_status": "blocked",
-        "compliance_blocker": _initial_blockers(),
+        "compliance_blocker": blockers,
     })
     return row
 

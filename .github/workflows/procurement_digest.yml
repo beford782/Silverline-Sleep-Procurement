@@ -61,7 +61,17 @@ jobs:
             echo "## ⏰ Response deadlines — act or close"
             echo
             echo '```text'
+            python tools/pipeline.py deadlines
+            echo '```'
+            echo
+            echo '```text'
             python tools/lead_radar.py deadlines
+            echo '```'
+            echo
+            echo "## ✉️ Send-by reminders (bid_ready / drafting rows, due - 2d)"
+            echo
+            echo '```text'
+            python tools/pipeline.py calendar --emit --stdout
             echo '```'
             echo
             echo "## Current Lead Radar"
@@ -117,7 +127,8 @@ jobs:
             echo
             echo "## What to do"
             echo
-            echo "- **Response deadlines first.** Anything under \`DUE WITHIN\` needs a bid/no-bid call now; anything under \`OVERDUE\` is a missed window that should be closed to a terminal status (\`no-fit\`/\`stale\`/\`archived\`) so the list stays honest."
+            echo "- **Response deadlines first — active pipeline, then Lead Radar.** Anything under \`DUE WITHIN\` needs a send/no-bid call now; anything under \`MISSED\`/\`OVERDUE\` is a window that closed on our watch — log the send if it went out, otherwise close the row to a terminal status (\`no-bid\`/\`lost\`/\`no-fit\`/\`stale\`) so the list stays honest. \`SUBMITTED - awaiting award\` rows need a POC follow-up at due + 14d."
+            echo "- Send-by reminders are the alarm for bid_ready/drafting rows (due - 2d). Operator/assistant: create each \`already_scheduled: false\` event via the Google Calendar MCP tool and record its id in \`bids/active/_calendar_state.json\`. A \`WARN ... gate is blocked\` line is a row due soon that is not ready — clear the blockers or no-bid it today."
             echo "- If there are open automation PRs, review those next — merge them the day they land, since two open ingest runs will collide on overlapping windows."
             echo "- Active pipeline rows are confirmed bid candidates; Lead Radar rows are watch/research signals."
             echo "- Demand Radar rows are pre-RFP private-sector construction signals for human outreach (sales), NOT biddable solicitations."

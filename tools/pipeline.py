@@ -13,6 +13,10 @@ Subcommands:
     summary          Counts by status, source, risk_level, and procurement_risk.
     score            Recompute fit_score; fill blank risk_level unless told to overwrite.
     move-to-archive  Move a row from active to archive.
+    deadlines        Open rows overdue / due soon / undated, plus submitted rows
+                     awaiting award (the digest's first section).
+    calendar         SEND-BY reminders (due_date - 2d) for bid_ready / drafting
+                     rows, as a CI-safe event payload for Google Calendar.
 
 Stdlib only. No third-party dependencies.
 """
@@ -21,13 +25,14 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 import os
 import re
 import shutil
 import sys
 import tempfile
 from collections import Counter
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Iterable
 
@@ -42,6 +47,22 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_ACTIVE = REPO_ROOT / "bids" / "active" / "_pipeline.csv"
 DEFAULT_ARCHIVE = REPO_ROOT / "bids" / "archive" / "_pipeline_archive.csv"
 TEMPLATE_HEADER = REPO_ROOT / "templates" / "opportunity_tracker.csv"
+
+# Response-deadline triage + send-by calendar for the ACTIVE pipeline (mirrors
+# lead_radar.py's deadlines/calendar). Stdlib-only, no network, no MCP.
+OPEN_STATUSES = ("watching", "drafting")   # rows that still owe the buyer a response
+DEADLINE_WINDOW_DAYS = 10
+SEND_BY_LEAD_DAYS = 2                      # the send-by event lands on due_date - 2d
+SEND_BY_HORIZON_DAYS = 45
+DEFAULT_CALENDAR_EVENTS = REPO_ROOT / "bids" / "active" / "_calendar_events.json"
+DEFAULT_CALENDAR_STATE = REPO_ROOT / "bids" / "active" / "_calendar_state.json"
+SEND_CHECKLIST = [
+    "Price every CLIN / complete every form field named in the prep sheet - leave nothing blank.",
+    "Sign and date; attach the capability statement / spec sheets the notice asks for.",
+    "Send from silverlinesleep.com (never Gmail) to every POC named in next_action; keep the sent copy.",
+    "Log the send date + quoted total in the pipeline row AND set the bid markdown '| Status |' to submitted.",
+    "Set the award follow-up: check with the POC at due + 14d.",
+]
 
 CANONICAL_HEADER = [
     "opportunity_id",
@@ -562,6 +583,361 @@ def cmd_move_to_archive(args: argparse.Namespace) -> int:
 # CLI plumbing
 # ---------------------------------------------------------------------
 
+# ---------------------------------------------------------------------
+# Response deadlines (active pipeline)
+# ---------------------------------------------------------------------
+def parse_due(value: str) -> "date | None":
+    """Parse an ISO YYYY-MM-DD date; None for blank/unparseable."""
+    value = (value or "").strip()
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def is_open_row(row: dict) -> bool:
+    """True while the row still owes the buyer a response. submitted / awarded /
+    lost / no-bid / cancelled never raise a deadline alarm."""
+    return (row.get("status") or "").strip().lower() in OPEN_STATUSES
+
+
+def triage_deadlines(rows: Iterable[dict], today: "date", window_days: int) -> dict:
+    """Bucket active rows by response deadline (same rules as Lead Radar).
+
+    missed          open row whose due_date passed while we held it
+                    (created_date <= due_date, or blank created_date).
+    arrived_closed  open row ingested after its due_date (historical signal).
+    due_soon        open row due within window_days.
+    undated         open row with no due_date -- nothing can ever warn about it.
+    awaiting_award  submitted row past its due_date, with days since due, so an
+                    award follow-up does not fall off the radar either.
+    """
+    missed: list[tuple[int, dict]] = []
+    arrived_closed: list[tuple[int, dict]] = []
+    due_soon: list[tuple[int, dict]] = []
+    undated: list[dict] = []
+    awaiting_award: list[tuple[int, dict]] = []
+
+    for row in rows:
+        status = (row.get("status") or "").strip().lower()
+        due = parse_due(row.get("due_date", ""))
+        if status == "submitted":
+            if due is not None and due < today:
+                awaiting_award.append(((today - due).days, row))
+            continue
+        if not is_open_row(row):
+            continue
+        if due is None:
+            undated.append(row)
+            continue
+        days = (due - today).days
+        if days < 0:
+            created = parse_due(row.get("created_date", ""))
+            if created is not None and created > due:
+                arrived_closed.append((days, row))
+            else:
+                missed.append((days, row))
+        elif days <= window_days:
+            due_soon.append((days, row))
+
+    def by_days(dr: tuple[int, dict]) -> tuple:
+        return (dr[0], dr[1].get("opportunity_id", ""))
+
+    missed.sort(key=by_days)
+    arrived_closed.sort(key=by_days)
+    due_soon.sort(key=by_days)
+    awaiting_award.sort(key=lambda dr: (-dr[0], dr[1].get("opportunity_id", "")))
+    undated.sort(key=lambda r: r.get("opportunity_id", ""))
+    return {
+        "today": today.isoformat(),
+        "window_days": window_days,
+        "missed": missed,
+        "arrived_closed": arrived_closed,
+        "due_soon": due_soon,
+        "undated": undated,
+        "awaiting_award": awaiting_award,
+    }
+
+
+def _parse_today(value: str) -> "date":
+    if not value:
+        return datetime.now().date()
+    return datetime.strptime(value, "%Y-%m-%d").date()
+
+
+def cmd_deadlines(args: argparse.Namespace) -> int:
+    _, rows = read_rows(Path(args.active))
+    try:
+        today = _parse_today(args.today)
+    except ValueError as exc:
+        print(f"error: --today expected YYYY-MM-DD, got {args.today!r} ({exc})", file=sys.stderr)
+        return 1
+    if args.window < 0:
+        print("error: --window must be >= 0", file=sys.stderr)
+        return 1
+
+    report = triage_deadlines(rows, today, args.window)
+    missed, due_soon = report["missed"], report["due_soon"]
+    arrived_closed, undated = report["arrived_closed"], report["undated"]
+    awaiting = report["awaiting_award"]
+
+    print(f"Active pipeline response deadlines (as of {report['today']}, window {args.window}d)")
+    print(f"{len(missed)} missed, {len(due_soon)} due soon, {len(undated)} open with no due date, "
+          f"{len(awaiting)} submitted awaiting award")
+    print()
+
+    def print_block(label: str, entries: list, empty: str) -> None:
+        print(label)
+        if not entries:
+            print(f"  {empty}")
+            print()
+            return
+        cols = ("DAYS", "DUE", "STATUS", "GATE", "WIN", "SOLICITATION", "TITLE")
+        table = [(
+            (f"+{days}" if days > 0 else str(days)),
+            row.get("due_date", ""),
+            row.get("status", ""),
+            row.get("gate_status", ""),
+            row.get("win_score", ""),
+            (row.get("solicitation_number") or "")[:24],
+            (row.get("title") or "")[:52],
+        ) for days, row in entries]
+        widths = [max(len(c), max((len(r[i]) for r in table), default=0)) for i, c in enumerate(cols)]
+        print("  " + "  ".join(c.ljust(widths[i]) for i, c in enumerate(cols)))
+        print("  " + "  ".join("-" * widths[i] for i in range(len(cols))))
+        for r in table:
+            print("  " + "  ".join(r[i].ljust(widths[i]) for i in range(len(cols))))
+        print()
+
+    print_block(f"MISSED - active row held past its response deadline ({len(missed)}):",
+                missed, "(none) - nothing expired on our watch")
+    print_block(f"DUE WITHIN {args.window} DAYS - send it or no-bid it ({len(due_soon)}):",
+                due_soon, "(none)")
+    if arrived_closed:
+        print(f"Ingested already-closed, historical signal only ({len(arrived_closed)}):")
+        for _, row in arrived_closed:
+            print(f"  due {row.get('due_date', ''):<12} {(row.get('title') or '')[:60]}")
+        print()
+    print(f"SUBMITTED - awaiting award ({len(awaiting)}):")
+    if not awaiting:
+        print("  (none)")
+    for since, row in awaiting:
+        print(f"  {since:>4}d since due {row.get('due_date', '')}  "
+              f"{(row.get('solicitation_number') or '')[:20]:<20} {(row.get('title') or '')[:50]}")
+    print()
+    print(f"NO DUE DATE, still open ({len(undated)}):")
+    if not undated:
+        print("  (none)")
+    for row in undated:
+        print(f"  {row.get('status', ''):<9} {(row.get('solicitation_number') or '')[:20]:<20} "
+              f"{(row.get('title') or '')[:50]}")
+    print()
+    if missed:
+        print("A missed row means a bid we were holding expired unsent. Close it")
+        print("(no-bid/lost) with the reason, or log the send if it did go out.")
+    return 0
+
+
+# ---------------------------------------------------------------------
+# Send-by calendar (bid_ready / drafting rows)
+# ---------------------------------------------------------------------
+CALENDAR_HELP = """\
+calendar - emit a dated SEND-BY reminder for every bid we intend to submit.
+
+A digest line is not an alarm. For each open row that is bid_ready (or already
+drafting) and has a due_date, this emits a CI-safe all-day event on
+due_date - 2 days carrying the send checklist, and writes the payload to
+bids/active/_calendar_events.json (or stdout with --stdout). Open rows due
+inside the horizon whose gate is still blocked/triage are listed as WARN so a
+deadline cannot sneak up on an unready row.
+
+NO NETWORK / NO MCP happens here. Pushing events to Google Calendar is an
+OPERATOR/ASSISTANT step:
+  1. Read bids/active/_calendar_events.json.
+  2. For each event with "already_scheduled": false, call the Google Calendar
+     MCP tool mcp__claude_ai_Google_Calendar__create_event (all-day on
+     "start", using "title" and "description").
+  3. Record the returned event id in bids/active/_calendar_state.json under
+     the event "key" so the next emit marks it already_scheduled.
+"""
+
+
+def is_send_by_candidate(row: dict) -> bool:
+    """Open row we intend to submit: gate bid_ready, or already drafting."""
+    if not is_open_row(row):
+        return False
+    gate = (row.get("gate_status") or "").strip().lower()
+    status = (row.get("status") or "").strip().lower()
+    return gate == "bid_ready" or status == "drafting"
+
+
+def _send_by_title(row: dict, due: "date") -> str:
+    sol = (row.get("solicitation_number") or "").strip()
+    title = (row.get("title") or "").strip()
+    head = " ".join(p for p in (sol, title) if p)
+    return f"[SEND BY] {head} - due {due.isoformat()}".strip()
+
+
+def _send_by_description(row: dict, due: "date", send_by: "date") -> str:
+    lines = [f"Response due {due.isoformat()}; send by {send_by.isoformat()}.", "", "Send checklist:"]
+    for i, step in enumerate(SEND_CHECKLIST, 1):
+        lines.append(f"{i}. {step}")
+    lines.append("")
+    for label, field in (("Buyer", "buyer"), ("Portal", "portal_url"),
+                         ("Next action", "next_action"), ("Blockers", "compliance_blocker")):
+        val = (row.get(field) or "").strip()
+        if val:
+            lines.append(f"{label}: {val}")
+    win = (row.get("win_score") or "").strip()
+    if win:
+        lines.append(f"Win score: {win}")
+    return "\n".join(lines)
+
+
+def build_send_by_event(row: dict, today: "date") -> dict:
+    """Event payload for a candidate row with a parseable due_date."""
+    due = parse_due(row.get("due_date", ""))
+    if due is None:
+        raise ValueError("build_send_by_event requires a parseable due_date")
+    send_by = due - timedelta(days=SEND_BY_LEAD_DAYS)
+    oid = (row.get("opportunity_id") or "").strip()
+    return {
+        "key": f"{oid}:{due.isoformat()}",
+        "opportunity_id": oid,
+        "title": _send_by_title(row, due),
+        "start": send_by.isoformat(),
+        "all_day": True,
+        "due_date": due.isoformat(),
+        "lead_time_days": SEND_BY_LEAD_DAYS,
+        "overdue": send_by < today,
+        "past_due": due < today,
+        "status": (row.get("status") or "").strip(),
+        "gate_status": (row.get("gate_status") or "").strip(),
+        "buyer": (row.get("buyer") or "").strip(),
+        "solicitation_number": (row.get("solicitation_number") or "").strip(),
+        "portal_url": (row.get("portal_url") or "").strip(),
+        "description": _send_by_description(row, due, send_by),
+        "already_scheduled": False,
+    }
+
+
+def load_calendar_state(path: Path) -> dict:
+    """Read the idempotency ledger (key -> {event_id, created}); {} if absent."""
+    if not path.exists():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return data if isinstance(data, dict) else {}
+
+
+def build_send_by_payload(rows: Iterable[dict], today: "date", horizon_days: int,
+                          state: "dict | None" = None) -> dict:
+    """Pure, deterministic: active rows -> send-by events + warnings.
+
+    Events: bid_ready/drafting rows due within now..now+horizon (a send-by
+    date already in the past is still emitted, flagged overdue, so nothing
+    lapses quietly). Warnings: candidates with no due_date, and open rows due
+    inside the horizon whose gate is still blocked/triage. No file/network I/O.
+    """
+    state = state or {}
+    horizon_end = today + timedelta(days=horizon_days)
+    events: list[dict] = []
+    warnings: list[dict] = []
+    for row in rows:
+        if not is_open_row(row):
+            continue
+        due = parse_due(row.get("due_date", ""))
+        oid = (row.get("opportunity_id") or "").strip()
+        if is_send_by_candidate(row):
+            if due is None:
+                warnings.append({
+                    "opportunity_id": oid,
+                    "message": "bid_ready/drafting with no due_date - set it or no send-by can be scheduled",
+                })
+                continue
+            if due > horizon_end:
+                continue
+            event = build_send_by_event(row, today)
+            event["already_scheduled"] = event["key"] in state
+            events.append(event)
+        elif due is not None and today <= due <= horizon_end:
+            gate = (row.get("gate_status") or "").strip() or "triage"
+            blockers = (row.get("compliance_blocker") or "").strip()
+            warnings.append({
+                "opportunity_id": oid,
+                "message": f"due in {(due - today).days}d but gate is {gate}"
+                           + (f" ({blockers})" if blockers else "")
+                           + " - clear the blockers or no-bid it now",
+            })
+    events.sort(key=lambda e: (e["start"], e["key"]))
+    warnings.sort(key=lambda w: w["opportunity_id"])
+    return {
+        "generated": today.isoformat(),
+        "horizon_days": horizon_days,
+        "events": events,
+        "warnings": warnings,
+    }
+
+
+def _print_send_by_table(payload: dict) -> None:
+    events, warnings = payload["events"], payload["warnings"]
+    print(f"Send-by reminders (as of {payload['generated']}, horizon {payload['horizon_days']}d): "
+          f"{len(events)} event(s), {len(warnings)} warning(s)")
+    if events:
+        cols = ("SEND BY", "STATE", "DUE", "STATUS", "GATE", "SOLICITATION", "TITLE")
+
+        def state_of(e: dict) -> str:
+            if e["past_due"]:
+                return "PAST DUE"
+            if e["overdue"]:
+                return "SEND NOW"
+            return "scheduled" if e["already_scheduled"] else "new"
+
+        table = [[e["start"], state_of(e), e["due_date"], e["status"], e["gate_status"],
+                  e["solicitation_number"][:18], e["title"][:44]] for e in events]
+        widths = [max(len(cols[i]), max((len(r[i]) for r in table), default=0)) for i in range(len(cols))]
+        print("  ".join(cols[i].ljust(widths[i]) for i in range(len(cols))))
+        print("  ".join("-" * widths[i] for i in range(len(cols))))
+        for r in table:
+            print("  ".join(r[i].ljust(widths[i]) for i in range(len(cols))))
+    else:
+        print("  (no bid_ready/drafting rows with a due date in horizon)")
+    for w in warnings:
+        print(f"WARN: {w['opportunity_id'] or '(unknown)'}: {w['message']}")
+
+
+def cmd_calendar(args: argparse.Namespace) -> int:
+    _, rows = read_rows(Path(args.active))
+    try:
+        today = _parse_today(args.today)
+    except ValueError as exc:
+        print(f"error: --today expected YYYY-MM-DD, got {args.today!r} ({exc})", file=sys.stderr)
+        return 1
+    if args.horizon < 0:
+        print("error: --horizon must be >= 0", file=sys.stderr)
+        return 1
+
+    state = load_calendar_state(Path(args.state))
+    payload = build_send_by_payload(rows, today, args.horizon, state)
+    _print_send_by_table(payload)
+
+    text = json.dumps(payload, indent=2, ensure_ascii=False)
+    if args.stdout:
+        if payload["events"]:
+            print()
+            print(text)
+    else:
+        out = Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(text + "\n", encoding="utf-8")
+        print()
+        print(f"Wrote {len(payload['events'])} event(s), {len(payload['warnings'])} warning(s) to {out}")
+        print("Operator/assistant: push 'already_scheduled: false' events to Google Calendar "
+              f"via MCP, then record ids in {Path(args.state)} (see `calendar --help`).")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--active", default=str(DEFAULT_ACTIVE), help="Active pipeline CSV (default: %(default)s)")
@@ -652,6 +1028,37 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Append text to the notes column (separator '; '). Empty notes are set rather than prefixed.",
     )
+
+    p_dl = sub.add_parser(
+        "deadlines",
+        help="Active rows that are overdue, due soon, undated, or submitted and awaiting award.",
+    )
+    p_dl.set_defaults(func=cmd_deadlines)
+    p_dl.add_argument("--window", type=int, default=DEADLINE_WINDOW_DAYS,
+                      help="Flag open rows due within DAYS (default: %(default)s).")
+    p_dl.add_argument("--today", default="",
+                      help="Override 'today' as YYYY-MM-DD (determinism/testing).")
+
+    p_cal = sub.add_parser(
+        "calendar",
+        help="Emit SEND-BY reminders (due_date - 2d) for bid_ready / drafting rows.",
+        description=CALENDAR_HELP,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p_cal.set_defaults(func=cmd_calendar)
+    p_cal.add_argument("--emit", action="store_true", default=True,
+                       help="Emit send-by events (default; CI-safe, no network/MCP).")
+    p_cal.add_argument("--horizon", type=int, default=SEND_BY_HORIZON_DAYS,
+                       help="Only rows due within now..now+DAYS (default: %(default)s).")
+    p_cal.add_argument("--stdout", action="store_true",
+                       help="Print the event-payload JSON to stdout (only when there are events) "
+                            "instead of writing --out.")
+    p_cal.add_argument("--out", default=str(DEFAULT_CALENDAR_EVENTS),
+                       help="Event-payload JSON path (default: %(default)s).")
+    p_cal.add_argument("--state", default=str(DEFAULT_CALENDAR_STATE),
+                       help="Idempotency ledger JSON (key -> event_id) (default: %(default)s).")
+    p_cal.add_argument("--today", default="",
+                       help="Override 'today' as YYYY-MM-DD (determinism/testing).")
 
     return parser
 

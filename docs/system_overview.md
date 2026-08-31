@@ -121,7 +121,7 @@ All adapters dedupe against prior rows **including archives**, so dead leads don
 | `daily_email_ingest.yml` | daily IMAP pull → triage → digest |
 | `weekly_rss_ingest.yml` / `weekly_sam_ingest.yml` | RSS + SAM sweeps |
 | `weekly_email_ingest.yml` | Graph fallback path for the email channel |
-| `procurement_digest.yml` | assemble + email the digest (bids + leads + demand + calendar + readiness) |
+| `procurement_digest.yml` | assemble the digest (bids + leads + demand + calendar + readiness) and post it to issue #43; chained to the RSS ingest via `workflow_run`, with fallback crons + an idempotency guard. Delivery today is the GitHub notification email on #43 (no direct-email step yet) |
 | `email_watchdog.yml` | dead-channel detection |
 | `ci.yml` | tests + leak/PII checks + `workflow_check` |
 | `cleanup_auto_branches.yml` | hygiene |

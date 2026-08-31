@@ -15,8 +15,10 @@ name: Daily email-alert ingest (IMAP)
 
 on:
   schedule:
-    # Daily at 14:00 UTC = 09:00 Houston CDT / 08:00 CST.
-    - cron: '0 14 * * *'
+    # Daily at 14:11 UTC = 09:11 Houston CDT. Off the :00 boundary (GitHub
+    # delays/drops top-of-hour scheduled jobs under load). No fallback cron:
+    # the 7-day IMAP window self-heals on the next day's run.
+    - cron: '11 14 * * *'
   workflow_dispatch:
 
 permissions:

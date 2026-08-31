@@ -7,8 +7,14 @@ name: Twice-weekly RSS/feed ingest
 
 on:
   schedule:
-    # Mondays + Thursdays 13:45 UTC (after the SAM 13:00 and email 13:30 runs).
-    - cron: '45 13 * * 1,4'
+    # Mondays + Thursdays 13:52 UTC, after the SAM 13:07 run. Off the :45
+    # boundary (GitHub delays/drops boundary-minute scheduled jobs under
+    # load). Completing this workflow triggers the digest via workflow_run.
+    - cron: '52 13 * * 1,4'
+    # Same-day fallback (17:55 UTC = 12:55 Houston) for a dropped morning
+    # slot; dedup makes a repeat run a no-op, and the digest it triggers is
+    # idempotent per day.
+    - cron: '55 17 * * 1,4'
   workflow_dispatch:
 
 permissions:

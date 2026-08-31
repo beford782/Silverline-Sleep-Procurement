@@ -1,11 +1,31 @@
 name: Procurement ingest digest
 
 on:
+  # PRIMARY trigger: chain off the RSS ingest so the digest posts minutes after
+  # the Mon/Thu ingests actually ran. Rationale (60-day audit, 2026-08-31):
+  # GitHub's cron scheduler fired 0 of 18 digest slots within 30 min - median
+  # +97 min, worst +9.4 h (08-27), one slot cancelled by runner starvation
+  # (08-06), one never fired at all (08-31). Chaining costs one scheduler hit
+  # instead of four and can never post before the data lands.
+  workflow_run:
+    workflows: ["Twice-weekly RSS/feed ingest"]
+    types: [completed]
   schedule:
-    # Mondays + Thursdays 14:30 UTC = 09:30 Houston CDT / 08:30 CST.
-    # Runs after SAM, email-alert, and RSS ingest workflows.
-    - cron: '30 14 * * 1,4'
+    # FALLBACK crons, deliberately off the :00/:30/:45 congestion minutes
+    # (GitHub documents top-of-hour scheduled jobs as delayable/droppable).
+    # Fallback 1 - Mon + Thu 14:38 UTC = 09:38 Houston CDT.
+    - cron: '38 14 * * 1,4'
+    # Fallback 2 - Mon + Thu 18:40 UTC = 13:40 Houston CDT, so a dropped
+    # morning slot still delivers by lunch. The idempotency guard below keeps
+    # multiple triggers from double-posting.
+    - cron: '40 18 * * 1,4'
   workflow_dispatch:
+
+env:
+  # The tracking issue the digest posts to. Pinned by number: the old
+  # title-search lookup could silently create a NEW bot-authored issue (which
+  # the operator is not subscribed to) on a search hiccup or a closed #43.
+  DIGEST_ISSUE: "43"
 
 permissions:
   contents: read
@@ -21,12 +41,36 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      # With three triggers, first-to-post wins and the rest no-op: a cron
+      # firing hours late from GitHub's backlog must not double-post after the
+      # workflow_run trigger already delivered today's digest. Manual
+      # dispatches always post a fresh digest.
+      - name: Idempotency guard - has today's digest already posted?
+        id: guard
+        if: github.event_name != 'workflow_dispatch'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TODAY=$(date -u +%F)
+          COUNT=$(gh api "repos/${{ github.repository }}/issues/${DIGEST_ISSUE}/comments?since=${TODAY}T00:00:00Z&per_page=100" \
+            --jq "[.[] | select(.body | startswith(\"# Procurement ingest digest - ${TODAY}\"))] | length" || echo 0)
+          if [ "${COUNT:-0}" -gt 0 ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Digest for ${TODAY} already posted (${COUNT} comment(s)) - skipping this trigger."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Set up Python 3.11
+        if: steps.guard.outputs.skip != 'true'
         uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
       - name: Build digest
+        if: steps.guard.outputs.skip != 'true'
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           EVENT_NAME: ${{ github.event_name }}
@@ -138,18 +182,88 @@ jobs:
 
           cat /tmp/digest.md >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Post digest issue/comment
+      - name: Post digest to the tracking issue
+        if: steps.guard.outputs.skip != 'true'
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TITLE="Procurement ingest digest"
-          ISSUE_NUMBER=$(gh issue list --state open --search "\"${TITLE}\" in:title" --json number,title \
-            --jq ".[] | select(.title == \"${TITLE}\") | .number" | head -n 1)
+          STATE=$(gh issue view "$DIGEST_ISSUE" --json state --jq .state || echo "MISSING")
+          if [ "$STATE" != "OPEN" ]; then
+            echo "::warning::Digest issue #${DIGEST_ISSUE} is ${STATE}; creating a replacement - update DIGEST_ISSUE in this workflow"
+            ISSUE_URL=$(gh issue create --title "Procurement ingest digest" \
+              --assignee beford782 \
+              --body "Replacement digest tracking issue: #${DIGEST_ISSUE} was ${STATE}. Update DIGEST_ISSUE in .github/workflows/procurement_digest.yml to this issue's number so future digests (and their notification emails) land here. cc @beford782")
+            DIGEST_ISSUE="${ISSUE_URL##*/}"
+          fi
+          gh issue comment "$DIGEST_ISSUE" --body-file /tmp/digest.md
+          echo "Posted digest comment to issue #${DIGEST_ISSUE}"
 
-          if [ -z "$ISSUE_NUMBER" ]; then
-            ISSUE_URL=$(gh issue create --title "$TITLE" --body-file /tmp/digest.md)
-            echo "Created digest issue: $ISSUE_URL"
+      # Direct email copy to the operator's working mailbox (DIGEST_EMAIL_TO
+      # secret), independent of GitHub notification routing - the operator had
+      # been hand-forwarding digests there. Self-notification over the
+      # established Gmail app-password channel; non-fatal like every notify
+      # send (the #43 GitHub notification email remains the backstop).
+      - name: Email digest copy to the operator
+        if: steps.guard.outputs.skip != 'true'
+        shell: bash
+        env:
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          DIGEST_EMAIL_TO: ${{ secrets.DIGEST_EMAIL_TO }}
+        run: |
+          python tools/notify_push.py \
+            --subject "[Silverline] Procurement digest $(date -u +%F)" \
+            --body-file /tmp/digest.md \
+            --to "$DIGEST_EMAIL_TO" \
+            || echo "::warning::digest email copy failed (see log); the #43 notification email is unaffected"
+
+      # Dead-man's-switch: ping healthchecks.io ONLY on success, so a missed
+      # or failed Mon/Thu digest raises an alert that does not depend on
+      # GitHub's scheduler or notification email. No-op until the operator
+      # creates the check (Mon/Thu schedule, ~2 h grace) and sets the
+      # HEALTHCHECK_URL repo secret.
+      - name: Healthcheck ping (success only)
+        if: success()
+        shell: bash
+        env:
+          HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL }}
+        run: |
+          if [ -n "$HEALTHCHECK_URL" ]; then
+            curl -fsS -m 10 --retry 3 "$HEALTHCHECK_URL" >/dev/null || true
+            echo "Pinged healthcheck."
           else
-            gh issue comment "$ISSUE_NUMBER" --body-file /tmp/digest.md
-            echo "Posted digest comment to issue #$ISSUE_NUMBER"
+            echo "HEALTHCHECK_URL not set - skipping ping."
+          fi
+
+      # A failed digest was previously only a generic Actions email. Match the
+      # ingest workflows: email Blake directly AND open/comment a GitHub issue.
+      - name: Alert on failure (email + issue)
+        if: failure()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW: ${{ github.workflow }}
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          NOTIFY_EMAIL_TO: ${{ secrets.NOTIFY_EMAIL_TO }}
+        run: |
+          # Email (non-fatal; no-op if creds are the thing that's missing).
+          python tools/notify_push.py --failure --run-url "$RUN_URL" || true
+          # GitHub issue (create-or-comment de-dupes).
+          TITLE="Ingest failure: ${WORKFLOW}"
+          TODAY=$(date -u +%F)
+          BODY=$(printf '%s\n' \
+            "The **${WORKFLOW}** workflow FAILED on ${TODAY}." \
+            "" \
+            "- Failed run: ${RUN_URL}" \
+            "- Impact: the Mon/Thu digest did not post, so the operator gets no report for this slot." \
+            "- Check the run log, fix, then re-run with \`gh workflow run procurement_digest.yml\`.")
+          EXISTING=$(gh issue list --state open --search "\"${TITLE}\" in:title" --json number,title \
+            --jq ".[] | select(.title == \"${TITLE}\") | .number" | head -n 1 || true)
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body "$BODY"
+          else
+            gh issue create --title "$TITLE" --body "$BODY"
           fi

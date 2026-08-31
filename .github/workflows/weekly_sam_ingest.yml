@@ -2,8 +2,13 @@ name: Twice-weekly SAM.gov mattress ingest
 
 on:
   schedule:
-    # Mondays + Thursdays 13:00 UTC = 08:00 Houston CDT / 07:00 CST.
-    - cron: '0 13 * * 1,4'
+    # Mondays + Thursdays 13:07 UTC = 08:07 Houston CDT. Off the :00 boundary:
+    # GitHub delays/drops top-of-hour scheduled jobs under load (60-day audit
+    # 2026-08-31: 0 of 17 slots within 30 min; 08-31 never fired).
+    - cron: '7 13 * * 1,4'
+    # Same-day fallback (17:10 UTC = 12:10 Houston) for a dropped morning
+    # slot. A repeat run is safe: dedup makes it a no-op when nothing is new.
+    - cron: '10 17 * * 1,4'
   workflow_dispatch:
 
 permissions:

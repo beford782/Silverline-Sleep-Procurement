@@ -214,5 +214,42 @@ class MainDryRunTests(unittest.TestCase):
         self.assertIn("https://gh/run/12", out)
 
 
+class GenericModeTests(unittest.TestCase):
+    """--subject/--body-file: ship an already-built document (the Mon/Thu
+    digest) over the same non-fatal Gmail channel."""
+
+    def _run(self, *argv: str) -> tuple[int, str, str]:
+        out, err = io.StringIO(), io.StringIO()
+        from contextlib import redirect_stderr
+        with redirect_stdout(out), redirect_stderr(err):
+            rc = notify_push.main(list(argv))
+        return rc, out.getvalue(), err.getvalue()
+
+    def test_subject_and_body_file_dry_run(self) -> None:
+        tmp = Path(tempfile.mkdtemp())
+        try:
+            body = tmp / "digest.md"
+            body.write_text("# Procurement ingest digest - 2026-08-31 hello", encoding="utf-8")
+            rc, out, _ = self._run("--subject", "[Silverline] Procurement digest 2026-08-31",
+                                   "--body-file", str(body), "--dry-run")
+            self.assertEqual(rc, 0)
+            self.assertIn("Subject: [Silverline] Procurement digest 2026-08-31", out)
+            self.assertIn("# Procurement ingest digest - 2026-08-31", out)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_subject_without_body_file_is_a_usage_error(self) -> None:
+        rc, _, err = self._run("--subject", "x", "--dry-run")
+        self.assertEqual(rc, 2)
+        self.assertIn("--body-file", err)
+
+    def test_missing_body_file_warns_and_exits_zero(self) -> None:
+        rc, _, err = self._run("--subject", "x", "--body-file",
+                               str(Path(tempfile.gettempdir()) / "nope-no-such-digest.md"),
+                               "--dry-run")
+        self.assertEqual(rc, 0)
+        self.assertIn("body file not found", err)
+
+
 if __name__ == "__main__":
     unittest.main()

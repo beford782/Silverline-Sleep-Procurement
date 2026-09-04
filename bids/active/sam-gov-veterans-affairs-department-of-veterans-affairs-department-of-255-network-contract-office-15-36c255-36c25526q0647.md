@@ -64,24 +64,46 @@ Source: notice + SF 1449 package on SAM
 - **Brand exposure — the main risk.** CLIN 0001 names a specific commercial
   model (`NP TRIO BH`) plus a VA local stock number, and the RFQ contains
   **no brand-name-or-equal provision**. The award basis is nevertheless
-  technical requirement + past performance + price (FAR 52.212-2), so an
-  equal alternative is evaluable — but only if the quote maps CSP's model
+  Technical Capabilities + Manufacture destination + Price (FAR 52.212-2),
+  so an equal alternative is evaluable — but only if the quote maps CSP's model
   to **each** bullet in Section B explicitly and states plainly where it
   differs. Terms like "Core Shield layer" read as vendor-proprietary
   vocabulary; answer them by construction and function, not by name.
 - **Eligibility:** SAM **Active** (UEI XF73FG8CVMX1, CAGE 22NH3, expires
   2027-07-07). Offeror must be SAM-registered at submission *and* at award,
   and verified in SBA Small Business Search if applicable.
+- **Delivery date is ours to propose.** Section B.4's DELIVERY DATE column is
+  blank and the RFQ states no period of performance or days-ARO. Put a firm,
+  credible date in it — an unfilled schedule is a responsiveness risk, and a
+  short honest lead time is a differentiator on a 20-unit buy.
 - **Scale:** 20 units. Small-dollar, so it will not move the win_score
   (17), but it is a live, closable requirement with a warm POC and a
   reference-quality VA past-performance citation if won.
 
 ## 3. Evaluation / award
 
-Firm-fixed-price, evaluated on **technical requirement, past performance,
-and price** (FAR 52.212-2). Government intends to award **without
-discussions**, so the initial quote must carry best terms. It reserves the
-right to accept other than the lowest offer.
+Firm-fixed-price. **The RFQ states its evaluation basis two different ways —
+read the provision, not the instructions:**
+
+- **E.9, FAR 52.212-2 (the operative provision, p. 41)** lists exactly three
+  factors: **1. Technical Capabilities, 2. Manufacture destination,
+  3. Price.** Award goes to the responsible offeror whose conforming offer is
+  most advantageous, price and other factors considered.
+- **E.2, instructions addendum (p. 29)** says responses "will be evaluated for
+  technical requirement, **past performance**, and price in accordance with
+  FAR Clause 52.212-2" — past performance is not in the provision's factor
+  list.
+
+Practical reading: **manufacture destination is a scored factor, and past
+performance may be.** Submit past performance anyway (the instructions make
+it part of a responsive non-priced volume), but the point to press is that
+**CSP manufactures in Texas** — that is a scoring advantage here, not merely
+a Buy American checkbox. Complete 52.225-2 and 52.225-18 as a domestic end
+product; leave the "Foreign End Products" table blank.
+
+Government intends to award **without discussions**, so the initial quote
+must carry best terms. It reserves the right to accept other than the lowest
+offer.
 
 ## 4. Submission checklist
 
@@ -129,6 +151,12 @@ salient characteristic (RF-weld vs inverted sealed seam; copper/gel foam;
 three-layer head/torso/heel), say so in the technical response rather than
 staying silent — award is not lowest-price-technically-acceptable, and a
 candid deviation is survivable where an unstated one is not.
+
+The counterweight is **manufacture destination**, which 52.212-2 makes a
+scored factor in its own right. CSP builds in Texas; the named incumbent
+model's origin is not stated in the package. That is the one axis where CSP
+can score without matching anyone else's construction, so lead with it
+rather than burying it in the Buy American paperwork.
 
 ## 6. Log
 

@@ -15,11 +15,45 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  actions: read
 
 jobs:
+  # The fallback cron exists for a DROPPED primary slot, not for a late one.
+  # Both fired on 2026-09-03 (primary 17:00Z, fallback 19:46Z, each hours
+  # behind its nominal minute) and opened PRs #172 and #176 over the same
+  # window: dedup runs against `main`, so while the primary's PR is still open
+  # the fallback sees none of its rows and re-emits every one of them as new.
+  # Gate the fallback on whether today already produced a successful run.
+  guard:
+    name: Skip this cron if today's ingest already succeeded
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.check.outputs.skip }}
+    steps:
+      - name: Look for a successful run of this workflow today
+        id: check
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          WORKFLOW_FILE: weekly_sam_ingest.yml
+        run: |
+          TODAY=$(date -u +%F)
+          # The in-flight run is not "completed", so it cannot match itself.
+          JQ="[.workflow_runs[] | select(.conclusion == \"success\") | select(.created_at | startswith(\"${TODAY}\"))] | length"
+          COUNT=$(gh api "repos/${GH_REPO}/actions/workflows/${WORKFLOW_FILE}/runs?per_page=50&status=completed" --jq "$JQ" 2>/dev/null || echo 0)
+          if [ "${COUNT:-0}" -gt 0 ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Today's ingest already succeeded (${COUNT} run(s)) - skipping this cron."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
   ingest:
     name: Ingest, score, open PR if active changed
     runs-on: ubuntu-latest
+    needs: guard
+    if: needs.guard.outputs.skip != 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v5

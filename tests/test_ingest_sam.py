@@ -6,6 +6,7 @@ import csv
 import io
 import json
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -730,6 +731,58 @@ class FetchPageRetryTests(unittest.TestCase):
                 ingest_sam.fetch_page("https://x", sleep=lambda _s: None)
         self.assertEqual(ctx.exception.code, 500)
         self.assertEqual(calls["n"], 1)  # 5xx is a hard error, no retry
+
+
+class OpportunityIdTruncationTests(unittest.TestCase):
+    """The opportunity_id is the dedup key. Capping it must never cost the
+    solicitation number, or two notices from one long-named buyer collapse
+    onto a single id and the newer one is silently dropped as 'already
+    closed' - with no reject-log trace. Regression for N0040626Q0450."""
+
+    NAVY = ("DEPT OF DEFENSE DEPT OF THE NAVY NAVSUP NAVSUP GLOBAL LOGISTICS "
+            "SUPPORT NAVSUP FLC PUGET SOUND NAVSUP FLT LOG CTR PUGET SOUND")
+
+    def test_long_buyer_keeps_solicitation_number(self) -> None:
+        oid = ingest_sam._build_opportunity_id(self.NAVY, "N0040626Q0450")
+        self.assertLessEqual(len(oid), ingest_sam.MAX_OPPORTUNITY_ID_LEN)
+        self.assertTrue(oid.endswith("n0040626q0450"), oid)
+
+    def test_two_notices_from_same_long_buyer_do_not_collide(self) -> None:
+        a = ingest_sam._build_opportunity_id(self.NAVY, "N0040626Q0450")
+        b = ingest_sam._build_opportunity_id(self.NAVY, "1301360161")
+        self.assertNotEqual(a, b)
+
+    def test_short_buyer_id_is_unchanged(self) -> None:
+        """Ids that already fit keep their exact historical value."""
+        oid = ingest_sam._build_opportunity_id("CITY OF AUSTIN", "IFB-123")
+        self.assertEqual(oid, "sam-gov-city-of-austin-ifb-123")
+
+    def test_id_at_the_cap_is_returned_unchanged(self) -> None:
+        """An id that exactly fills the cap keeps its exact historical value;
+        rewriting a working id would orphan the row it belongs to."""
+        label = "abc123"
+        # size the buyer so source + buyer + label lands exactly on the cap
+        pad = ingest_sam.MAX_OPPORTUNITY_ID_LEN - len("sam-gov") - 1 - len(label) - 1
+        buyer = "b" * pad
+        oid = ingest_sam._build_opportunity_id(buyer, label)
+        self.assertEqual(len(oid), ingest_sam.MAX_OPPORTUNITY_ID_LEN)
+        self.assertEqual(oid, f"sam-gov-{buyer}-{label}")
+
+    def test_one_char_over_the_cap_still_keeps_the_label(self) -> None:
+        label = "abc123"
+        pad = ingest_sam.MAX_OPPORTUNITY_ID_LEN - len("sam-gov") - 1 - len(label)
+        oid = ingest_sam._build_opportunity_id("b" * pad, label)
+        self.assertLessEqual(len(oid), ingest_sam.MAX_OPPORTUNITY_ID_LEN)
+        self.assertTrue(oid.endswith(label), oid)
+
+    def test_record_to_row_uses_the_capped_builder(self) -> None:
+        row = ingest_sam.record_to_row(
+            {"solicitationNumber": "N0040626Q0450",
+             "fullParentPathName": self.NAVY.replace(" ", "."),
+             "title": "Standard Beds, Box Springs, Mattresses & Headboards"},
+            "2026-09-04")
+        self.assertTrue(row["opportunity_id"].endswith("n0040626q0450"),
+                        row["opportunity_id"])
 
 
 if __name__ == "__main__":

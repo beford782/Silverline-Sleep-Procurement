@@ -8,7 +8,7 @@
 | Vendor | [Continental Silverline](../../vendor-profiles/continental_silverline.md) |
 | Decision owner | Blake |
 | Portal | SAM.gov |
-| Opportunity id | sam-gov-dept-of-defense-dept-of-the-navy-navsup-navsup-global-logistics-support-navsup-flc-jacksonville-navsup-flt-log-c |
+| Opportunity id | sam-gov-dept-of-defense-dept-of-the-navy-navsup-navsup-global-logistics-support-navsup-flc-jacksonville-na-n6883626q0064 |
 
 ## 1. Summary
 

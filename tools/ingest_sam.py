@@ -301,6 +301,50 @@ def _set_aside_note(code: str, desc: str) -> str:
     return f"Set-aside: {code} ({desc})" if desc else f"Set-aside: {code}"
 
 
+MAX_OPPORTUNITY_ID_LEN = 120
+
+
+def _join_slug(*parts: str) -> str:
+    """Join non-empty slug parts with single dashes."""
+    return re.sub(r"-+", "-", "-".join(p for p in parts if p)).strip("-")
+
+
+def _build_opportunity_id(buyer: str, label: str) -> str:
+    """Build the stable dedup key for a SAM notice: source + buyer + label.
+
+    The label (solicitation number, else noticeId) is the ONLY part that tells
+    two notices from the same buyer apart, so it must survive length capping.
+    Truncating the joined string from the right does the opposite: buyers with
+    long org paths (NAVSUP FLC Puget Sound, JBSA FA3016 502 CONS CL, MICC Ft
+    Drum) overflow 120 chars inside the buyer segment and every notice from
+    that buyer collapses onto one id. Dedup then treats a brand-new
+    solicitation as one we already closed and drops it with no reject-log
+    trace - which is how N0040626Q0450 (Navy mattresses, due 2026-09-01) was
+    silently swallowed by the archived no-bid row for 1301360161.
+
+    So: cap the buyer segment instead, and keep source + label intact.
+    """
+    src = slugify("SAM.gov")
+    buyer_slug = slugify(buyer)
+    label_slug = slugify(label)
+
+    legacy = _join_slug(src, buyer_slug, label_slug)[:MAX_OPPORTUNITY_ID_LEN]
+    if not label_slug or legacy.endswith(label_slug):
+        # The historical right-truncating scheme. Whenever it leaves the label
+        # intact its id is already unique, so keep it byte-for-byte: changing
+        # a working id would orphan the row it belongs to and re-ingest the
+        # notice as new. Only the losing case below gets the new shape.
+        return legacy
+
+    # Room left for the buyer once source, label and the joining dash are paid
+    # for. Can go <= 0 for a pathologically long label, in which case the id is
+    # just source + label and stays unique on the label alone.
+    budget = MAX_OPPORTUNITY_ID_LEN - len(_join_slug(src, label_slug)) - 1
+    if budget <= 0:
+        return _join_slug(src, label_slug)[:MAX_OPPORTUNITY_ID_LEN]
+    return _join_slug(src, buyer_slug[:budget].strip("-"), label_slug)
+
+
 def record_to_row(record: dict, today: str) -> dict:
     """Map a SAM.gov opportunity record onto a pipeline CSV row dict."""
     solicitation_number = (record.get("solicitationNumber") or "").strip()
@@ -309,8 +353,7 @@ def record_to_row(record: dict, today: str) -> dict:
     buyer = _extract_buyer(record)
     # Stable opportunity id: prefer slugified solicitation_number; else noticeId.
     label = solicitation_number or notice_id or title
-    parts = [slugify("SAM.gov"), slugify(buyer), slugify(label)]
-    opportunity_id = re.sub(r"-+", "-", "-".join(p for p in parts if p)).strip("-")[:120]
+    opportunity_id = _build_opportunity_id(buyer, label)
 
     # Set-aside: the relevance gate scores NAICS/PSC/keywords and cannot see
     # eligibility, so a Buy Indian (ISBEE) or 8(a) mattress buy scores fit 95

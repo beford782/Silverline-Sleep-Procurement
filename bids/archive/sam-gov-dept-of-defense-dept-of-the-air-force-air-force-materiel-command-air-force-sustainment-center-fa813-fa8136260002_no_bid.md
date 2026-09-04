@@ -10,7 +10,7 @@
 | Portal | SAM.gov |
 | Notice type | Sources Sought (market research, not a solicitation) |
 | Response due | 2026-06-17 |
-| Opportunity id | sam-gov-dept-of-defense-dept-of-the-air-force-air-force-materiel-command-air-force-sustainment-center-fa8136-afsc-pziob- |
+| Opportunity id | sam-gov-dept-of-defense-dept-of-the-air-force-air-force-materiel-command-air-force-sustainment-center-fa813-fa8136260002 |
 
 ## 1. Summary
 

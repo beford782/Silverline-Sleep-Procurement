@@ -1,8 +1,8 @@
-# Mattress for Behavior Health — Marion VA RRTP (36C25526Q0647) — Bid
+# Mattress for Behavior Health — Marion VA RRTP (36C25526Q0647) — No-Bid
 
 | Field | Value |
 | --- | --- |
-| Status | drafting |
+| Status | no-bid |
 | Buyer | U.S. Dept. of Veterans Affairs — Network Contracting Office (NCO) 15, 36C255 (Leavenworth KS) |
 | Solicitation # | 36C25526Q0647 (SF 1449 RFQ, 42 pp) |
 | Portal | SAM.gov — **email-back quote, no portal submission** |
@@ -138,25 +138,34 @@ silverlinesleep.com. Two separate parts:
 
 ## 5. Decision rationale
 
-**Recommend BID.** Core product, total small-business set-aside under CSP's
-own NAICS, a contracting officer who already holds CSP's capability
-statement, and a 4-day runway with the full spec in hand and no portal
-registration to clear. The order is small, but it converts an existing
-Sources Sought touch into a real quote and, if won, produces a VA
-past-performance reference for the larger recurring VHA mattress channel
-already tracked in Lead Radar.
+**NO-BID — decided 2026-09-04 on geography.**
 
-The one genuine risk is the named model. If CSP cannot meet a specific
-salient characteristic (RF-weld vs inverted sealed seam; copper/gel foam;
-three-layer head/torso/heel), say so in the technical response rather than
-staying silent — award is not lowest-price-technically-acceptable, and a
-candid deviation is survivable where an unstated one is not.
+Marion IL is ~750 road miles from the Houston plant and sits outside CSP's
+declared service geography (TX / OK / LA / MS / AR / NM). CLIN 0002 is what
+makes that decisive: this is not a drop-ship. The award requires on-site
+removal and disposal of the 20 replaced mattresses plus installation
+coordinated with RRTP staff under VA escort policy, so it needs a crew on the
+ground in southern Illinois. Mobilizing one — or qualifying and managing a
+local sub — does not pay for itself against a 20-unit order.
 
-The counterweight is **manufacture destination**, which 52.212-2 makes a
-scored factor in its own right. CSP builds in Texas; the named incumbent
-model's origin is not stated in the package. That is the one axis where CSP
-can score without matching anyone else's construction, so lead with it
-rather than burying it in the Buy American paperwork.
+Nothing else was wrong with it. Product fit, spec, set-aside, NAICS and
+eligibility all cleared, and the manufacture-destination evaluation factor
+actively favored a Texas manufacturer. The disqualifier is purely logistics
+at this quantity.
+
+**What was genuinely on offer, for the record:** core behavioral-health
+mattress work under CSP's own NAICS, from a contracting officer who already
+holds CSP's capability statement, on a total small-business set-aside. If the
+same requirement recurs at a VISN closer to Texas, or at a quantity that
+carries its own freight and crew, it should be picked up immediately — the
+technical analysis in sections 1–3 above stays valid and the spec is already
+decoded.
+
+**Relationship note:** the Sources Sought response (36C25526Q0607) put CSP on
+Jon Lutmer's radar and he is the CO for VA NCO 15. A short courtesy note
+declining on service-area grounds — rather than silence after having engaged
+the Sources Sought — costs nothing and keeps the door open for VA work in
+range. Optional, operator's call.
 
 ## 6. Log
 
@@ -170,3 +179,7 @@ rather than burying it in the Buy American paperwork.
 - **Open for operator:** confirm which CSP behavioral-health model answers
   `NP TRIO BH 35x82 w/ defined perimeter`, and list any spec deltas, before
   the quote goes out.
+- 2026-09-04 **NO-BID (operator decision).** Rejected on geography: Marion IL
+  is outside the TX/OK/LA/MS/AR/NM service area and the CLIN 0002
+  removal/disposal/install obligation requires a crew on site, which a
+  20-unit order cannot carry. Row moved to archive; no quote sent.

@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Status | watching |
+| Status | no-bid |
 | Phase | Sources Sought open; response drafted, awaiting operator send |
 | Buyer | VA Network Contracting Office 15 (36C255), Leavenworth KS — for Marion IL VAMC |
 | Sources Sought # | 36C25526Q0607 (ref 36C255-26-AP-3270) |
@@ -48,3 +48,15 @@ inverted sealed seam, copper/gel foam) before sending.
 - 2026-08-13: surfaced by SAM ingest (PR #152), notice PDF read, promoted
   from Lead Radar, response drafted. Awaiting operator confirm + send by
   08-19 11:00 CT.
+
+## Outcome
+
+**Superseded 2026-09-04 — closed as watch-satisfied, not as a loss.**
+This row existed to watch for the VA NCO 15 follow-on solicitation. That RFQ
+posted 2026-09-01 as **36C25526Q0647** (same contracting officer Jon Lutmer,
+same Marion IL RRTP behavioral-health mattress requirement, Total Small
+Business Set-Aside, offers due 2026-09-08). CSP's Sources Sought capability
+response went in by the 2026-08-19 deadline and the requirement converted.
+
+Work continues on the active row and bid sheet for
+[36C25526Q0647](../active/sam-gov-veterans-affairs-department-of-veterans-affairs-department-of-255-network-contract-office-15-36c255-36c25526q0647.md).

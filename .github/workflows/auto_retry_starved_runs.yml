@@ -5,7 +5,7 @@ name: Auto-retry runner-starved runs
 # reads "The job was not acquired by Runner of type hosted even after
 # multiple attempts". That failure mode bypasses every in-workflow alert
 # step (nothing ever runs), so the ingest silently doesn't happen that day
-# unless a human notices the notification email and clicks "Re-run".
+# unless a human notices the failed run in the digest and clicks "Re-run".
 #
 # This workflow IS that click. It fires when a watched scheduled workflow
 # completes, checks for the starvation signature (every job cancelled with
@@ -25,7 +25,6 @@ on:
       - "Procurement ingest digest"
       - "Twice-weekly RSS/feed ingest"
       - "Twice-weekly SAM.gov mattress ingest"
-      - "Email-ingest pipe watchdog"
       - "Cleanup auto-ingest branches"
     types: [completed]
 

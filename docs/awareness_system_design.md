@@ -95,8 +95,8 @@ obscurity-only). Blake then chose email-to-self over Telegram.
 5. **Dead-man's-switch.** One free healthchecks.io check; copy its ping URL
    (catches the GitHub cron itself silently stopping).
 6. **GitHub secrets** (Settings -> Secrets and variables -> Actions):
-   `GMAIL_ADDRESS`, `GMAIL_APP_PASSWORD`, `NOTIFY_EMAIL_TO` (where to email
-   Blake), `HEALTHCHECK_URL`.
+   `GMAIL_ADDRESS`, `GMAIL_APP_PASSWORD`, `DIGEST_EMAIL_TO` (the one mailbox
+   the Mon/Thu digest goes to), `HEALTHCHECK_URL`.
 7. **Validate.** Actions -> Run workflow once; confirm a test alert email arrives.
 
 ## What I build (code/CI) - smallest first, each independently shippable

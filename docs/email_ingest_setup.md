@@ -71,11 +71,12 @@ fallbacks only.
 6. **GitHub secrets** (Settings → Secrets and variables → Actions):
    - `GMAIL_ADDRESS` = blake.e.ford@gmail.com
    - `GMAIL_APP_PASSWORD` = the 16-char value from step 1
-   - `NOTIFY_EMAIL_TO` = where to email you (optional; defaults to `GMAIL_ADDRESS`)
+   - `DIGEST_EMAIL_TO` = the one mailbox the Mon/Thu digest goes to
+     (beford@silverlinesleep.com). The ingest itself sends no email.
    - `HEALTHCHECK_URL` = the ping URL from step 5 (optional)
 7. **Validate.** Actions → **Daily email-alert ingest (IMAP)** → **Run
-   workflow**. Confirm it succeeds and, if there were new alerts, that a digest
-   email arrives. Diagnose creds with:
+   workflow**. Confirm it succeeds and, if there were new alerts, that a PR
+   opens (the rows appear in the next Mon/Thu digest). Diagnose creds with:
    `GMAIL_ADDRESS=... GMAIL_APP_PASSWORD=... python tools/ingest_email.py --provider imap --imap-folder "Procurement/Alerts" --check`
 
 Once steps 1, 6, and (3 and/or 4) are done, the channel is live — the workflow

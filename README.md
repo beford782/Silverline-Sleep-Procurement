@@ -345,19 +345,23 @@ python tools/ingest_rss.py --feed https://harriscountytx.bonfirehub.com/opportun
 
 ### 10. Twice-weekly procurement digest
 
-`.github/workflows/procurement_digest.yml` runs every Monday and Thursday at
-14:30 UTC, after the SAM.gov, email-alert, and RSS/feed ingests. It posts a
-single human-readable digest to a standing GitHub issue titled
-`Procurement ingest digest` (creating it if needed, then commenting on it for
-future runs). The digest includes:
+`.github/workflows/procurement_digest.yml` runs once every Monday and
+Thursday, chained off the RSS/feed ingest (the last of the day's ingests) with
+a single late-afternoon fallback cron and a send-once guard. It emails ONE
+human-readable digest over SMTP to the `DIGEST_EMAIL_TO` secret
+(beford@silverlinesleep.com) and posts nothing to GitHub issues. The digest
+includes:
 
-- current active pipeline counts;
-- current Lead Radar counts;
-- open automation PRs that need triage;
-- recent ingest workflow status links.
+- failed automation runs since the last digest (the only failure report);
+- email-alert pipe health (the former standalone watchdog, folded in);
+- new active-bid / Lead Radar / Demand Radar rows created in the last 4 days;
+- current active pipeline, win-score ranking, readiness backlog, deadlines;
+- Lead Radar, re-bid prep windows, Demand Radar buy-windows;
+- open automation PRs that need triage and recent ingest run links.
 
-This is the operator-facing update channel. The ingest workflows still open
-separate PRs only when data changed.
+This is the operator's only scheduled email from the system. The ingest
+workflows still open separate PRs when data changed, but never email. See
+"Notification policy" in `docs/system_overview.md`.
 
 ## Tools
 

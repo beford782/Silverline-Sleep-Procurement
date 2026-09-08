@@ -43,8 +43,10 @@ adapters. Lane 1 = public procurement (SAM API twice-weekly, RSS/Bonfire
 twice-weekly, email alerts daily via Gmail IMAP). Lane 2 = private Demand Radar
 (Google Alerts RSS, kind:"demand" in configs/feeds.json) — pre-RFP construction/
 renovation signals for sales outreach, NOT biddable solicitations; triage is
-manual in next_action/notes. Reliability: per-run failure emails, zero-message
-watchdog, healthchecks.io dead-man's-switch, Monday digest on issue #43.
+manual in next_action/notes. Reliability: ONE Mon/Thu digest email to
+beford@silverlinesleep.com (DIGEST_EMAIL_TO) carrying failed runs + email-pipe
+health + new rows; healthchecks.io dead-man's-switch. No per-run emails, no
+GitHub-issue channel (see docs/system_overview.md "Notification policy").
 Re-bid prep windows: lead_radar.py calendar -> Google Calendar via MCP, state
 ledger leads/review/_calendar_state.json.
 
@@ -54,7 +56,7 @@ ledger leads/review/_calendar_state.json.
 - leads/review/_lead_radar.csv         — watch/research signals
 - docs/demand_radar_next_steps.md      — Demand Radar plan (data-gated; don't
   build cockpit/enrichment before 20-50 real rows exist)
-- GitHub issue #43 (digest) + open automation PRs
+- The Mon/Thu digest email (Actions -> "Procurement ingest digest" -> run summary has a copy) + open automation PRs
 
 ## Status snapshot (2026-07-07 — verify against the sources above)
 - SAM.gov: registration SUBMITTED under the corrected LLC name (UEI XF73FG8CVMX1).

@@ -281,7 +281,7 @@ jobs:
       # A failed scheduled sweep is the silent-miss failure mode: the run goes
       # red but nobody is watching the Actions tab. Surface it as a GitHub issue
       # so a missed federal window is visible. Create-or-comment de-dupes.
-      - name: Alert on failure
+      - name: Record failure on a GitHub issue
         if: failure()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,75 +1,146 @@
 name: Procurement ingest digest
 
+# THE one report. Notification policy (2026-09-08 redesign):
+#   - exactly one digest email per Mon/Thu slot, sent over SMTP to the single
+#     business mailbox in the DIGEST_EMAIL_TO secret (beford@silverlinesleep.com)
+#   - nothing else in this repo emails the operator: ingest runs open PRs and
+#     their new rows are folded into this digest ("New since last digest"),
+#     the old standalone email-pipe watchdog is now a section here, and
+#     failed runs are listed at the top instead of alerting individually
+#   - no GitHub issue is used as a mail channel. The previous design posted
+#     each digest as a comment on a tracking issue; once that issue was closed
+#     (2026-08-31) every run created a NEW issue, assigned it, and @mentioned
+#     the operator - three GitHub notification emails per run to the wrong
+#     mailbox, four runs a day. That path is gone, not patched.
+#   - the only other email this workflow can send is a short "digest FAILED"
+#     note to the same mailbox (if: failure()).
+
 on:
-  # PRIMARY trigger: chain off the RSS ingest so the digest posts minutes after
-  # the Mon/Thu ingests actually ran. Rationale (60-day audit, 2026-08-31):
-  # GitHub's cron scheduler fired 0 of 18 digest slots within 30 min - median
-  # +97 min, worst +9.4 h (08-27), one slot cancelled by runner starvation
-  # (08-06), one never fired at all (08-31). Chaining costs one scheduler hit
-  # instead of four and can never post before the data lands.
+  # PRIMARY trigger: chain off the RSS ingest, which is the last of the Mon/Thu
+  # ingests, so the digest posts minutes after the data lands. (60-day audit
+  # 2026-08-31: GitHub's cron fired 0 of 18 digest slots within 30 min.)
   workflow_run:
     workflows: ["Twice-weekly RSS/feed ingest"]
     types: [completed]
   schedule:
-    # FALLBACK crons, deliberately off the :00/:30/:45 congestion minutes
-    # (GitHub documents top-of-hour scheduled jobs as delayable/droppable).
-    # Fallback 1 - Mon + Thu 14:38 UTC = 09:38 Houston CDT.
-    - cron: '38 14 * * 1,4'
-    # Fallback 2 - Mon + Thu 18:40 UTC = 13:40 Houston CDT, so a dropped
-    # morning slot still delivers by lunch. The idempotency guard below keeps
-    # multiple triggers from double-posting.
-    - cron: '40 18 * * 1,4'
+    # ONE fallback cron - Mon + Thu 20:40 UTC = 15:40 Houston CDT - for the day
+    # the chain never fires. The guard job below makes any second trigger a
+    # no-op, so this cannot double-send.
+    - cron: '40 20 * * 1,4'
   workflow_dispatch:
-
-env:
-  # The tracking issue the digest posts to. Pinned by number: the old
-  # title-search lookup could silently create a NEW bot-authored issue (which
-  # the operator is not subscribed to) on a search hiccup or a closed #43.
-  DIGEST_ISSUE: "43"
 
 permissions:
   contents: read
-  issues: write
   pull-requests: read
   actions: read
 
-jobs:
-  digest:
-    name: Post procurement ingest digest
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
+env:
+  DIGEST_WINDOW_DAYS: "4"
 
-      # With three triggers, first-to-post wins and the rest no-op: a cron
-      # firing hours late from GitHub's backlog must not double-post after the
-      # workflow_run trigger already delivered today's digest. Manual
-      # dispatches always post a fresh digest.
-      - name: Idempotency guard - has today's digest already posted?
-        id: guard
+jobs:
+  # Send-once guard. A trigger is skipped when a run of this workflow already
+  # SENT today's digest: we look for a completed run created today whose
+  # "Send digest email" step concluded success (a skipped run also concludes
+  # "success", so run conclusion alone is not enough). Manual dispatches always
+  # send a fresh digest.
+  guard:
+    name: Skip if today's digest was already sent
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.check.outputs.skip }}
+    steps:
+      - name: Look for a run that already sent today's digest
+        id: check
         if: github.event_name != 'workflow_dispatch'
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          WORKFLOW_FILE: procurement_digest.yml
+          SEND_STEP: Send digest email
         run: |
           TODAY=$(date -u +%F)
-          COUNT=$(gh api "repos/${{ github.repository }}/issues/${DIGEST_ISSUE}/comments?since=${TODAY}T00:00:00Z&per_page=100" \
-            --jq "[.[] | select(.body | startswith(\"# Procurement ingest digest - ${TODAY}\"))] | length" || echo 0)
-          if [ "${COUNT:-0}" -gt 0 ]; then
+          # The in-flight run is not "completed", so it cannot match itself.
+          IDS=$(gh api "repos/${GH_REPO}/actions/workflows/${WORKFLOW_FILE}/runs?per_page=50&status=completed" \
+            --jq ".workflow_runs[] | select(.conclusion == \"success\") | select(.created_at | startswith(\"${TODAY}\")) | .id" 2>/dev/null || true)
+          SENT=0
+          for id in $IDS; do
+            n=$(gh api "repos/${GH_REPO}/actions/runs/${id}/jobs" \
+              --jq "[.jobs[].steps[]? | select(.name == \"${SEND_STEP}\" and .conclusion == \"success\")] | length" 2>/dev/null || echo 0)
+            SENT=$((SENT + ${n:-0}))
+          done
+          if [ "$SENT" -gt 0 ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "Digest for ${TODAY} already posted (${COUNT} comment(s)) - skipping this trigger."
+            echo "Today's digest was already sent (${SENT} send step(s) succeeded) - skipping this trigger."
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
+  digest:
+    name: Build and email the procurement digest
+    runs-on: ubuntu-latest
+    needs: guard
+    if: needs.guard.outputs.skip != 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      # Refuse to build if the recipient is unset: notify_push would otherwise
+      # fall back to NOTIFY_EMAIL_TO / the sender mailbox, and the whole point
+      # of this workflow is that the report goes to exactly one address.
+      - name: Verify the digest recipient is configured
+        shell: bash
+        env:
+          DIGEST_EMAIL_TO: ${{ secrets.DIGEST_EMAIL_TO }}
+        run: |
+          if [ -z "$DIGEST_EMAIL_TO" ]; then
+            echo "::error::DIGEST_EMAIL_TO repo secret is not set - refusing to send the digest anywhere else. Set it to the business mailbox at Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          echo "Digest recipient configured."
+
       - name: Set up Python 3.11
-        if: steps.guard.outputs.skip != 'true'
         uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
+      # Folded-in watchdog: the daily IMAP ingest can run green while fetching
+      # NOTHING (Power Automate flow off, Gmail label renamed, portal dropped
+      # the contact). Read the fetched count from the last 7 successful daily
+      # runs and let tools/email_watchdog.py decide. Non-fatal: a hiccup here
+      # must never block the report.
+      - name: Email-alert pipe health (folded-in watchdog)
+        id: pipe
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          THRESHOLD=7
+          ids=$(gh run list --workflow daily_email_ingest.yml --status success \
+                  --limit "$THRESHOLD" --json databaseId --jq '.[].databaseId' 2>/dev/null || true)
+          counts=""
+          for id in $ids; do
+            n=$(gh run view "$id" --log 2>/dev/null \
+                 | grep -oE 'email alerts fetched: [0-9]+' | grep -oE '[0-9]+' | head -n 1)
+            if [ -n "$n" ]; then counts="$counts $n"; fi
+          done
+          python tools/email_watchdog.py --counts "$counts" --threshold "$THRESHOLD" > /tmp/wd.out 2>/dev/null || echo "alert=unknown" > /tmp/wd.out
+          ALERT=$(grep -oE '^alert=.*' /tmp/wd.out | cut -d= -f2)
+          WINDOW=$(grep -oE '^window=.*' /tmp/wd.out | cut -d= -f2)
+          {
+            if [ "$ALERT" = "true" ]; then
+              echo "⚠️ SILENT: the last ${WINDOW} daily email-ingest runs all fetched ZERO alert messages (counts:${counts:- none})."
+              echo "   The pipe into the Procurement/Alerts Gmail label is broken, not quiet: check the Outlook rule / Power Automate flow (issue #154 has the fix list)."
+            elif [ -z "$counts" ]; then
+              echo "unknown: no fetched-count lines found in the last ${THRESHOLD} successful daily runs (see the Actions tab)."
+            else
+              echo "healthy: fetched counts over the last ${WINDOW} successful daily runs:${counts}."
+            fi
+          } > /tmp/pipe_health.md
+          cat /tmp/pipe_health.md
+
       - name: Build digest
-        if: steps.guard.outputs.skip != 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -78,11 +149,36 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           TODAY=$(date -u +%F)
+          SINCE=$(date -u -d "${DIGEST_WINDOW_DAYS} days ago" +%FT%TZ)
+
+          # Failed automation runs since the last digest slot - the ONLY place
+          # failures are reported now (no per-run alert emails).
+          gh run list --limit 100 --json workflowName,conclusion,createdAt,url,event \
+            --jq ".[] | select(.conclusion == \"failure\") | select(.createdAt >= \"${SINCE}\") | \"- \(.workflowName) (\(.event)) failed on \(.createdAt) ([run](\(.url)))\"" \
+            > /tmp/failed_runs.md 2>/dev/null || true
 
           {
             echo "# Procurement ingest digest - ${TODAY}"
             echo
-            echo "Triggered by: \`${EVENT_NAME}\` ([run #${RUN_NUMBER}](${RUN_URL}))"
+            echo "Triggered by: \`${EVENT_NAME}\` ([run #${RUN_NUMBER}](${RUN_URL})). One email per Mon/Thu slot; covers the last ${DIGEST_WINDOW_DAYS} days."
+            echo
+            if [ -s /tmp/failed_runs.md ]; then
+              echo "## ⚠️ Failed automation runs since the last digest"
+              echo
+              cat /tmp/failed_runs.md
+              echo
+              echo "Open the run, read the first red step, fix, then \"Re-run all jobs\". Failures are reported here only."
+              echo
+            fi
+            echo "## Email-alert pipe health"
+            echo
+            cat /tmp/pipe_health.md
+            echo
+            echo "## New since last digest (rows created in the last ${DIGEST_WINDOW_DAYS} days)"
+            echo
+            echo '```text'
+            python tools/notify_push.py --created-date "${TODAY}" --since-days "${DIGEST_WINDOW_DAYS}" --print
+            echo '```'
             echo
             echo "## Current active pipeline"
             echo
@@ -178,34 +274,16 @@ jobs:
             echo "- Demand Radar rows are pre-RFP private-sector construction signals for human outreach (sales), NOT biddable solicitations."
             echo "- Re-bid prep windows are dated prep-start reminders for expiring awarded contracts. Pushing them to Google Calendar is an operator/assistant step: read \`leads/review/_calendar_events.json\` and create each \`already_scheduled: false\` event via the Google Calendar MCP tool, then record its id in \`leads/review/_calendar_state.json\`."
             echo "- If both counts look unchanged and there are no automation PRs, no action is needed."
+            echo
+            echo "_This is the only scheduled email from the procurement system. Nothing is posted to a GitHub issue; failures and pipe health are reported above._"
           } >> /tmp/digest.md
 
           cat /tmp/digest.md >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Post digest to the tracking issue
-        if: steps.guard.outputs.skip != 'true'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          STATE=$(gh issue view "$DIGEST_ISSUE" --json state --jq .state || echo "MISSING")
-          if [ "$STATE" != "OPEN" ]; then
-            echo "::warning::Digest issue #${DIGEST_ISSUE} is ${STATE}; creating a replacement - update DIGEST_ISSUE in this workflow"
-            ISSUE_URL=$(gh issue create --title "Procurement ingest digest" \
-              --assignee beford782 \
-              --body "Replacement digest tracking issue: #${DIGEST_ISSUE} was ${STATE}. Update DIGEST_ISSUE in .github/workflows/procurement_digest.yml to this issue's number so future digests (and their notification emails) land here. cc @beford782")
-            DIGEST_ISSUE="${ISSUE_URL##*/}"
-          fi
-          gh issue comment "$DIGEST_ISSUE" --body-file /tmp/digest.md
-          echo "Posted digest comment to issue #${DIGEST_ISSUE}"
-
-      # Direct email copy to the operator's working mailbox (DIGEST_EMAIL_TO
-      # secret), independent of GitHub notification routing - the operator had
-      # been hand-forwarding digests there. Self-notification over the
-      # established Gmail app-password channel; non-fatal like every notify
-      # send (the #43 GitHub notification email remains the backstop).
-      - name: Email digest copy to the operator
-        if: steps.guard.outputs.skip != 'true'
+      # The step name is load-bearing: the guard job keys off "Send digest
+      # email" succeeding to decide that today's digest is done. --strict makes
+      # a failed delivery fail the run (delivery IS the job here).
+      - name: Send digest email
         shell: bash
         env:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
@@ -216,7 +294,7 @@ jobs:
             --subject "[Silverline] Procurement digest $(date -u +%F)" \
             --body-file /tmp/digest.md \
             --to "$DIGEST_EMAIL_TO" \
-            || echo "::warning::digest email copy failed (see log); the #43 notification email is unaffected"
+            --strict
 
       # Dead-man's-switch: ping healthchecks.io ONLY on success, so a missed
       # or failed Mon/Thu digest raises an alert that does not depend on
@@ -236,34 +314,18 @@ jobs:
             echo "HEALTHCHECK_URL not set - skipping ping."
           fi
 
-      # A failed digest was previously only a generic Actions email. Match the
-      # ingest workflows: email Blake directly AND open/comment a GitHub issue.
-      - name: Alert on failure (email + issue)
+      # If the digest itself fails there is no digest to report it in, so send
+      # a short note to the SAME mailbox. No GitHub issue (that was the
+      # second-mailbox notification path).
+      - name: Email a short failure note (same mailbox)
         if: failure()
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           WORKFLOW: ${{ github.workflow }}
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          NOTIFY_EMAIL_TO: ${{ secrets.NOTIFY_EMAIL_TO }}
+          DIGEST_EMAIL_TO: ${{ secrets.DIGEST_EMAIL_TO }}
         run: |
-          # Email (non-fatal; no-op if creds are the thing that's missing).
-          python tools/notify_push.py --failure --run-url "$RUN_URL" || true
-          # GitHub issue (create-or-comment de-dupes).
-          TITLE="Ingest failure: ${WORKFLOW}"
-          TODAY=$(date -u +%F)
-          BODY=$(printf '%s\n' \
-            "The **${WORKFLOW}** workflow FAILED on ${TODAY}." \
-            "" \
-            "- Failed run: ${RUN_URL}" \
-            "- Impact: the Mon/Thu digest did not post, so the operator gets no report for this slot." \
-            "- Check the run log, fix, then re-run with \`gh workflow run procurement_digest.yml\`.")
-          EXISTING=$(gh issue list --state open --search "\"${TITLE}\" in:title" --json number,title \
-            --jq ".[] | select(.title == \"${TITLE}\") | .number" | head -n 1 || true)
-          if [ -n "$EXISTING" ]; then
-            gh issue comment "$EXISTING" --body "$BODY"
-          else
-            gh issue create --title "$TITLE" --body "$BODY"
-          fi
+          python tools/notify_push.py --failure --workflow "$WORKFLOW" --run-url "$RUN_URL" \
+            --to "$DIGEST_EMAIL_TO" || true

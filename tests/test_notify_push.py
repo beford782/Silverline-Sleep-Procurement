@@ -198,6 +198,39 @@ class MainDryRunTests(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertIn("nothing new", out)
 
+    def test_since_days_widens_selection_and_print_emits_body_only(self) -> None:
+        pipeline.write_rows_atomic(self.active, [
+            _active_row(opportunity_id="old", title="Old Row", source="SAM.gov",
+                        created_date="2026-06-20"),
+            _active_row(opportunity_id="in", title="In Window Row", source="SAM.gov",
+                        created_date="2026-06-24"),
+            _active_row(opportunity_id="edge", title="Edge Row", source="SAM.gov",
+                        created_date="2026-06-27"),
+        ])
+        rc, out = self._run("--active", str(self.active), "--leads", str(self.leads),
+                            "--demand", str(self.demand),
+                            "--created-date", "2026-06-27", "--since-days", "4", "--print")
+        self.assertEqual(rc, 0)
+        self.assertIn("In Window Row", out)
+        self.assertIn("Edge Row", out)
+        self.assertNotIn("Old Row", out)
+        self.assertNotIn("DRY RUN", out)
+        self.assertNotIn("Subject:", out)
+
+    def test_print_with_nothing_new_is_a_one_liner(self) -> None:
+        rc, out = self._run("--active", str(self.active), "--leads", str(self.leads),
+                            "--demand", str(self.demand),
+                            "--created-date", "2026-06-27", "--since-days", "4", "--print")
+        self.assertEqual(rc, 0)
+        self.assertIn("No new active-bid, Lead Radar, or Demand Radar rows", out)
+
+    def test_failure_mode_names_the_workflow(self) -> None:
+        rc, out = self._run("--failure", "--workflow", "Procurement ingest digest",
+                            "--run-url", "https://gh/run/9", "--created-date", "2026-06-27",
+                            "--dry-run")
+        self.assertEqual(rc, 0)
+        self.assertIn("PIPELINE FAILED - Procurement ingest digest", out)
+
     def test_failure_mode_dry_run(self) -> None:
         rc, out = self._run("--failure", "--run-url", "https://gh/run/9",
                             "--created-date", "2026-06-27", "--dry-run")
@@ -242,6 +275,24 @@ class GenericModeTests(unittest.TestCase):
         rc, _, err = self._run("--subject", "x", "--dry-run")
         self.assertEqual(rc, 2)
         self.assertIn("--body-file", err)
+
+    def test_strict_without_creds_exits_one(self) -> None:
+        import os
+        tmp = Path(tempfile.mkdtemp())
+        saved = {k: os.environ.pop(k, None)
+                 for k in ("GMAIL_ADDRESS", "GMAIL_APP_PASSWORD", "NOTIFY_EMAIL_TO")}
+        try:
+            body = tmp / "digest.md"
+            body.write_text("digest", encoding="utf-8")
+            rc, _, err = self._run("--subject", "x", "--body-file", str(body),
+                                   "--to", "ops@example.com", "--strict")
+            self.assertEqual(rc, 1)
+            self.assertIn("ERROR", err)
+        finally:
+            for k, v in saved.items():
+                if v is not None:
+                    os.environ[k] = v
+            shutil.rmtree(tmp, ignore_errors=True)
 
     def test_missing_body_file_warns_and_exits_zero(self) -> None:
         rc, _, err = self._run("--subject", "x", "--body-file",

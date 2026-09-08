@@ -11,11 +11,18 @@ same app password the IMAP reader uses (no new credential).
 Channels/secrets (env):
   GMAIL_ADDRESS       sender mailbox (also the SMTP login)
   GMAIL_APP_PASSWORD  the 16-char Gmail app password (same as --provider imap)
-  NOTIFY_EMAIL_TO     where to email Blake (default: GMAIL_ADDRESS, i.e. yourself)
+  NOTIFY_EMAIL_TO     fallback recipient when --to is not given (else GMAIL_ADDRESS)
 
-Design intent: NON-FATAL. A send error must never fail the ingest job — it
-prints a warning and exits 0 so the PR/commit still lands. Reliability is
-covered separately by the if:failure() alert and the zero-message watchdog.
+Notification policy (2026-09-08): the operator gets ONE email per digest slot
+(Mon/Thu) at the single business mailbox the workflow passes via --to
+(DIGEST_EMAIL_TO secret). Ingest runs do not email; their new rows are folded
+into the digest via --since-days/--print. No GitHub issue is used as a mail
+channel any more (issue comments/assignments generated GitHub notification
+mail to a second mailbox).
+
+Design intent: NON-FATAL by default. A send error prints a warning and exits
+0 so an ingest PR/commit still lands. The digest itself passes --strict so a
+failed delivery fails the run (delivery IS the job there).
 
 Usage:
     # real send (creds in env), notifying about rows created today
@@ -23,7 +30,9 @@ Usage:
     # preview without sending (CI / testing)
     python tools/notify_push.py --created-date 2026-06-27 --dry-run
     # generic mode: send an arbitrary subject + body file (e.g. the Mon/Thu digest)
-    python tools/notify_push.py --subject "[Silverline] Procurement digest 2026-08-31" --body-file /tmp/digest.md
+    python tools/notify_push.py --subject "[Silverline] Procurement digest 2026-08-31" --body-file /tmp/digest.md --to ops@example.com --strict
+    # digest section: print (no send) the rows created in the last 4 days
+    python tools/notify_push.py --since-days 4 --print
 
 Stdlib only (smtplib, email).
 """
@@ -34,7 +43,7 @@ import argparse
 import os
 import smtplib
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from email.message import EmailMessage
 from pathlib import Path
 
@@ -46,22 +55,43 @@ import lead_radar  # noqa: E402
 import demand_radar  # noqa: E402
 
 
-def select_new_rows(active_rows: list[dict], lead_rows: list[dict], created_date: str
-                    ) -> tuple[list[dict], list[dict]]:
-    """Rows added on `created_date` — the new ACCEPT bids and new Lead Radar leads."""
-    accepts = [r for r in active_rows if (r.get("created_date") or "") == created_date]
-    leads = [r for r in lead_rows if (r.get("created_date") or "") == created_date]
+def _in_window(value: str, end_date: str, since_days: int) -> bool:
+    """True when ISO date `value` falls in [end_date - since_days, end_date].
+
+    since_days=0 keeps the original exact-day behaviour. Dates are compared as
+    ISO strings, so a malformed value never matches.
+    """
+    value = (value or "").strip()
+    if not value:
+        return False
+    if since_days <= 0:
+        return value == end_date
+    try:
+        end = datetime.strptime(end_date, "%Y-%m-%d").date()
+    except ValueError:
+        return value == end_date
+    start = (end - timedelta(days=since_days)).isoformat()
+    return start <= value <= end_date
+
+
+def select_new_rows(active_rows: list[dict], lead_rows: list[dict], created_date: str,
+                    since_days: int = 0) -> tuple[list[dict], list[dict]]:
+    """Rows added on `created_date` (or within the trailing `since_days` window
+    ending there) — the new ACCEPT bids and new Lead Radar leads."""
+    accepts = [r for r in active_rows if _in_window(r.get("created_date"), created_date, since_days)]
+    leads = [r for r in lead_rows if _in_window(r.get("created_date"), created_date, since_days)]
     return accepts, leads
 
 
-def select_new_demand_rows(demand_rows: list[dict], created_date: str) -> list[dict]:
-    """Demand Radar rows first seen on `created_date`.
+def select_new_demand_rows(demand_rows: list[dict], created_date: str,
+                           since_days: int = 0) -> list[dict]:
+    """Demand Radar rows first seen on `created_date` (or in the trailing window).
 
     Mirrors `select_new_rows`' date logic, but pre-RFP demand signals carry their
     discovery date in `first_seen` (there is no bid `created_date`). Kept separate
     so the Demand Radar lane never mixes with the bid pipeline.
     """
-    return [r for r in demand_rows if (r.get("first_seen") or "") == created_date]
+    return [r for r in demand_rows if _in_window(r.get("first_seen"), created_date, since_days)]
 
 
 def _demand_window_sort_key(r: dict) -> tuple:
@@ -150,12 +180,13 @@ def build_email(accepts: list[dict], leads: list[dict], pr_url: str, date: str,
     return subject, "\n".join(lines)
 
 
-def build_failure_email(date: str, run_url: str) -> tuple[str, str]:
+def build_failure_email(date: str, run_url: str,
+                        workflow: str = "daily email-alert ingest") -> tuple[str, str]:
     """Return (subject, body) for a pipeline-failure alert."""
-    subject = f"[Silverline] PIPELINE FAILED - {date}"
+    subject = f"[Silverline] PIPELINE FAILED - {workflow} - {date}"
     body = (
-        f"The daily email-alert ingest FAILED on {date}.\n\n"
-        "This means a sweep did not complete, so new mattress/bedding "
+        f"The {workflow} FAILED on {date}.\n\n"
+        "This means a sweep or report did not complete, so new mattress/bedding "
         "opportunities in this window may have been missed.\n\n"
         + (f"Failed run: {run_url}\n\n" if run_url else "")
         + "What to do: open the run above, read the first red step (common causes: "
@@ -206,6 +237,16 @@ def main(argv: list[str] | None = None) -> int:
                         help="Demand Radar CSV (default: %(default)s)")
     parser.add_argument("--created-date", default=None,
                         help="Notify about rows created on this date (default: today, UTC-naive).")
+    parser.add_argument("--since-days", type=int, default=0,
+                        help="Widen the row selection to the trailing N days ending at --created-date "
+                             "(the Mon/Thu digest uses 4 so nothing lands between slots unseen).")
+    parser.add_argument("--print", dest="print_only", action="store_true",
+                        help="Print the built body only (no headers, no send) - for embedding "
+                             "in the digest. Prints a one-line note when nothing is new.")
+    parser.add_argument("--strict", action="store_true",
+                        help="Exit 1 on missing creds/recipient or a send error (default: warn, exit 0).")
+    parser.add_argument("--workflow", default="daily email-alert ingest",
+                        help="Workflow name to cite in a --failure alert.")
     parser.add_argument("--pr-url", default="", help="Triage PR URL to include in the email.")
     parser.add_argument("--failure", action="store_true",
                         help="Send a 'pipeline failed' alert instead of a digest (for the workflow's if:failure step).")
@@ -245,17 +286,26 @@ def main(argv: list[str] | None = None) -> int:
     elif args.watchdog:
         subject, body = build_watchdog_email(args.window, args.run_url)
     elif args.failure:
-        subject, body = build_failure_email(created_date, args.run_url)
+        subject, body = build_failure_email(created_date, args.run_url, args.workflow)
     else:
         active_rows = pipeline.read_rows(Path(args.active))[1] if Path(args.active).exists() else []
         lead_rows = lead_radar.read_lead_rows(Path(args.leads))[1] if Path(args.leads).exists() else []
         demand_rows = demand_radar.read_demand_rows(Path(args.demand))[1] if Path(args.demand).exists() else []
-        accepts, leads = select_new_rows(active_rows, lead_rows, created_date)
-        demand = select_new_demand_rows(demand_rows, created_date)
+        accepts, leads = select_new_rows(active_rows, lead_rows, created_date, args.since_days)
+        demand = select_new_demand_rows(demand_rows, created_date, args.since_days)
         if not accepts and not leads and not demand:
-            print(f"notify: nothing new for {created_date}; no email sent.")
+            if args.print_only:
+                span = (f"the {args.since_days} days ending {created_date}"
+                        if args.since_days else created_date)
+                print(f"No new active-bid, Lead Radar, or Demand Radar rows in {span}.")
+            else:
+                print(f"notify: nothing new for {created_date}; no email sent.")
             return 0
         subject, body = build_email(accepts, leads, args.pr_url, created_date, demand)
+
+    if args.print_only:
+        print(body)
+        return 0
 
     if args.dry_run:
         print(f"--- DRY RUN (no email sent) ---\nTo: <recipient>\nSubject: {subject}\n\n{body}")
@@ -265,23 +315,28 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _deliver(args, subject: str, body: str) -> int:
-    """Send via Gmail SMTP, non-fatally. A missing secret or send error warns
-    and returns 0 so a notify problem never fails the ingest job."""
+    """Send via Gmail SMTP. Non-fatal by default (warn + return 0 so a notify
+    problem never fails an ingest job); with --strict a missing secret or a
+    send error returns 1, because for the digest delivery IS the job."""
+    strict = bool(getattr(args, "strict", False))
+    level = "ERROR" if strict else "WARNING"
     address = os.environ.get("GMAIL_ADDRESS", "")
     app_password = os.environ.get("GMAIL_APP_PASSWORD", "")
     to_addr = args.to or os.environ.get("NOTIFY_EMAIL_TO") or address
     if not address or not app_password or not to_addr:
-        print("notify: WARNING - GMAIL_ADDRESS / GMAIL_APP_PASSWORD / recipient not set; "
-              "skipping email (this did not fail the run).", file=sys.stderr)
-        return 0
+        tail = "cannot deliver." if strict else "skipping email (this did not fail the run)."
+        print(f"notify: {level} - GMAIL_ADDRESS / GMAIL_APP_PASSWORD / recipient not set; {tail}",
+              file=sys.stderr)
+        return 1 if strict else 0
     try:
         send_email(host=args.smtp_host, port=args.smtp_port, address=address,
                    app_password=app_password, to_addr=to_addr, subject=subject, body=body)
         print(f"notify: emailed {to_addr} - {subject}")
-    except Exception as exc:  # noqa: BLE001 - non-fatal by design
-        print(f"notify: WARNING - email send failed ({exc!r}); the ingest run still "
-              "succeeded. The zero-message watchdog will catch a sustained outage.",
-              file=sys.stderr)
+    except Exception as exc:  # noqa: BLE001 - non-fatal by design (unless --strict)
+        tail = "" if strict else (" The run still succeeded; the digest's pipe-health "
+                                  "section will show a sustained outage.")
+        print(f"notify: {level} - email send failed ({exc!r}).{tail}", file=sys.stderr)
+        return 1 if strict else 0
     return 0
 
 

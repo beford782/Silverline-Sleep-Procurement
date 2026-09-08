@@ -118,11 +118,10 @@ All adapters dedupe against prior rows **including archives**, so dead leads don
 ## 5. Automation (GitHub Actions, on cron)
 | Workflow | Role |
 |---|---|
-| `daily_email_ingest.yml` | daily IMAP pull → triage → digest |
+| `daily_email_ingest.yml` | daily IMAP pull → triage PR (no email; rows surface in the digest) |
 | `weekly_rss_ingest.yml` / `weekly_sam_ingest.yml` | RSS + SAM sweeps |
 | `weekly_email_ingest.yml` | Graph fallback path for the email channel |
-| `procurement_digest.yml` | assemble the digest (bids + leads + demand + calendar + readiness) and post it to issue #43; chained to the RSS ingest via `workflow_run`, with fallback crons + an idempotency guard. Delivery today is the GitHub notification email on #43 (no direct-email step yet) |
-| `email_watchdog.yml` | dead-channel detection |
+| `procurement_digest.yml` | **the one report.** Assemble the digest (failed runs + pipe health + new rows since last digest + bids + leads + demand + calendar + readiness) and email it over SMTP to the `DIGEST_EMAIL_TO` secret (beford@silverlinesleep.com). Chained to the RSS ingest via `workflow_run`, one fallback cron, and a send-once guard (keys off the "Send digest email" step having succeeded today). Nothing is posted to a GitHub issue. The old standalone `email_watchdog.yml` is folded in as the "Email-alert pipe health" section |
 | `ci.yml` | tests + leak/PII checks + `workflow_check` |
 | `cleanup_auto_branches.yml` | hygiene |
 
@@ -170,3 +169,21 @@ layer = *if it's quiet, it's genuinely quiet*.
 ### Scope note
 Living doc — update it when components change. PII (EIN, taxpayer #, banking, street address) stays out of
 version control; the SAM UEI is public.
+
+## Notification policy (2026-09-08)
+
+One email, one mailbox, every few days:
+
+- The **only** scheduled email is the Mon/Thu `procurement_digest.yml` send to
+  `DIGEST_EMAIL_TO` (beford@silverlinesleep.com). Ingest workflows never email.
+- Failures are listed at the top of the digest ("Failed automation runs since
+  the last digest") and recorded on a GitHub issue with no assignee/@mention.
+  The single exception: if the digest itself fails, it emails a short failure
+  note to the same mailbox, because there is no digest to carry it.
+- No GitHub issue is a mail channel. The pre-09-08 design posted digests as
+  comments on tracking issue #43 and, after that issue was closed, created a
+  new assigned issue per run - three GitHub notification emails per run to the
+  Gmail account, four runs per digest day. Do not reintroduce issue comments,
+  assignees, or `cc @beford782` mentions in automation.
+- `NOTIFY_EMAIL_TO` is no longer read by any workflow (the tools keep it only
+  as a CLI fallback); it can be deleted from the repo secrets.

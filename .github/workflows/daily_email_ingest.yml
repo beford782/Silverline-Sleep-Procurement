@@ -3,13 +3,17 @@ name: Daily email-alert ingest (IMAP)
 # The live awareness path (see docs/awareness_system_design.md). Reads portal
 # commodity-alert emails from a Gmail mailbox over IMAP using a self-issued app
 # password (no Azure/Workspace admin, no OAuth token expiry), runs them through
-# the central mattress-relevance filter, opens a triage PR for new rows, and
-# EMAILS Blake a digest so a fit reaches him without watching GitHub.
+# the central mattress-relevance filter, and opens a triage PR for new rows.
+#
+# This workflow sends NO email (notification policy 2026-09-08: one digest
+# email per Mon/Thu slot, from procurement_digest.yml, to one mailbox). New
+# rows show up in the digest's "New since last digest" section; a failure is
+# recorded on a GitHub issue (create-or-comment, no assignee/mention) and
+# listed in the digest's "Failed automation runs" section.
 #
 # Required repo secrets (Settings -> Secrets and variables -> Actions):
 #   GMAIL_ADDRESS, GMAIL_APP_PASSWORD   - the mailbox + 16-char app password
 # Optional:
-#   NOTIFY_EMAIL_TO   - where to email Blake (default: GMAIL_ADDRESS, i.e. self)
 #   HEALTHCHECK_URL   - healthchecks.io ping URL (dead-man's-switch)
 # Never commit these. See docs/email_ingest_setup.md for the one-time setup.
 
@@ -28,7 +32,7 @@ permissions:
 
 jobs:
   ingest:
-    name: IMAP ingest, score, PR + email if new rows
+    name: IMAP ingest, score, PR if new rows
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -137,17 +141,6 @@ jobs:
           echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
           echo "Opened $PR_URL"
 
-      - name: Email Blake a digest of new fits
-        if: steps.ingest_diff.outputs.changed == 'true'
-        env:
-          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          NOTIFY_EMAIL_TO: ${{ secrets.NOTIFY_EMAIL_TO }}
-        run: |
-          python tools/notify_push.py \
-            --created-date "$(date -u +%F)" \
-            --pr-url "${{ steps.pr.outputs.pr_url }}"
-
       - name: Ping healthcheck (dead-man's-switch)
         if: success()
         env:
@@ -162,27 +155,22 @@ jobs:
       - name: Summary
         run: |
           if [ "${{ steps.ingest_diff.outputs.changed }}" = "true" ]; then
-            echo "IMAP ingest opened a PR and emailed the digest."
+            echo "IMAP ingest opened a PR; the rows will appear in the next Mon/Thu digest."
           else
-            echo "IMAP ingest ran clean - no new rows, no PR, no email."
+            echo "IMAP ingest ran clean - no new rows, no PR."
           fi
 
-      # Failure is the silent-miss mode. Make it loud BOTH ways: email Blake
-      # directly (his chosen channel) and open/comment a GitHub issue.
-      - name: Alert on failure (email + issue)
+      # Failure is the silent-miss mode. Record it on a GitHub issue
+      # (create-or-comment de-dupes; no assignee/mention, so it does not
+      # generate notification mail) - the Mon/Thu digest lists failed runs.
+      - name: Record failure on a GitHub issue
         if: failure()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           WORKFLOW: ${{ github.workflow }}
-          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          NOTIFY_EMAIL_TO: ${{ secrets.NOTIFY_EMAIL_TO }}
         run: |
-          # Email (non-fatal; no-op if creds are the thing that's missing).
-          python tools/notify_push.py --failure --run-url "$RUN_URL" || true
-          # GitHub issue (create-or-comment de-dupes).
           TITLE="Ingest failure: ${WORKFLOW}"
           TODAY=$(date -u +%F)
           {

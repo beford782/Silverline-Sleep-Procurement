@@ -79,8 +79,9 @@ fallbacks only.
    > The Outlook rule must only **Move** to the folder — a *Forward to* action
    > bounces (`550 5.7.520`) and just litters the Inbox with NDRs. The trigger
    > is not retroactive: mail already in the folder is not re-sent.
-5. **Dead-man's-switch.** Create one free [healthchecks.io](https://healthchecks.io)
-   check (period: 1 day, grace: 1 day); copy its **ping URL**.
+5. **Dead-man's-switch.** Done 2026-09-08: one free [healthchecks.io](https://healthchecks.io)
+   check, cron `0 13 * * 1,4` UTC, grace 12 h, pinged by the Mon/Thu digest
+   after a successful send; its ping URL is the `HEALTHCHECK_URL` repo secret.
 6. **GitHub secrets** (Settings → Secrets and variables → Actions):
    - `GMAIL_ADDRESS` = blake.e.ford@gmail.com
    - `GMAIL_APP_PASSWORD` = the 16-char value from step 1

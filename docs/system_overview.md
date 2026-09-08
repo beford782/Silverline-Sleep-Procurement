@@ -185,5 +185,10 @@ One email, one mailbox, every few days:
   new assigned issue per run - three GitHub notification emails per run to the
   Gmail account, four runs per digest day. Do not reintroduce issue comments,
   assignees, or `cc @beford782` mentions in automation.
+- Dead-man's switch: `HEALTHCHECK_URL` is set (2026-09-08) to a healthchecks.io
+  check "Silverline procurement digest (Mon/Thu)", cron `0 13 * * 1,4` UTC with a
+  12-hour grace. The digest pings it only after the email is sent, so a missed
+  or failed Mon/Thu send raises a healthchecks alert without depending on
+  GitHub's scheduler or on GitHub notification mail.
 - `NOTIFY_EMAIL_TO` is no longer read by any workflow (the tools keep it only
   as a CLI fallback); it can be deleted from the repo secrets.

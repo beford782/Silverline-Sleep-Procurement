@@ -66,6 +66,19 @@ fallbacks only.
    their own lines followed by the original body (so `unwrap_forwarded()`
    recovers the real portal sender). **Standard connectors only** — no
    premium/HTTP, so no admin license.
+
+   > **As built (verified 2026-09-08, issue #154).** Flow "Procurement alerts
+   > to Gmail": trigger folder must be **`Inbox/Procurement Alerts`** (the
+   > default, Inbox only, never sees mail the rule has moved — that silently
+   > broke the pipe Jul 28 – Sep 8 2026). The Condition is an OR of `From`
+   > **contains**: bonfirehub.com, gobonfire.com, eunasolutions.com,
+   > ionwave.net, demandstar.com, bidnetdirect.com, buyboard.com,
+   > txsmartbuy.gov, cpa.texas.gov (Texas SmartBuy really sends from
+   > txsmartbuy@cpa.texas.gov), bidnet.com (BidNet really sends from
+   > noreply@bidnet.com), tdcj.texas.gov. Use *contains*, never *is equal to*.
+   > The Outlook rule must only **Move** to the folder — a *Forward to* action
+   > bounces (`550 5.7.520`) and just litters the Inbox with NDRs. The trigger
+   > is not retroactive: mail already in the folder is not re-sent.
 5. **Dead-man's-switch.** Create one free [healthchecks.io](https://healthchecks.io)
    check (period: 1 day, grace: 1 day); copy its **ping URL**.
 6. **GitHub secrets** (Settings → Secrets and variables → Actions):

@@ -124,6 +124,8 @@ FACILITY_NOUNS_BY_SEGMENT: dict[str, list[str]] = {
         "senior living", "assisted living", "memory care", "independent living",
         "skilled nursing", "nursing facility", "nursing home", "snf", "ccrc",
         "continuing care", "life plan community", "long-term care",
+        # bare noun as it appears in building-permit text
+        "nursing",
     ],
     "student-housing": [
         "student housing", "residence hall", "dormitory", "dorm",
@@ -134,6 +136,8 @@ FACILITY_NOUNS_BY_SEGMENT: dict[str, list[str]] = {
         "hospital", "medical center", "patient tower", "bed tower", "inpatient",
         "behavioral health hospital", "psychiatric hospital", "acute care",
         "ltach",
+        # bare phrase as it appears in building-permit text
+        "behavioral health",
     ],
     "correctional": [
         "jail", "county jail", "detention center", "detention facility",
@@ -144,6 +148,9 @@ FACILITY_NOUNS_BY_SEGMENT: dict[str, list[str]] = {
         "homeless shelter", "emergency shelter", "navigation center",
         "transitional housing", "migrant shelter", "workforce housing",
         "crew housing", "man camp",
+        # bare nouns as they appear in building-permit text; barracks are
+        # institutional group housing, closest to the crew-housing family
+        "shelter", "barracks",
     ],
 }
 

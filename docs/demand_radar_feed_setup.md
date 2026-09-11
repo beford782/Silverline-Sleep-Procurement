@@ -163,6 +163,37 @@ python tools/ingest_rss.py --feed "<url>" --kind demand --dry-run
 You should see `demand: N` and sample rows. Then the weekly RSS workflow populates
 `leads/demand/_demand_radar.csv` and the demand section appears in your digest/email.
 
+## 4b. Permit open data (Austin pilot): the second demand source
+Google Alerts stayed thin through 2026-09-10, so the Mon/Thu workflow now also runs
+`tools/ingest_permits.py --config configs/permits.json`, the municipal permit open-data adapter. It is a
+second feed into the SAME lane, not a new lane: rows land in `leads/demand/_demand_radar.csv` next to the
+Google Alerts rows and get the same §2 triage.
+
+- **Dataset:** City of Austin "Issued Construction Permits" (Socrata dataset `3syk-w9eu`,
+  `https://data.austintexas.gov/resource/3syk-w9eu.json`). No key needed; `SOCRATA_APP_TOKEN` is optional
+  and not configured as a secret yet.
+- **Filter logic:** building permits only (`permittype` BP, so no standalone electrical/plumbing/mechanical
+  rows), Commercial work class, a keyword LIKE match on the permit description (hotel / motel / dorm /
+  student housing / assisted or senior living / memory care / shelter and similar), then `exclude_terms`
+  from `configs/permits.json` to drop the obvious non-fits. Lookback is 14 days per source (`lookback_days`);
+  the Mon/Thu cadence overlaps on purpose and dedupe absorbs the repeat. The trade and floor permits of one
+  project are grouped under the master permit so one project is one signal, not ten rows. Anything dropped
+  is written to `logs/rejects/_permits.csv` with a reason. Exact terms live in `configs/permits.json` and
+  `tools/ingest_permits.py`.
+- **Where rows land:** Demand Radar, with `signal_source` "Permits: City of Austin", the permit portal link
+  in `source_url`, and the site address in `location`. Classification is by `tools/demand_signal.py`, same
+  as the RSS demand feeds.
+- **How to triage:** exactly the §2 discipline. A permit tells you the project is real and roughly where it
+  is in construction; it does not tell you who buys the mattresses. Assign a bucket + route tag + action in
+  `next_action` / `notes`, and do not cold-sell a branded property before the route is mapped. Archive
+  no-fits with `python tools/demand_radar.py archive <id> --status no-fit --note "<reason>"`.
+- **No PII:** the adapter never writes contractor phone numbers or person names. The site address is kept
+  uppercase exactly as the city publishes it (it is public permit data, not a private contact). The CI PII
+  scan runs on the auto-ingest branch too (CI is dispatched there by the ingest run) and lints only the
+  newly added lines against `main`.
+- **Exit criteria for the pilot:** two ingest cycles, count the rows that survive human triage, then decide
+  on San Antonio (CKAN CSV, weekly full extracts). Houston is unverified (monthly summaries only).
+
 ## 5. When to promote route-to-market into the schema (not yet)
 The classifier *can* heuristically guess a bucket from cues it already extracts (segment, brand flags,
 project-stage): branded hotel + early stage → spec-position; branded + opened → market-intel; institutional

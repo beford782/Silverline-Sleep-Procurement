@@ -41,6 +41,7 @@ Registry of what we're registered to: [`active_registrations.md`](active_registr
 | `tools/ingest_sam.py` | SAM.gov (title + NAICS 337910 + PSC 7210/7105 sweeps, deduped) |
 | `tools/ingest_email.py` | IMAP mailbox; unwraps forwarded portal alerts |
 | `tools/ingest_portal_csv.py` (+ `portal_csv_mapping.py`) | manual portal-export paste fallback |
+| `tools/ingest_permits.py` | municipal permit open data (Austin pilot, Socrata); demand lane only |
 
 All adapters dedupe against prior rows **including archives**, so dead leads don't re-enter each sweep.
 
@@ -146,9 +147,15 @@ Everything upstream (find → classify → rank → position → alert) is autom
   §2). No schema/tooling changes until ~20–50 real rows justify them. Pilot C (shelter/workforce) + geo
   expansion are parked until A/B prove signal. The end-to-end plan is in
   [`demand_radar_next_steps.md`](demand_radar_next_steps.md).
-- **Optional next builds:** municipal permit open-data adapter (earliest free private signal —
-  higher-signal than Google Alerts and the likely next build if the pilot is thin),
-  construction-data email alerts (paid), incumbent/award-intel capture, buyer CRM.
+- **Municipal permit open-data adapter: BUILT 2026-09-11 (Austin pilot).** The Google Alerts tripwire
+  fired (the 2026-09-10 ingest produced 5 demand rows, all noise), so `tools/ingest_permits.py` now runs in
+  the same Mon/Thu workflow: it pulls City of Austin issued commercial building permits whose description
+  names a hotel / dorm / student-housing / senior-living / shelter-type project, groups one project's
+  trade permits into one signal, classifies it with `demand_signal.py`, and appends to the Demand Radar
+  with `signal_source` "Permits: City of Austin". **Decision rule:** run two ingest cycles, count the rows
+  that survive human triage, then decide whether to add San Antonio (CKAN CSV; Houston's portal only has
+  monthly summaries and is unverified).
+- **Optional next builds:** construction-data email alerts (paid), incumbent/award-intel capture, buyer CRM.
 
 ## 8. Mental model
 **Two lanes, one ranked funnel, two human gates.** The public lane = *who's buying now*; the demand lane
@@ -158,7 +165,7 @@ layer = *if it's quiet, it's genuinely quiet*.
 ---
 
 ### Tool index (quick reference)
-- **Ingest:** `ingest_rss.py` · `ingest_sam.py` · `ingest_email.py` · `ingest_portal_csv.py` (+`portal_csv_mapping.py`)
+- **Ingest:** `ingest_rss.py` · `ingest_sam.py` · `ingest_email.py` · `ingest_portal_csv.py` (+`portal_csv_mapping.py`) · `ingest_permits.py`
 - **Classify:** `relevance.py` (procurement) · `demand_signal.py` (demand)
 - **Stores/CLIs:** `pipeline.py` (bids) · `lead_radar.py` (watch + calendar) · `demand_radar.py` (private)
 - **Rank/eligibility:** `win_score.py` · `readiness.py`

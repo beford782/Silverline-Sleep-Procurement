@@ -15,6 +15,7 @@ Lightweight Python utilities for the procurement toolkit.
 | `ingest_portal_csv.py` | yes | Import an operator-downloaded portal CSV export into the active pipeline using a JSON column mapping such as `configs/portal_csv/esbd.json`. |
 | `ingest_email.py` | yes | Ingest portal commodity/NIGP email alerts from the alert mailbox. Stdlib HTTPS via `urllib.request`. Two backends: `--provider graph` (Outlook/M365 via Microsoft Graph, app-only OAuth; `GRAPH_TENANT_ID`/`GRAPH_CLIENT_ID`/`GRAPH_CLIENT_SECRET`/`GRAPH_MAILBOX`) and `--provider gmail` (Gmail REST, refresh-token; `GMAIL_*`). `--fixture` for offline use. Generic title/link/due-date parser; dedupes by `opportunity_id`. Gated by `relevance.py`: `ACCEPT` rows write to `bids/active/_pipeline.csv`; `REVIEW` rows route to Lead Radar (`--leads`, default `leads/review/_lead_radar.csv`); `REJECT` is dropped. `--review-target` overrides routing. See `docs/email_ingest_setup.md`. |
 | `ingest_rss.py` | yes | Ingest RSS 2.0 / Atom feeds (Google Alerts, Bonfire `/opportunities/rss`, RFPMart, etc.). Stdlib `urllib` + `xml.etree`; unwraps Google Alerts redirect links. Feeds via `--feed`/`--source`, `--feeds-config` (see `configs/feeds.example.json`), or `--fixture`. Gated by `relevance.py`: `ACCEPT` rows write to `bids/active/_pipeline.csv`; `REVIEW` rows route to Lead Radar (`--leads`, default `leads/review/_lead_radar.csv`); `REJECT` is dropped. `--review-target` overrides routing. Dedupes by `opportunity_id` (leads also deduped against Lead Radar + active/archive). |
+| `ingest_permits.py` | yes | Ingest municipal building-permit open data into the **Demand Radar** (`leads/demand/_demand_radar.csv`, the same lane as the `kind:"demand"` RSS feeds). Austin pilot: City of Austin "Issued Construction Permits" (Socrata dataset `3syk-w9eu`) filtered to `permittype` BP, Commercial, keyword match on the description (hotel / dorm / student housing / assisted or senior living / memory care / shelter, etc.) minus `exclude_terms`; groups a project's trade/floor permits into one signal; classifies with `demand_signal.py`; appends via `demand_radar.py`. Sources and terms in `configs/permits.json`; 14-day lookback per source (`lookback_days`). Rows carry `signal_source` "Permits: City of Austin", the permit portal link in `source_url`, the site address in `location`. No contractor phone/person names are written. Optional `SOCRATA_APP_TOKEN` env var. Exit 0 on success (including no new rows); non-zero if any configured source fails to fetch/parse. |
 | `portal_csv_mapping.py` | yes | Inspect a portal CSV export and write a starter mapping JSON for `ingest_portal_csv.py`. |
 | `generate_procurement_packet.py` | yes | Reads a questionnaire CSV, writes a markdown packet and printable HTML. Default output dir is `build/generated/` (gitignored). |
 | `validate_vendor_profile.py` | yes | Validates `vendor-profiles/*.profile.json` against `vendor-profiles/vendor_profile.schema.json`. Walks the schema at runtime; no parallel hardcoded rules. |
@@ -231,6 +232,36 @@ Flags worth knowing:
 
 The script never reads or writes `pointOfContact` fields from SAM.gov
 responses — contact PII stays out of the repo by design.
+
+### Ingest municipal permit open data (Demand Radar)
+
+```sh
+python tools/ingest_permits.py --config configs/permits.json [--since-days N] [--dry-run] \
+    [--demand PATH] [--demand-archive PATH] [--reject-log logs/rejects/_permits.csv] \
+    [--fixture PATH] [--today YYYY-MM-DD]
+
+# Offline smoke (what CI runs): the Austin fixture, no network, no writes.
+python tools/ingest_permits.py --config configs/permits.json \
+    --fixture tests/fixtures/austin_permits_sample.json --dry-run
+```
+
+Flags worth knowing:
+
+- `--config PATH` - source list, keyword and exclude terms, `lookback_days`
+  (default `configs/permits.json`).
+- `--since-days N` - override the per-source lookback for this run.
+- `--demand PATH` / `--demand-archive PATH` - override the Demand Radar CSV
+  locations used for writing and dedupe.
+- `--reject-log PATH` - audit CSV of filtered-out permits (own header; see
+  `logs/rejects/README.md`). The scheduled workflow writes
+  `logs/rejects/_permits.csv`.
+- `--fixture PATH` - read a local JSON response instead of calling Socrata.
+- `--today YYYY-MM-DD` - pin the lookback window for deterministic runs.
+- `--dry-run` - print what would be added; write nothing.
+
+The scheduled `weekly_rss_ingest.yml` runs this right after the RSS step
+(Mon/Thu). Triage permit rows by hand exactly like Google Alerts demand rows
+(`docs/demand_radar_feed_setup.md` §2 and §4b).
 
 ### Ingest a portal CSV export
 

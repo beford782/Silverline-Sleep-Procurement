@@ -1,0 +1,27 @@
+[
+  {
+    "source": "Permits: City of Austin",
+    "adapter": "socrata",
+    "url": "https://data.austintexas.gov/resource/3syk-w9eu.json",
+    "city": "Austin",
+    "state": "TX",
+    "lookback_days": 14,
+    "limit": 500,
+    "permit_types": ["BP"],
+    "permit_class_mapped": "Commercial",
+    "exclude_work_class": ["Demolition"],
+    "keywords": [
+      "hotel", "motel", "inn", "resort", "hospitality",
+      "dorm", "dormitory", "residence hall", "student housing",
+      "assisted living", "senior living", "memory care", "nursing", "skilled nursing",
+      "shelter", "behavioral health", "detention center", "detention facility", "jail", "barracks"
+    ],
+    "exclude_terms": [
+      "generator", "parking garage", "concrete repair", "concrete repairs", "signage", "sign permit",
+      "antenna", "cell site", "elevator modernization", "roof", "roofing",
+      "hvac replacement", "fire alarm", "sprinkler", "irrigation", "fence",
+      "retaining wall", "solar", "ev charger"
+    ],
+    "notes": "Issued Construction Permits (Socrata). BP only: one project = one signal; EP/MP/PP are trade siblings. Commercial class only. exclude_terms and keywords are re-applied locally as whole words/phrases (the LIKE clauses over-fetch), so no_keyword rejects occur in live runs by design. 'suites' deliberately absent: in permit text it means office/tenant suites far more often than hotel suites (first live dry run 2026-09-11)."
+  }
+]

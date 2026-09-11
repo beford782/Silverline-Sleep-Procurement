@@ -12,10 +12,13 @@ Own header, separate from the relevance-channel logs:
 - `exclude_term:<term>` - description matched a configured `exclude_terms` entry.
 - `work_class_excluded:<wc>` - permit work class is not one the config accepts.
 - `non_bp:<type>` - `permittype` is not BP (standalone trade permit).
-- `no_keyword` - description matched none of the configured `keywords` (fixture
-  mode only; the live Socrata query filters this server-side).
+- `no_keyword` - description matched none of the configured `keywords` under the
+  local whole-word check. Live records land here too: the Socrata query is a
+  looser substring LIKE over-fetch, and the local filter is the one that counts.
 - `duplicate` - already present in the Demand Radar (active or archive) or already
   grouped under another permit in this run.
+- `classifier:<reason>` - passed every permit filter, but `demand_signal.py`
+  rejected it; `<reason>` is the classifier's own reason string.
 
 Not written under `--dry-run` (unlike the relevance-channel logs), so a dry run
 leaves the tree untouched.

@@ -20,13 +20,27 @@ Facts the design is built around (verified on live Austin data):
     MP mechanical, PP plumbing) with the same description. Only BP is the
     project signal; the live query filters permittype server-side.
   - One project can issue several BP permits (one per floor / building). Records
-    are grouped into ONE signal per (masterpermitnum or project_id) + site
-    address stem; the permit numbers, floors and buildings land in notes.
+    are grouped into ONE signal per masterpermitnum (or, when the master is
+    blank, per site address stem); permit numbers, floors and buildings land in
+    notes. project_id is a per-permit folder id in Austin and is NOT an anchor.
   - Keyword hits contain trade noise ("Generator replacement ... shelter
     building", "concrete repairs in the Hotels Parking Garage"). A small
     config `exclude_terms` list sends those to the reject log; no heavy NLP.
   - Contractor person names / phones / addresses are NEVER requested or
-    stored. contractor_company_name (a business) may be noted as "GC: <name>".
+    stored. contractor_company_name is free text and may be an owner-builder's
+    personal name, so it is noted as "GC: <name>" only when it carries a
+    business marker (LLC, Inc, Construction, ...).
+
+Two keyword gates, deliberately different:
+  - Server side, the SoQL $where uses upper(description) LIKE '%HOTEL%' clauses
+    built from config `keywords`. LIKE is a substring match, so it OVER-fetches
+    ("dorm" pulls "dormer", "inn" pulls "inner").
+  - Locally, `keywords` are re-applied as whole words / phrases via
+    relevance._compile. This local filter is the real gate, so a live run CAN
+    reject records with reason `no_keyword`; that is expected, not a bug.
+  A record that passes both gates but that demand_signal.classify_demand still
+  REJECTs (no facility noun) goes to the reject log with reason
+  "classifier:<first reason>"; it is never written as a Demand Radar row.
 
 Usage:
     python tools/ingest_permits.py --config configs/permits.json --dry-run
@@ -36,8 +50,8 @@ Usage:
         --reject-log logs/rejects/_permits.csv
 
 Exit code 0 on success (including "no new rows"); non-zero when ANY configured
-source fails to fetch or parse, so a network failure never looks like a quiet
-day. Stdlib only (urllib + json + csv).
+source fails to fetch or parse (after 3 attempts with backoff on transient
+errors), so a network failure never looks like a quiet day. Stdlib only.
 """
 
 from __future__ import annotations
@@ -49,6 +63,7 @@ import os
 import re
 import ssl
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -62,6 +77,9 @@ DEFAULT_TIMEOUT_S = 30
 USER_AGENT = "silverline-sleep-procurement/1.0"
 DEFAULT_LOOKBACK_DAYS = 14
 DEFAULT_LIMIT = 500
+MAX_PAGES = 10
+RETRY_BACKOFF_S = (1, 3)          # sleep before attempt 2 and attempt 3
+RETRY_HTTP_CODES = {429}          # plus every 5xx
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import demand_radar  # noqa: E402
@@ -95,23 +113,6 @@ SEGMENT_LABELS = {
     "shelter": "Shelter",
 }
 
-# When the demand classifier finds no facility noun (its lexicon wants
-# "homeless shelter" / "skilled nursing"; a permit just says "shelter" or
-# "nursing"), fall back to the segment implied by the config keyword that
-# matched. Order matters: first hit wins.
-KEYWORD_SEGMENT_FALLBACK: list[tuple[str, str]] = [
-    ("hotel", "hotel"), ("motel", "hotel"), ("inn ", "hotel"), ("suites", "hotel"),
-    ("resort", "hotel"), ("hospitality", "hotel"),
-    ("dormitory", "student-housing"), ("dorm", "student-housing"),
-    ("residence hall", "student-housing"), ("student housing", "student-housing"),
-    ("assisted living", "senior-living"), ("senior living", "senior-living"),
-    ("memory care", "senior-living"), ("skilled nursing", "senior-living"),
-    ("nursing", "senior-living"),
-    ("behavioral health", "healthcare"),
-    ("detention", "correctional"), ("jail", "correctional"),
-    ("shelter", "shelter"), ("barracks", "shelter"),
-]
-
 # Trailing "Floor 11" / "Level 3" tokens are split off the description so the
 # floors of one project share a facility_name (and therefore one demand_id).
 _FLOOR_TAIL_RE = re.compile(r"[\s,\-–]*(?:\(|\b)(?:floor|level|fl\.?)\s*#?\s*(\d+)\)?\s*$", re.I)
@@ -121,6 +122,13 @@ _ADDRESS_UNIT_RE = re.compile(
 _MAIN_SUFFIX_RE = re.compile(r"[\s*]*\bMAIN\b[\s*]*$", re.I)
 _SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
 _WS_RE = re.compile(r"\s+")
+# contractor_company_name is free text; an owner-builder permit carries a
+# person's name there. Only a value with a business marker is noted.
+_BUSINESS_MARKER_RE = re.compile(
+    r"(?<![A-Za-z])(?:LLC|L\.L\.C|Inc|Co|Corp|Company|Construction|Builders?|Build|"
+    r"Contractors?|Group|Services|Design|Electric|Electrical|Plumbing|Mechanical|"
+    r"LP|LLP|Ltd|Enterprises|Partners|Development|Restoration|Associates)(?![A-Za-z])"
+    r"|&", re.I)
 
 FACILITY_STEM_MAX = 88   # longest label "Senior living permit: " (22) + 88 = 110 chars
 
@@ -139,17 +147,22 @@ def load_config(path: Path) -> list[dict]:
     return cfg
 
 
+def effective_limit(src: dict) -> int:
+    return int(src.get("limit") or DEFAULT_LIMIT)
+
+
 def _soql_quote(value: str) -> str:
     """Single-quote a SoQL string literal, doubling embedded quotes."""
     return "'" + str(value).replace("'", "''") + "'"
 
 
-def build_socrata_url(src: dict, since: str) -> str:
-    """Pure: the Socrata GET URL for one source. `since` is YYYY-MM-DD.
+def build_socrata_url(src: dict, since: str, offset: int = 0) -> str:
+    """Pure: the Socrata GET URL for one source page. `since` is YYYY-MM-DD.
 
     $where = issue_date > since AND permit_class_mapped = X AND permittype in
-    (BP) AND (upper(description) LIKE '%HOTEL%' OR ...). The $select is the
-    fixed field list above (never contractor person/phone/address fields).
+    (BP) AND (upper(description) LIKE '%HOTEL%' OR ...). The LIKE clauses are
+    a substring over-fetch; the local whole-word gate decides. The $select is
+    the fixed field list above (never contractor person/phone/address fields).
     """
     clauses = [f"issue_date > {_soql_quote(since + 'T00:00:00')}"]
     pcm = src.get("permit_class_mapped")
@@ -161,31 +174,72 @@ def build_socrata_url(src: dict, since: str) -> str:
     keywords = src.get("keywords") or []
     if keywords:
         likes = " OR ".join(
-            f"upper(description) LIKE {_soql_quote('%' + kw.upper() + '%')}" for kw in keywords)
+            f"upper(description) LIKE {_soql_quote('%' + kw.strip().upper() + '%')}"
+            for kw in keywords)
         clauses.append(f"({likes})")
     params = [
         ("$select", ", ".join(SELECT_FIELDS)),
         ("$where", " AND ".join(clauses)),
         ("$order", "issue_date DESC"),
-        ("$limit", str(int(src.get("limit") or DEFAULT_LIMIT))),
+        ("$limit", str(effective_limit(src))),
+        ("$offset", str(int(offset))),
     ]
     return src["url"] + "?" + urllib.parse.urlencode(params, quote_via=urllib.parse.quote)
 
 
+def _urlopen(req: urllib.request.Request, timeout: float):
+    """Thin seam over urllib (patched in tests)."""
+    return urllib.request.urlopen(req, timeout=timeout, context=ssl.create_default_context())
+
+
+def _is_transient(exc: Exception) -> bool:
+    if isinstance(exc, urllib.error.HTTPError):
+        return exc.code in RETRY_HTTP_CODES or 500 <= exc.code <= 599
+    # URLError covers DNS failures, refused connections and socket timeouts;
+    # TimeoutError is what a bare socket timeout surfaces as on some paths.
+    return isinstance(exc, (urllib.error.URLError, TimeoutError))
+
+
 def fetch_json(url: str, timeout: float = DEFAULT_TIMEOUT_S) -> list[dict]:
-    """GET a JSON array. Raises OSError/ValueError on any fetch/parse problem."""
+    """GET a JSON array with 3 attempts (backoff 1 s, 3 s) on transient errors
+    (URLError / timeout / HTTP 429 / 5xx). Anything else, or a third failure,
+    raises OSError/ValueError so the caller fails loud."""
     headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
     token = os.environ.get("SOCRATA_APP_TOKEN", "").strip()
     if token:
         headers["X-App-Token"] = token
-    ctx = ssl.create_default_context()
     req = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
-        body = resp.read().decode("utf-8", errors="replace")
+    attempts = len(RETRY_BACKOFF_S) + 1
+    for attempt in range(1, attempts + 1):
+        try:
+            with _urlopen(req, timeout) as resp:
+                body = resp.read().decode("utf-8", errors="replace")
+            break
+        except (urllib.error.URLError, TimeoutError) as exc:   # HTTPError is a URLError
+            if attempt == attempts or not _is_transient(exc):
+                raise
+            time.sleep(RETRY_BACKOFF_S[attempt - 1])
     data = json.loads(body)
     if not isinstance(data, list):
         raise ValueError(f"expected a JSON array, got {type(data).__name__}")
     return data
+
+
+def fetch_all_pages(src: dict, since: str, fetcher=None) -> tuple[list[dict], bool]:
+    """Page through the Socrata query with $offset until a short page.
+
+    Returns (records, capped). `capped` is True when MAX_PAGES full pages came
+    back, meaning older permits in the window were NOT fetched.
+    """
+    fetcher = fetcher or fetch_json
+    limit = effective_limit(src)
+    records: list[dict] = []
+    for page in range(MAX_PAGES):
+        batch = fetcher(build_socrata_url(src, since, offset=page * limit))
+        records.extend(batch)
+        if len(batch) < limit:
+            return records, False
+    return records, True
 
 
 # ---------------------------------------------------------------------------
@@ -233,6 +287,11 @@ def clean_contractor(name) -> str:
     """Drop Austin's '*MAIN**' / '****MAIN***' suffix and tidy whitespace."""
     out = _MAIN_SUFFIX_RE.sub("", _collapse(name))
     return out.strip(" *").strip()
+
+
+def is_business_name(name: str) -> bool:
+    """True when the cleaned contractor value looks like a company, not a person."""
+    return bool(name) and bool(_BUSINESS_MARKER_RE.search(name))
 
 
 def description_stem(description: str) -> str:
@@ -309,15 +368,8 @@ def scrub_pii(text: str) -> str:
     return out
 
 
-def _matched_keyword(text: str, keywords: list[str]) -> str:
-    low = (text or "").lower()
-    for kw in keywords:
-        if kw.lower() in low:
-            return kw
-    return ""
-
-
-def _matched_exclude(text: str, compiled) -> str:
+def _first_match(text: str, compiled) -> str:
+    """First (term) whose whole-word/phrase regex hits `text`, else ''."""
     for term, rx in compiled:
         if rx.search(text or ""):
             return term
@@ -351,12 +403,12 @@ def _reject(rec: dict, source: str, reason: str, today: str) -> dict:
 
 def filter_records(records: list[dict], src: dict, today: str
                    ) -> tuple[list[dict], list[dict]]:
-    """Per-record gates: permit type, work class, keyword, exclude terms.
-    Returns (kept, rejected_log_rows)."""
+    """Per-record gates, in order: permit type, work class, exclude terms,
+    whole-word keyword. Returns (kept, rejected_log_rows)."""
     ptypes = {p.upper() for p in (src.get("permit_types") or [])}
     excluded_wc = {w.lower() for w in (src.get("exclude_work_class") or [])}
-    keywords = src.get("keywords") or []
-    compiled_excludes = relevance._compile(src.get("exclude_terms") or [])
+    keywords = relevance._compile([k.strip() for k in (src.get("keywords") or []) if k.strip()])
+    excludes = relevance._compile(src.get("exclude_terms") or [])
     source = src["source"]
     kept: list[dict] = []
     rejected: list[dict] = []
@@ -370,25 +422,26 @@ def filter_records(records: list[dict], src: dict, today: str
             rejected.append(_reject(rec, source, f"work_class_excluded:{wc}", today))
             continue
         desc = _collapse(rec.get("description"))
-        if keywords and not _matched_keyword(desc, keywords):
-            rejected.append(_reject(rec, source, "no_keyword", today))
-            continue
-        term = _matched_exclude(desc, compiled_excludes)
+        term = _first_match(desc, excludes)
         if term:
             rejected.append(_reject(rec, source, f"exclude_term:{term}", today))
+            continue
+        if keywords and not _first_match(desc, keywords):
+            rejected.append(_reject(rec, source, "no_keyword", today))
             continue
         kept.append(rec)
     return kept, rejected
 
 
 def group_records(records: list[dict]) -> list[list[dict]]:
-    """One project = one group: (masterpermitnum or project_id) + address stem.
-    Groups keep first-seen order; members are sorted by permit_number."""
+    """One project = one group, anchored on masterpermitnum; when that is
+    blank, on the site address stem alone. (Austin's project_id is a
+    per-permit folder RSN, so it must NOT anchor a group.) Groups keep
+    first-seen order; members are sorted by permit_number."""
     groups: dict[tuple, list[dict]] = {}
     for rec in records:
-        anchor = _collapse(rec.get("masterpermitnum")) or _collapse(rec.get("project_id")) \
-            or _collapse(rec.get("permit_number"))
-        key = (anchor, address_stem(_site_address(rec)))
+        master = _collapse(rec.get("masterpermitnum"))
+        key = (master, address_stem(_site_address(rec)))
         groups.setdefault(key, []).append(rec)
     out = []
     for members in groups.values():
@@ -396,15 +449,18 @@ def group_records(records: list[dict]) -> list[list[dict]]:
     return out
 
 
-def group_to_row(group: list[dict], src: dict, today: str) -> dict:
-    """Map one grouped permit signal onto a Demand Radar row."""
+def group_to_row(group: list[dict], src: dict, today: str) -> tuple[dict | None, str]:
+    """Map one grouped permit signal onto a Demand Radar row.
+
+    Returns (row, "") or (None, "classifier:<reason>") when the demand
+    classifier finds no mattress-demand facility in the permit text.
+    """
     primary = group[0]
     source = src["source"]
     city = src.get("city") or _collapse(primary.get("original_city")).title()
     state = (src.get("state") or _collapse(primary.get("original_state")) or "").upper()
     work_class = _collapse(primary.get("work_class"))
     type_desc = _collapse(primary.get("permit_type_desc"))
-    keywords = src.get("keywords") or []
 
     # Unique description stems, primary first.
     stems: list[str] = []
@@ -415,17 +471,10 @@ def group_to_row(group: list[dict], src: dict, today: str) -> dict:
     text = " | ".join(stems + [p for p in (work_class, type_desc) if p])
 
     verdict = demand_signal.classify_demand(text, source=source)
+    if verdict.decision == "REJECT" or not verdict.segment:
+        first = (verdict.reasons or ["no mattress-demand facility"])[0]
+        return None, f"classifier:{first[:60]}"
     reasons = list(verdict.reasons)
-    if verdict.decision == "REJECT":
-        verdict.decision = "REVIEW"
-        reasons.append("classifier=REJECT, kept as permit signal")
-    if not verdict.segment:
-        kw = _matched_keyword(text, [k for k, _ in KEYWORD_SEGMENT_FALLBACK]) or \
-            _matched_keyword(text, keywords)
-        seg = next((s for k, s in KEYWORD_SEGMENT_FALLBACK if k == kw), "")
-        if seg:
-            verdict.segment = seg
-            reasons.append(f"segment from permit keyword: {kw.strip()}")
     if not verdict.project_stage:
         derived = stage_from_work_class(work_class)
         if derived:
@@ -439,6 +488,7 @@ def group_to_row(group: list[dict], src: dict, today: str) -> dict:
         # A bare 20xx in permit text is a case number, not a completion year.
         verdict.est_completion_date = ""
         verdict.est_buy_window = ""
+        reasons = [r for r in reasons if not r.startswith("completion:")]
     if not verdict.est_buy_window and issued:
         verdict.est_buy_window = derive_buy_window(issued, work_class)
         reasons.append("buy-window derived from permit issue date")
@@ -497,7 +547,7 @@ def group_to_row(group: list[dict], src: dict, today: str) -> dict:
     if units:
         notes.append("site units: " + ", ".join(units))
     gc = clean_contractor(primary.get("contractor_company_name"))
-    if gc:
+    if is_business_name(gc):
         notes.append(f"GC: {gc}")
     housing_units = max((_num(r.get("housing_units")) for r in group), default=0)
     if housing_units > 1:
@@ -509,7 +559,7 @@ def group_to_row(group: list[dict], src: dict, today: str) -> dict:
     if sqft_remodel > 0:
         notes.append(f"remodel sqft: {int(sqft_remodel)}")
     row["notes"] = scrub_pii("; ".join(n for n in notes if n))
-    return row
+    return row, ""
 
 
 def match_keys(row: dict) -> set[str]:
@@ -543,7 +593,10 @@ def ingest_source(records: list[dict], src: dict, today: str,
     accepted: list[dict] = []
     duplicates = 0
     for group in groups:
-        row = group_to_row(group, src, today)
+        row, reason = group_to_row(group, src, today)
+        if row is None:
+            rejected.append(_reject(group[0], src["source"], reason, today))
+            continue
         keys = match_keys(row)
         if keys & known_keys:
             duplicates += 1
@@ -656,11 +709,10 @@ def main(argv: list[str] | None = None) -> int:
                 if not isinstance(records, list):
                     raise ValueError("fixture must be a JSON array of permit records")
             elif adapter == "socrata":
-                url = build_socrata_url(src, since)
-                records = fetch_json(url)
-                if src.get("limit") and len(records) >= int(src["limit"]):
-                    print(f"::warning::{source}: hit $limit={src['limit']}; "
-                          f"raise limit or shorten lookback")
+                records, capped = fetch_all_pages(src, since)
+                if capped:
+                    print(f"::warning::{source}: stopped after {MAX_PAGES} full pages of "
+                          f"{effective_limit(src)}; older permits in the window were not fetched")
             else:
                 raise ValueError(f"adapter {adapter!r} not implemented (only 'socrata')")
         except (OSError, ValueError) as exc:

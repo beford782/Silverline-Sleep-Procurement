@@ -15,6 +15,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -32,6 +33,7 @@ if str(TOOLS) not in sys.path:
     sys.path.insert(0, str(TOOLS))
 
 import demand_radar  # noqa: E402
+import demand_signal  # noqa: E402
 import ingest_permits  # noqa: E402
 import pii_lint  # noqa: E402
 
@@ -113,8 +115,15 @@ class SoqlUrlTests(unittest.TestCase):
         self.assertIn("upper(description) LIKE '%HOTEL%'", where)
         self.assertIn("upper(description) LIKE '%ASSISTED LIVING%'", where)
         self.assertIn(" OR ", where)
+        self.assertIn("upper(description) LIKE '%INN%'", where)
         self.assertEqual(p["$order"], "issue_date DESC")
         self.assertEqual(p["$limit"], "500")
+        self.assertEqual(p["$offset"], "0")
+
+    def test_offset_is_carried_for_paging(self) -> None:
+        url = ingest_permits.build_socrata_url(dict(_source(), limit=200), "2026-01-01", offset=400)
+        q = {k: v[0] for k, v in urllib.parse.parse_qs(urllib.parse.urlsplit(url).query).items()}
+        self.assertEqual((q["$limit"], q["$offset"]), ("200", "400"))
 
     def test_select_never_requests_contractor_pii(self) -> None:
         p = self._params(_source(), "2026-08-28")
@@ -164,6 +173,30 @@ class FilterTests(unittest.TestCase):
         kept, rejected = ingest_permits.filter_records([rec], self.src, TODAY)
         self.assertEqual(len(kept), 1, "'roof' must not fire inside 'waterproofing'")
         self.assertEqual(rejected, [])
+
+    def test_local_keyword_gate_is_whole_word(self) -> None:
+        cases = {
+            "Add dormer windows to commercial building": "no_keyword",   # dorm != dormer
+            "Reconfigure inner courtyard drainage": "no_keyword",        # inn != inner
+            "New 4-story office building with stormwater detention pond": "no_keyword",
+        }
+        for desc, expect in cases.items():
+            kept, rejected = ingest_permits.filter_records([_make_record(description=desc)], self.src, TODAY)
+            self.assertEqual(kept, [], desc)
+            self.assertEqual(rejected[0]["reason"], expect, desc)
+        kept, rejected = ingest_permits.filter_records(
+            [_make_record(description="Convert office floors to a 120-room dorm for the university")],
+            self.src, TODAY)
+        self.assertEqual(len(kept), 1)
+
+    def test_exclude_terms_are_checked_before_keywords(self) -> None:
+        # "Hotels" (plural) is not a whole-word keyword hit, but the exclude
+        # reason is the informative one and must win.
+        kept, rejected = ingest_permits.filter_records(
+            [_make_record(description="We will be making concrete repairs in the Hotels Parking Garage.")],
+            self.src, TODAY)
+        self.assertEqual(kept, [])
+        self.assertTrue(rejected[0]["reason"].startswith("exclude_term:"), rejected[0]["reason"])
 
     def test_reject_rows_carry_the_reject_schema(self) -> None:
         for r in self.rejected:
@@ -217,18 +250,66 @@ class GroupingTests(unittest.TestCase):
         self.assertEqual(row["project_stage"], "renovation")
         self.assertIn("stage derived from work_class Remodel", row["notes"])
 
-    def test_classifier_reject_is_downgraded_to_review_not_dropped(self) -> None:
-        # "shelter" alone is not in the classifier lexicon (it wants "homeless
-        # shelter"), so the classifier says REJECT; the permit is kept anyway.
-        rec = _make_record(description="Interior build-out of new shelter wing with 40 beds",
-                           work_class="New")
-        res = ingest_permits.ingest_source([rec], self.src, TODAY, set())
+    def test_classifier_reject_goes_to_reject_log_not_a_row(self) -> None:
+        rec = _make_record(description="Interior build-out of new shelter wing with 40 beds", work_class="New")
+        verdict = demand_signal.DemandVerdict(decision="REJECT", confidence=0,
+                                              reasons=["no mattress-demand facility"])
+        with mock.patch.object(ingest_permits.demand_signal, "classify_demand", return_value=verdict):
+            res = ingest_permits.ingest_source([rec], self.src, TODAY, set())
+        self.assertEqual(res["accepted"], [])
+        self.assertEqual(len(res["rejected"]), 1)
+        self.assertEqual(res["rejected"][0]["reason"], "classifier:no mattress-demand facility")
+        self.assertEqual(res["rejected"][0]["permit_number"], "2026-900001 BP")
+
+    def test_no_fabricated_rows_from_lookalike_words(self) -> None:
+        # Review finding: substring keyword matching + a REJECT->REVIEW override
+        # produced "Correctional permit: ... office building ..." rows.
+        for desc in ("New 4-story office building with stormwater detention pond",
+                     "Add dormer windows to commercial building",
+                     "Inner lobby refresh for office tenants"):
+            res = ingest_permits.ingest_source([_make_record(description=desc)], self.src, TODAY, set())
+            self.assertEqual(res["accepted"], [], desc)
+
+    def test_bare_permit_nouns_now_classify(self) -> None:
+        cases = (("Interior build-out of new shelter wing with 40 beds", "shelter", "under-construction"),
+                 ("Remodel of existing nursing wing", "senior-living", "under-construction"),
+                 ("New behavioral health unit finish-out", "healthcare", "under-construction"),
+                 # the classifier's own "renovation" verb wins over the work_class derivation
+                 ("Barracks renovation building 2", "shelter", "renovation"),
+                 ("Tenant finish-out for county detention center intake", "correctional", "under-construction"))
+        for desc, segment, stage in cases:
+            res = ingest_permits.ingest_source([_make_record(description=desc, work_class="New")],
+                                               self.src, TODAY, set())
+            self.assertEqual(len(res["accepted"]), 1, desc)
+            self.assertEqual(res["accepted"][0]["segment"], segment, desc)
+            self.assertEqual(res["accepted"][0]["project_stage"], stage, desc)
+            self.assertNotIn("classifier=REJECT", res["accepted"][0]["notes"])
+
+    def test_floor_bps_without_master_still_group_by_address(self) -> None:
+        floors = [dict(r, masterpermitnum="") for r in _records()
+                  if r["permit_number"] in ("2024-128983 BP", "2024-128984 BP", "2024-128986 BP")]
+        self.assertEqual(len(floors), 3)
+        self.assertEqual(len({r["project_id"] for r in floors}), 3)  # distinct per-permit RSNs
+        res = ingest_permits.ingest_source(floors, self.src, TODAY, set())
         self.assertEqual(len(res["accepted"]), 1)
-        row = res["accepted"][0]
-        self.assertEqual(row["status"], "reviewing")
-        self.assertIn("classifier=REJECT, kept as permit signal", row["notes"])
-        self.assertTrue(row["segment"])  # falls back to the matched keyword's segment
-        self.assertEqual(row["project_stage"], "under-construction")
+        self.assertEqual(res["duplicates"], 0)
+        notes = res["accepted"][0]["notes"]
+        self.assertIn("permits: 2024-128983 BP, 2024-128984 BP, 2024-128986 BP (3 BP)", notes)
+        self.assertIn("floors: 11, 12, 14", notes)
+
+    def test_gc_note_only_for_business_names(self) -> None:
+        biz = ingest_permits.ingest_source(
+            [_make_record(contractor_company_name="DPR Construction  *MAIN**")], self.src, TODAY, set())
+        self.assertIn("GC: DPR Construction", biz["accepted"][0]["notes"])
+        for name in ("Jane Q Public", "Robert Smith", "MARIA GARCIA"):
+            person = ingest_permits.ingest_source(
+                [_make_record(contractor_company_name=name)], self.src, TODAY, set())
+            self.assertNotIn("GC:", person["accepted"][0]["notes"], name)
+            self.assertNotIn(name.split()[0], person["accepted"][0]["notes"], name)
+        for name in ("Power Design Inc****MAIN***", "RTC Restoration & Glass, Inc.", "NEI GC, LLC",
+                     "Triad Mechanical Co, Inc", "Smith & Sons"):
+            self.assertTrue(ingest_permits.is_business_name(ingest_permits.clean_contractor(name)), name)
+        self.assertFalse(ingest_permits.is_business_name(""))
 
     def test_location_keeps_uppercase_site_and_appends_city_state_zip(self) -> None:
         self.assertIn("311 E 5TH ST, Austin, TX 78701", self.rows)
@@ -271,6 +352,8 @@ class GroupingTests(unittest.TestCase):
         self.assertEqual(row["est_completion_date"], "")
         self.assertEqual(row["est_buy_window"], "2026-11")  # issued 2026-08-20 + 3 months
         self.assertIn("buy-window derived from permit issue date", row["notes"])
+        self.assertNotIn("completion:", row["notes"])
+        self.assertNotIn("2026-01", row["next_action"])
 
 
 class DerivationTests(unittest.TestCase):
@@ -492,10 +575,131 @@ class FailureTests(unittest.TestCase):
             self.assertIn("fetched 0", out)
             self.assertIn("(no new rows to write)", out)
 
+    def test_pagination_follows_offset_until_short_page(self) -> None:
+        src = dict(_source(), limit=2)
+        base = [_make_record(permit_number=f"2026-90000{i} BP", masterpermitnum=f"9900000{i}",
+                             original_address1=f"{100 + i} CONGRESS AVE") for i in range(5)]
+        pages = [base[0:2], base[2:4], base[4:5]]
+        seen_urls: list[str] = []
+
+        def fake_fetch(url):
+            seen_urls.append(url)
+            return pages[len(seen_urls) - 1]
+
+        records, capped = ingest_permits.fetch_all_pages(src, "2026-08-28", fetcher=fake_fetch)
+        self.assertEqual(len(records), 5)
+        self.assertFalse(capped)
+        offsets = [urllib.parse.parse_qs(urllib.parse.urlsplit(u).query)["$offset"][0] for u in seen_urls]
+        self.assertEqual(offsets, ["0", "2", "4"])
+
+    def test_pagination_caps_at_max_pages_and_flags_it(self) -> None:
+        src = dict(_source(), limit=1)
+        calls = []
+
+        def always_full(url):
+            calls.append(url)
+            return [_make_record()]
+
+        records, capped = ingest_permits.fetch_all_pages(src, "2026-08-28", fetcher=always_full)
+        self.assertTrue(capped)
+        self.assertEqual(len(calls), ingest_permits.MAX_PAGES)
+        self.assertEqual(len(records), ingest_permits.MAX_PAGES)
+
+    def test_main_pages_and_warns_when_capped(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            cfg = self._cfg(d, limit=1)
+            with mock.patch.object(ingest_permits, "fetch_json", return_value=[_make_record()]):
+                rc, out = _run_main(["--config", str(cfg), "--demand", str(Path(d) / "demand.csv"),
+                                     "--demand-archive", str(Path(d) / "archive.csv"),
+                                     "--today", TODAY, "--dry-run"])
+            self.assertEqual(rc, 0)
+            self.assertIn("::warning::Permits: City of Austin: stopped after 10 full pages", out)
+            self.assertIn("fetched 10", out)
+
     def test_missing_config_returns_2(self) -> None:
         with tempfile.TemporaryDirectory() as d:
             rc, _ = _run_main(["--config", str(Path(d) / "nope.json"), "--dry-run"])
             self.assertEqual(rc, 2)
+
+
+class _FakeResponse:
+    def __init__(self, body: str) -> None:
+        self._body = body.encode("utf-8")
+
+    def read(self) -> bytes:
+        return self._body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc) -> bool:
+        return False
+
+
+class RetryTests(unittest.TestCase):
+    def _fetch_with(self, side_effects):
+        calls = []
+        sleeps = []
+
+        def fake_urlopen(req, timeout):
+            calls.append(req.full_url)
+            effect = side_effects[len(calls) - 1]
+            if isinstance(effect, Exception):
+                raise effect
+            return _FakeResponse(effect)
+
+        with mock.patch.object(ingest_permits, "_urlopen", side_effect=fake_urlopen), \
+                mock.patch.object(ingest_permits.time, "sleep", side_effect=sleeps.append):
+            data = ingest_permits.fetch_json("https://example.test/resource/x.json")
+        return data, calls, sleeps
+
+    def test_two_transient_failures_then_success(self) -> None:
+        data, calls, sleeps = self._fetch_with([
+            urllib.error.URLError("timed out"),
+            urllib.error.HTTPError("https://x", 503, "Service Unavailable", {}, None),
+            '[{"permit_number": "1"}]',
+        ])
+        self.assertEqual(data, [{"permit_number": "1"}])
+        self.assertEqual(len(calls), 3)
+        self.assertEqual(sleeps, [1, 3])
+
+    def test_third_failure_raises(self) -> None:
+        with self.assertRaises(urllib.error.URLError):
+            self._fetch_with([urllib.error.URLError("a"), urllib.error.URLError("b"),
+                              urllib.error.URLError("c")])
+
+    def test_non_transient_http_error_is_not_retried(self) -> None:
+        calls = []
+
+        def fake_urlopen(req, timeout):
+            calls.append(1)
+            raise urllib.error.HTTPError("https://x", 403, "Forbidden", {}, None)
+
+        with mock.patch.object(ingest_permits, "_urlopen", side_effect=fake_urlopen), \
+                mock.patch.object(ingest_permits.time, "sleep") as slept:
+            with self.assertRaises(urllib.error.HTTPError):
+                ingest_permits.fetch_json("https://example.test/resource/x.json")
+        self.assertEqual(len(calls), 1)
+        slept.assert_not_called()
+
+    def test_429_is_retried(self) -> None:
+        data, calls, sleeps = self._fetch_with([
+            urllib.error.HTTPError("https://x", 429, "Too Many Requests", {}, None), "[]"])
+        self.assertEqual(data, [])
+        self.assertEqual((len(calls), sleeps), (2, [1]))
+
+    def test_app_token_header_when_env_set(self) -> None:
+        captured = {}
+
+        def fake_urlopen(req, timeout):
+            captured.update(req.headers)
+            return _FakeResponse("[]")
+
+        with mock.patch.dict(os.environ, {"SOCRATA_APP_TOKEN": "abc123"}), \
+                mock.patch.object(ingest_permits, "_urlopen", side_effect=fake_urlopen):
+            ingest_permits.fetch_json("https://example.test/resource/x.json")
+        self.assertEqual(captured.get("X-app-token"), "abc123")
+        self.assertEqual(captured.get("User-agent"), "silverline-sleep-procurement/1.0")
 
 
 class RejectLogTests(unittest.TestCase):

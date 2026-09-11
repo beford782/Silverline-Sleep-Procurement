@@ -78,8 +78,14 @@ jobs:
         run: python tools/ingest_rss.py --feeds-config configs/feeds.json --reject-log logs/rejects/_rss.csv
 
       - name: Run municipal permit ingest (configs/permits.json)
-        # Austin pilot. Same fail-loud rule as the feed step: a Socrata error
-        # exits non-zero rather than passing as a quiet day.
+        id: permits
+        # Austin pilot. A Socrata error still fails the RUN (see the final
+        # "Fail the run if the permit ingest failed" step), but not the JOB
+        # mid-way: without continue-on-error a transient Socrata 5xx would
+        # abort before the diff/PR steps and discard the RSS rows the previous
+        # step already wrote. This way the RSS rows still reach the triage PR
+        # and the run still goes red for the digest / failure issue.
+        continue-on-error: true
         run: python tools/ingest_permits.py --config configs/permits.json --reject-log logs/rejects/_permits.csv
 
       - name: Detect whether ingest changed active pipeline or Lead Radar
@@ -223,6 +229,14 @@ jobs:
           else
             echo "RSS ingest ran clean - no new rows, no PR."
           fi
+
+      # Deferred failure for the permit step (continue-on-error above): the RSS
+      # rows have reached the PR by now, so it is safe to turn the run red.
+      - name: Fail the run if the permit ingest failed
+        if: steps.permits.outcome == 'failure'
+        run: |
+          echo "::error::Municipal permit ingest (tools/ingest_permits.py) failed - see the 'Run municipal permit ingest' step. RSS rows were still processed; the permit window may have been missed."
+          exit 1
 
       # A failed scheduled sweep is the silent-miss failure mode: the run goes
       # red but nobody is watching the Actions tab. Surface it as a GitHub issue

@@ -188,8 +188,9 @@ Google Alerts rows and get the same §2 triage.
   `next_action` / `notes`, and do not cold-sell a branded property before the route is mapped. Archive
   no-fits with `python tools/demand_radar.py archive <id> --status no-fit --note "<reason>"`.
 - **No PII:** the adapter never writes contractor phone numbers or person names. The site address is kept
-  uppercase exactly as the city publishes it (it is public permit data, not a private contact). The
-  pull-request PII scan still runs on every new row.
+  uppercase exactly as the city publishes it (it is public permit data, not a private contact). The CI PII
+  scan runs on the auto-ingest branch too (CI is dispatched there by the ingest run) and lints only the
+  newly added lines against `main`.
 - **Exit criteria for the pilot:** two ingest cycles, count the rows that survive human triage, then decide
   on San Antonio (CKAN CSV, weekly full extracts). Houston is unverified (monthly summaries only).
 

@@ -105,10 +105,14 @@ jobs:
           git diff --check origin/${{ github.base_ref }}...HEAD
 
       - name: PII scan (newly added data lines only)
-        if: github.event_name == 'pull_request'
+        # Also runs on the auto/* ingest branches, which get CI via
+        # `gh workflow run ci.yml` (workflow_dispatch, no base_ref): the diff
+        # base falls back to main there.
+        if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref_name != 'main')
         run: |
-          git fetch origin ${{ github.base_ref }}
+          BASE="${{ github.base_ref || 'main' }}"
+          git fetch origin "$BASE"
           # Diff-scoped: blocks NEW street addresses / EINs / phone numbers from
           # entering the pipeline + radar CSVs, without failing on the public
           # buyer content already in their history. See tools/pii_lint.py.
-          python tools/pii_lint.py --diff-base origin/${{ github.base_ref }}
+          python tools/pii_lint.py --diff-base "origin/$BASE"

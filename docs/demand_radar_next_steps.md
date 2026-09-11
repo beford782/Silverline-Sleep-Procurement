@@ -54,6 +54,11 @@ No new tooling. Generate the rows that license Phase 2/3.
 > trade feeds — BEFORE building any more Demand Radar UI/tooling.** The lane underperforming is a
 > source problem, not a parsing problem.
 
+> **Tripwire status (2026-09-11): FIRED.** Google Alerts stayed thin through the 2026-09-10 ingest (5 demand
+> rows, all noise, archived no-fit 2026-09-11). Per the rule above, the municipal permit open-data adapter is
+> now built (`tools/ingest_permits.py`, Austin pilot) and runs in the same Mon/Thu workflow; see "Source
+> escalation" below for the exit criteria. No Demand Radar UI/tooling was built ahead of it.
+
 **Exit gate:** ~20–30 triaged rows with outcome tags. Phases 2–3 stay closed until then. (And the Jul-14
 tripwire above is the failure check, so an empty lane can't drift unnoticed.)
 
@@ -82,8 +87,15 @@ append. Do it **once**, folding the external plan's PR3+PR4+PR5 together:
 - Calibrate the action-window offsets against the **real rows** now in hand.
 
 ## Parallel / conditional
-- **Source escalation:** if Phase 1 signal is thin, build the **municipal permit open-data adapter** (already
-  on `system_overview.md §7`) ahead of any Demand-Radar UI work.
+- **Source escalation: DONE 2026-09-11 (Austin pilot).** Phase 1 signal was thin, so the **municipal permit
+  open-data adapter** (`tools/ingest_permits.py`, `configs/permits.json`) is built and wired into the Mon/Thu
+  ingest ahead of any Demand-Radar UI work. It reads City of Austin issued commercial building permits
+  (Socrata dataset 3syk-w9eu) for hotel / dorm / student-housing / senior-living / shelter-type descriptions,
+  groups one project's trade permits into one signal, and lands rows in the Demand Radar with
+  `signal_source` "Permits: City of Austin". Triage them by hand exactly like Google Alerts rows (§2 of the
+  feed-setup doc); the B > C > A conversion order is unchanged. **Exit criteria:** run two ingest cycles,
+  count the rows that survive human triage, then decide on San Antonio (CKAN CSV, weekly full extracts).
+  Houston's open-data portal only publishes monthly summaries and is unverified, so it is not queued.
 - **Out of scope:** the Restonic / Spring Air **licensor channel** stays a classification tag only —
   operator-owned, never worked by the assistant.
 

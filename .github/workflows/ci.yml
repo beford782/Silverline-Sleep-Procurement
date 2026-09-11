@@ -83,6 +83,11 @@ jobs:
           python tools/ingest_rss.py \
             --fixture tests/fixtures/rss_sample.xml --source "Smoke RSS" --dry-run
 
+      - name: Smoke - municipal permit ingest (fixture, dry-run)
+        run: |
+          python tools/ingest_permits.py --config configs/permits.json \
+            --fixture tests/fixtures/austin_permits_sample.json --dry-run
+
       - name: Machine-path leak check
         run: |
           if grep -rn \

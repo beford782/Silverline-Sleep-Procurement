@@ -22,6 +22,12 @@ fields onto the pipeline CSV's columns:
   naicsCode / classificationCode -> commodity_terms
   type                           -> notes (e.g. "Sources Sought")
 
+Routing: tools/relevance.py grades each notice ACCEPT / REVIEW / REJECT on
+its text. An ACCEPT is then held to two structured facts before it may enter
+the active pipeline - a US place of performance and a mattress NAICS
+(ACTIVE_PIPELINE_NAICS) - otherwise it is demoted to REVIEW and lands in
+Lead Radar for a human look (see active_scope_demotion).
+
 The API key is read from the SAM_API_KEY environment variable or the
 --api-key flag. Sign up for a free key at sam.gov (Profile → Account
 Details → API Key). NEVER commit the key.
@@ -224,12 +230,63 @@ def fetch_page(
     raise last_exc if last_exc is not None else RuntimeError("fetch_page exhausted retries")
 
 
+_US_COUNTRY_CODES = frozenset({"USA", "US"})
+
+# NAICS codes under which a notice may enter the ACTIVE pipeline straight
+# from ingest. 337910 = Mattress Manufacturing, 449110 = Furniture Retailers
+# (the code CRTC W50S7K26A005 and other mattress RFQs are issued under).
+# Anything else with a mattress-sounding title is REVIEW (Lead Radar), not a
+# confirmed bid: N0040626Q0450 ("Standard Beds, Box Springs, Mattresses &
+# Headboards") was NAICS 337127 and turned out to be shipboard steel
+# berthing built to NAVSEA drawings.
+ACTIVE_PIPELINE_NAICS = frozenset({"337910", "449110"})
+
+
+def _pop_country(pop: dict | None) -> tuple[str, str]:
+    """(code, name) of the place-of-performance country, upper-cased code."""
+    country = (pop or {}).get("country") or {}
+    return (country.get("code") or "").strip().upper(), (country.get("name") or "").strip()
+
+
+def _is_foreign_place_of_performance(pop: dict | None) -> bool:
+    code, _ = _pop_country(pop)
+    return bool(code) and code not in _US_COUNTRY_CODES
+
+
 def _extract_place_of_performance(pop: dict | None) -> str:
     if not pop:
         return ""
     city = (pop.get("city") or {}).get("name") or ""
     state = (pop.get("state") or {}).get("code") or (pop.get("state") or {}).get("name") or ""
-    return ", ".join(p for p in (city, state) if p)
+    parts = [city, state]
+    if _is_foreign_place_of_performance(pop):
+        # Domestic rows keep the bare "City, ST" form; a foreign delivery point
+        # is the whole story, so name the country ("Yokosuka, Japan" / "Japan").
+        code, name = _pop_country(pop)
+        parts.append(name.title() if name.isupper() else (name or code))
+    return ", ".join(p for p in parts if p)
+
+
+def active_scope_demotion(record: dict) -> str:
+    """Why an ACCEPT-graded notice must go to Lead Radar instead of the active
+    pipeline; '' when it may stay.
+
+    The relevance gate reads title/commodity text only. Two cheap structured
+    facts on every SAM record say "not a mattress buy we would prime" far more
+    reliably than a keyword: a place of performance outside the US, and a
+    NAICS outside the mattress codes. Neither drops the row - it becomes a
+    Lead Radar row a human can still promote.
+    """
+    reasons: list[str] = []
+    pop = record.get("placeOfPerformance")
+    if _is_foreign_place_of_performance(pop):
+        code, name = _pop_country(pop)
+        reasons.append(f"place of performance outside the US ({name or code})")
+    naics = (record.get("naicsCode") or "").strip()
+    if naics and naics not in ACTIVE_PIPELINE_NAICS:
+        allowed = "/".join(sorted(ACTIVE_PIPELINE_NAICS))
+        reasons.append(f"NAICS {naics} is not a mattress code ({allowed})")
+    return "; ".join(reasons)
 
 
 def _extract_commodity_terms(record: dict) -> str:
@@ -460,6 +517,11 @@ def ingest(
         verdict = relevance.classify(text, buyer=row["buyer"], source="SAM.gov",
                                      home_states=home_states)
         row["fit_score"] = str(verdict.confidence)
+        if verdict.decision == "ACCEPT":
+            demotion = active_scope_demotion(record)
+            if demotion:
+                verdict.decision = "REVIEW"
+                verdict.reasons.insert(0, f"active-scope gate: {demotion}")
         if verdict.decision == "REJECT":
             row["next_action"] = "; ".join(verdict.reasons[:2])
             rejected.append(row)

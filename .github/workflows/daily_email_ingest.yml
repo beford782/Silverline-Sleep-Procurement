@@ -29,6 +29,7 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  actions: write  # gh workflow run ci.yml on the auto/* branch
 
 jobs:
   ingest:
@@ -120,6 +121,11 @@ jobs:
           git add bids/active/_pipeline.csv leads/review/_lead_radar.csv logs/rejects/
           git commit -m "Daily IMAP email-alert ingest (${scope}): ${TODAY}"
           git push -u origin "$BRANCH"
+          # PRs opened with GITHUB_TOKEN never trigger pull_request workflows,
+          # so dispatch CI on the branch explicitly (workflow_dispatch is the
+          # documented exception). The check runs land on the branch head and
+          # satisfy main's required status checks.
+          gh workflow run ci.yml --ref "$BRANCH"
 
           cat > /tmp/pr_body.md <<'EOF'
           Automated daily portal email-alert ingest via Gmail IMAP (app password). **Human triage required before merge.**
@@ -132,7 +138,7 @@ jobs:
           3. Archive out-of-scope active rows with `python tools/pipeline.py move-to-archive <id> --status no-bid --next-action "No-bid archived" --note "<reason>"`; dead leads with `python tools/lead_radar.py archive <lead-id> --status no-fit --note "<reason>"`.
 
           ## CI note
-          Commits authored by `GITHUB_TOKEN` do not trigger PR-event workflows. Push a follow-up commit or use "Re-run all checks".
+          CI is dispatched on this branch by the ingest run (`gh workflow run ci.yml`), so the required checks appear here without a follow-up commit. If they are missing, open the Actions tab and run CI against this branch.
           EOF
 
           PR_URL=$(gh pr create \

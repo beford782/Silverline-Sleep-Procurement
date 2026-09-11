@@ -21,6 +21,7 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  actions: write  # gh workflow run ci.yml on the auto/* branch
 
 jobs:
   ingest:
@@ -159,6 +160,11 @@ jobs:
           git add bids/active/_pipeline.csv leads/review/_lead_radar.csv
           git commit -m "Twice-weekly portal email-alert ingest (${SCOPE}): ${TODAY}"
           git push -u origin "$BRANCH"
+          # PRs opened with GITHUB_TOKEN never trigger pull_request workflows,
+          # so dispatch CI on the branch explicitly (workflow_dispatch is the
+          # documented exception). The check runs land on the branch head and
+          # satisfy main's required status checks.
+          gh workflow run ci.yml --ref "$BRANCH"
 
           cat > /tmp/pr_body.md <<'EOF'
           Automated twice-weekly portal email-alert ingest (state/local + cooperative funnel). **Human triage required before merge.**
@@ -190,8 +196,9 @@ jobs:
 
           ## CI note
 
-          Commits authored by `GITHUB_TOKEN` do not trigger PR-event workflows.
-          Push a follow-up commit or use "Re-run all checks" to run CI on this PR.
+          CI is dispatched on this branch by the ingest run (`gh workflow run ci.yml`),
+          so the required checks appear here without a follow-up commit. If they are
+          missing, open the Actions tab and run CI against this branch.
 
           ---
 

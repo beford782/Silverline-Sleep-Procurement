@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Dispatched by the ingest workflows on their auto/* branches: PRs opened
+  # with GITHUB_TOKEN never fire pull_request, and main requires these checks.
+  workflow_dispatch:
 
 permissions:
   contents: read

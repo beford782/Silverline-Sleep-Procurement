@@ -21,7 +21,7 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
-  actions: read
+  actions: write  # gh workflow run ci.yml on the auto/* branch
 
 jobs:
   # The fallback cron exists for a DROPPED primary slot, not for a late one.
@@ -176,6 +176,11 @@ jobs:
           git add bids/active/_pipeline.csv leads/review/_lead_radar.csv leads/demand/_demand_radar.csv logs/rejects/
           git commit -m "Twice-weekly RSS/feed ingest (${SCOPE}): ${TODAY}"
           git push -u origin "$BRANCH"
+          # PRs opened with GITHUB_TOKEN never trigger pull_request workflows,
+          # so dispatch CI on the branch explicitly (workflow_dispatch is the
+          # documented exception). The check runs land on the branch head and
+          # satisfy main's required status checks.
+          gh workflow run ci.yml --ref "$BRANCH"
 
           cat > /tmp/pr_body.md <<'EOF'
           Automated twice-weekly RSS/feed ingest (Bonfire portal feeds, etc.), filtered by tools/relevance.py. **Human triage required before merge.**
@@ -191,7 +196,7 @@ jobs:
           6. Refine/assign owners on the keepers and merge.
 
           ## CI note
-          Commits authored by `GITHUB_TOKEN` do not trigger PR-event workflows. Push a follow-up commit or use "Re-run all checks".
+          CI is dispatched on this branch by the ingest run (`gh workflow run ci.yml`), so the required checks appear here without a follow-up commit. If they are missing, open the Actions tab and run CI against this branch.
 
           ---
           Triggered by: `__EVENT_NAME__` (run #__RUN_NUMBER__).

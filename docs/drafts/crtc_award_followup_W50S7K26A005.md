@@ -1,6 +1,6 @@
 # CRTC Replacement Mattresses (W50S7K26A005) — award-status follow-up — DRAFT
 
-> **STATUS: DRAFT — operator sends from silverlinesleep (never Gmail).**
+> **STATUS: ✅ SENT 2026-09-15** by operator from silverlinesleep as a reply in the quote thread.
 > Trigger: pipeline row plan said "if no award / no-award notice by 2026-09-15, follow up." Today is
 > 2026-09-15; 27 days since the 2026-08-19 quote deadline, no notice received.
 
@@ -44,7 +44,7 @@
 > [operator's standard signature block]
 
 ## After sending
-- [ ] Log the send date on the pipeline row (`notes` + `last_reviewed`); keep status `submitted`.
+- [x] Send date logged on the pipeline row 2026-09-15; status stays `submitted`.
 - [ ] If no reply by **2026-09-29**: one phone call to Nelson, then passive watch until quote expiry.
 - [ ] If they ask for an extension: reply in writing extending to a specific date; note it on the row.
 - [ ] On award: lock the Gulfport crew + 14-day window, invoice via WAWF (see

@@ -66,6 +66,15 @@ class MainTests(unittest.TestCase):
             f.write_text("id,phone\n1,210-555-9999\n", encoding="utf-8")
             self.assertEqual(pii_lint.main([str(f), "--allow", "210-555-9999"]), 0)
 
+    def test_dfars_clause_not_mistaken_for_phone(self) -> None:
+        # Regression: CI run 34603066296 (2026-09-11) flagged "252.211-7003",
+        # a DFARS clause cited in a SAM notice, as a phone number.
+        hits = pii_lint.scan_text("DFARS 252.211-7003 and 252.225-7001 apply", set())
+        self.assertEqual(hits, [])
+        # A real dotted phone number still trips the scan.
+        hits = pii_lint.scan_text("call 210.555.1234", set())
+        self.assertEqual([h[1] for h in hits], ["phone"])
+
 
 if __name__ == "__main__":
     unittest.main()

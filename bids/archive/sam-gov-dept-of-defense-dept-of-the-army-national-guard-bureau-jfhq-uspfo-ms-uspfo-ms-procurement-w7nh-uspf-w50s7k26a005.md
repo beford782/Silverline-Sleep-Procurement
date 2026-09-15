@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Status | lost |
+| Status | no-bid |
 | Buyer | Mississippi Air National Guard — Combat Readiness Training Center, Gulfport MS (USPFO MS, W50S7K) |
 | Solicitation # | W50S7K26A005 |
 | Portal | SAM.gov (email-back RFQ — no portal submission) |
@@ -89,7 +89,7 @@ hand and no portal registration is needed.
   notice. Note: this row sat 12 days past due unflagged because the digest
   deadline scan covers Lead Radar only, not the active pipeline.
 
-## Outcome — LOST (2026-09-15)
+## Outcome — NO-BID; awarded to a competitor (2026-09-15)
 
 - **Awardee:** Grand Bedding Inc — **$107,525.00** (all 6 CLINs).
 - **Notified by:** James Nelson, MS ANG CRTC Base Contracting Specialist, by email on 2026-09-15,
@@ -97,6 +97,13 @@ hand and no portal registration is needed.
 - **Read:** $107,525 / 454 mattresses ≈ $237 per mattress all-in (including 455 encasements and the
   removal/install job). Grand Bedding is the Louisiana state-contract mattress incumbent
   (see `docs/research/opportunity_expansion_plan_2026-06.md`); Gulfport is a short run for them.
-- **Our quoted total:** [operator to fill] — delta vs award: [fill].
-- **Basis of award:** requested (draft: `docs/drafts/crtc_lost_debrief_request_W50S7K26A005.md`).
+- **RECORD CORRECTION 2026-09-15:** the operator confirms **no formal quote was submitted**. The
+  2026-08-31 pipeline note saying the 6-CLIN quote had been emailed was wrong; the only contact was a
+  pre-deadline question to the POCs. This is a **no-bid** (deadline passed without a submission), not a
+  loss on price. Quote prep (`docs/drafts/crtc_quote_prep_W50S7K26A005.md`) was never completed with
+  pricing.
+- **Lesson:** a row moves to `submitted` only with the send date and quoted total recorded. "I think it
+  went out" is not a submission.
+- **Reply:** thank Nelson and ask to stay on the vendor list; no debrief request (nothing to debrief).
+  Draft: `docs/drafts/crtc_lost_debrief_request_W50S7K26A005.md`.
 - **Next cycle:** keep the SAM saved search on MS ANG / CRTC bedding; ask to stay on the vendor list.

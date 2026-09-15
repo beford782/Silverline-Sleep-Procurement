@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Status | drafting (Sources Sought answered; buyer requested a quote) |
+| Status | drafting |
 | Buyer | Dept. of the Air Force, AETC, Joint Base San Antonio — FA3016 502 CONS CL |
 | Solicitation # | FA301626Q7145 |
 | Portal | SAM.gov Sources Sought (email-back; no portal submission) |

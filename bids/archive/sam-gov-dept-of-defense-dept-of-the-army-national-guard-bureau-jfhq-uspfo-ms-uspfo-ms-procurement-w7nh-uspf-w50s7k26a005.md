@@ -2,7 +2,7 @@
 
 | Field | Value |
 | --- | --- |
-| Status | submitted |
+| Status | lost |
 | Buyer | Mississippi Air National Guard — Combat Readiness Training Center, Gulfport MS (USPFO MS, W50S7K) |
 | Solicitation # | W50S7K26A005 |
 | Portal | SAM.gov (email-back RFQ — no portal submission) |
@@ -88,3 +88,15 @@ hand and no portal registration is needed.
   60 days (~2026-10-18). Follow up with the POCs on 2026-09-15 if no award
   notice. Note: this row sat 12 days past due unflagged because the digest
   deadline scan covers Lead Radar only, not the active pipeline.
+
+## Outcome — LOST (2026-09-15)
+
+- **Awardee:** Grand Bedding Inc — **$107,525.00** (all 6 CLINs).
+- **Notified by:** James Nelson, MS ANG CRTC Base Contracting Specialist, by email on 2026-09-15,
+  replying to our award-status follow-up sent the same morning.
+- **Read:** $107,525 / 454 mattresses ≈ $237 per mattress all-in (including 455 encasements and the
+  removal/install job). Grand Bedding is the Louisiana state-contract mattress incumbent
+  (see `docs/research/opportunity_expansion_plan_2026-06.md`); Gulfport is a short run for them.
+- **Our quoted total:** [operator to fill] — delta vs award: [fill].
+- **Basis of award:** requested (draft: `docs/drafts/crtc_lost_debrief_request_W50S7K26A005.md`).
+- **Next cycle:** keep the SAM saved search on MS ANG / CRTC bedding; ask to stay on the vendor list.

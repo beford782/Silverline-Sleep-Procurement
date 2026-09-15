@@ -63,6 +63,13 @@ PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("phone", re.compile(r"\b\d{3}[-.]\d{3}[-.]\d{4}\b")),
 ]
 
+# Tokens that match a PATTERN above but are public regulatory citations, not
+# PII. DFARS clause numbers ("252.211-7003", "252.225-7001") have the same
+# 3-3-4 shape as a dotted phone number and show up in federal notice text.
+FALSE_POSITIVES: list[re.Pattern[str]] = [
+    re.compile(r"^252\.2\d{2}-7\d{3}$"),  # DFARS 252.2xx-7xxx clause number
+]
+
 
 def scan_text(text: str, allow: set[str]) -> list[tuple[int, str, str]]:
     """Return (line_no, kind, match) hits, skipping allowlisted literals."""
@@ -72,6 +79,8 @@ def scan_text(text: str, allow: set[str]) -> list[tuple[int, str, str]]:
             for m in pattern.finditer(line):
                 token = m.group(0)
                 if token in allow:
+                    continue
+                if any(fp.match(token) for fp in FALSE_POSITIVES):
                     continue
                 hits.append((lineno, kind, token))
     return hits

@@ -8,7 +8,7 @@
 | Portal | SAM.gov Sources Sought (email-back; no portal submission) |
 | Posted | 2026-09-14 |
 | Q&A deadline | none stated (questions to POCs by email) |
-| Response due | **2026-09-16 11:00 AM CDT** (posted response date; buyer's real quote deadline asked 09-15, pending) |
+| Response due | Sources Sought response date 2026-09-16 11:00 AM CDT — **met** (capability response sent 2026-09-15). Quote deadline: asked 09-15, **not yet stated** (no reply as of 2026-09-18) |
 | Award expected | not stated; RFQ expected to follow the market research |
 | Vendor | [continental_silverline](../../vendor-profiles/continental_silverline.md) |
 | Owner | Blake |
@@ -20,9 +20,11 @@
 
 Sources Sought for **delivery and installation of 1,000 dorm mattresses** at JBSA Lackland
 (Basic Military Training dorms), TX 78236. No set-aside stated on the notice; the buyer said
-in writing on 2026-09-15 that they "always prioritize small business." No attachments on SAM;
-the buyer emailed the Salient Characteristics document and a reference photo (Appendix A) on
-2026-09-15 (local only: `Downloads/BMT Dorm Mattresses/`).
+in writing on 2026-09-15 that they "always prioritize small business." The buyer emailed the
+Salient Characteristics document and a reference photo (Appendix A) on 2026-09-15 (local only:
+`Downloads/BMT Dorm Mattresses/`). The SAM notice also carries the full package (found
+2026-09-18; the earlier "no attachments" note was wrong): SOW dated 26 Aug 2026, Salient
+Characteristics, Appendix A–E (layouts and building images). SOW details are in §2a.
 
 Salient characteristics (buyer's document, 2026-09-15):
 
@@ -53,6 +55,23 @@ Source: notice <https://sam.gov/workspace/contract/opp/82d016fd8cbd427f9fe3d7a07
 - **Eligibility:** SAM Active, UEI XF73FG8CVMX1, CAGE 22NH3, small business under 337910.
   No blocker.
 
+## 2a. SOW facts that drive freight and labor (SOW 26 Aug 2026, on SAM)
+
+| Item | SOW |
+| --- | --- |
+| Quantity split | 1,000 = **576 ATC** (Bldgs 6578, 6586, 6588, 6596; 6 per dormitory, 3 per bay) + **424 RH&T** (Bldgs 9110, 9210, 10416), of which **64 go to BMT Warehouse Bldg 5189** |
+| Vertical access | ATC: floors 2–4, 4 stairwells, one elevator per squadron limited to **300 lb**. RH&T: floors 2–3, **no elevators**, stairwells only |
+| Schedule | All delivery complete **60 days ARO**; each building finished **within one week** of starting it |
+| Work hours | 06:30–17:00 Mon–Fri, no federal holidays (after-hours only with CO approval, no added cost) |
+| Staging | Level 1, workday only — nothing left overnight. No loading dock; contractor protects entrances and floors |
+| Clean-up | Contractor hauls all packaging off JBSA Lackland; supplies its own refuse containers |
+| Site management | On-site project manager for the duration; base ID / vehicle passes for the crew |
+| Warranty | Manufacturer + standard commercial warranty, with contact info |
+| Customer POC | Terrell Thames, 737 TRG (alternates MSgt Steven Copeland, TSgt Mitchell Vann) |
+
+**Conflict to resolve before pricing labor:** SOW 1.10 says "remove old furniture", while the
+buyer's 2026-09-15 email said no removal (install onto empty frames). Ask in the next touch.
+
 ## 3. Thread log
 
 - **2026-09-15** — Initial capability response sent from silverlinesleep to Ariana Trevino
@@ -63,6 +82,9 @@ Source: notice <https://sam.gov/workspace/contract/opp/82d016fd8cbd427f9fe3d7a07
 - **2026-09-15** — Clarifying email sent with the JBSA-addressed capability statement PDF
   attached; four questions (silver ion vs. equivalent, thickness + 6" price disadvantage,
   timetable/staging, real quote deadline). Awaiting reply.
+- **2026-09-18** — Outlook checked: the 09-15 08:52 clarifying email is the last message in the
+  thread; no reply from either POC. Timetable question is answered by the SOW on SAM (§2a).
+  Plan: if still silent on 2026-09-22, send one short nudge with the budgetary quote attached.
 
 ## 4. Quote plan
 

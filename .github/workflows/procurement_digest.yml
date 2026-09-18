@@ -153,8 +153,14 @@ jobs:
 
           # Failed automation runs since the last digest slot - the ONLY place
           # failures are reported now (no per-run alert emails).
-          gh run list --limit 100 --json workflowName,conclusion,createdAt,url,event \
-            --jq ".[] | select(.conclusion == \"failure\") | select(.createdAt >= \"${SINCE}\") | \"- \(.workflowName) (\(.event)) failed on \(.createdAt) ([run](\(.url)))\"" \
+          # A pull_request failure is dropped once it is superseded: the same
+          # workflow passed on the same commit (the 0-job phantom run GitHub
+          # records for a GITHUB_TOKEN-opened auto/* PR, next to the dispatched
+          # CI that passed) or passed later on the same branch (a red PR check
+          # that was fixed and merged). Scheduled/dispatched failures are never
+          # dropped - a later green ingest does not un-miss the failed one.
+          gh run list --limit 100 --json workflowName,conclusion,createdAt,url,event,headSha,headBranch \
+            --jq ". as \$all | \$all[] | select(.conclusion == \"failure\") | select(.createdAt >= \"${SINCE}\") | . as \$f | select(.event != \"pull_request\" or ([\$all[] | select(.workflowName == \$f.workflowName and .conclusion == \"success\" and (.headSha == \$f.headSha or (.headBranch == \$f.headBranch and .createdAt > \$f.createdAt)))] | length == 0)) | \"- \(.workflowName) (\(.event)) failed on \(.createdAt) ([run](\(.url)))\"" \
             > /tmp/failed_runs.md 2>/dev/null || true
 
           {

@@ -113,5 +113,41 @@ class SetAsideIngestTests(unittest.TestCase):
         self.assertTrue(r["next_action"].startswith("Triage:"))
 
 
+# 36C261-26-AP-3631 (2026-09-17 ingest): NAICS 423450 demotes the notice to Lead
+# Radar, and the lead arrived with no trace of its SDVOSBC set-aside.
+VA_SDVOSB = {
+    "noticeId": "84f2eddce17f41d48cd3578de62f01dc",
+    "solicitationNumber": "36C261-26-AP-3631",
+    "title": "Mattresses",
+    "fullParentPathName": "VETERANS AFFAIRS, DEPARTMENT OF.VETERANS AFFAIRS, DEPARTMENT OF.261-NETWORK CONTRACT OFFICE 21 (36C261)",
+    "naicsCode": "423450",
+    "classificationCode": "6515",
+    "type": "Presolicitation",
+    "typeOfSetAside": "SDVOSBC",
+    "typeOfSetAsideDescription": "Service-Disabled Veteran-Owned Small Business (SDVOSB) Set-Aside",
+    "postedDate": "2026-09-17",
+    "responseDeadLine": "2026-09-18T14:00:00-07:00",
+    "placeOfPerformance": {"state": {"code": "CA"}, "country": {"code": "USA", "name": "UNITED STATES"}},
+}
+
+
+class SetAsideLeadRadarTests(unittest.TestCase):
+    def test_ineligible_set_aside_survives_the_lead_radar_route(self) -> None:
+        new_rows, leads, _dupes, _rejected = ingest_sam.ingest([VA_SDVOSB], [], today="2026-09-17")
+        self.assertEqual(new_rows, [])
+        self.assertEqual(len(leads), 1)
+        lead = leads[0]
+        self.assertIn("Set-aside: SDVOSBC (Service-Disabled Veteran-Owned Small Business (SDVOSB) Set-Aside)",
+                      lead["notes"])
+        self.assertIn("active-scope gate", lead["notes"], "the verdict reasons are kept, not replaced")
+        self.assertTrue(lead["next_action"].startswith("NO-BID CANDIDATE: SDVOSBC set-aside"))
+
+    def test_eligible_set_aside_lead_is_stamped_but_still_a_scope_check(self) -> None:
+        rec = dict(VA_SDVOSB, typeOfSetAside="SBA", typeOfSetAsideDescription="Total Small Business Set-Aside (FAR 19.5)")
+        _new, leads, _dupes, _rejected = ingest_sam.ingest([rec], [], today="2026-09-17")
+        self.assertIn("Set-aside: SBA", leads[0]["notes"])
+        self.assertTrue(leads[0]["next_action"].startswith("HUMAN: confirm"))
+
+
 if __name__ == "__main__":
     unittest.main()

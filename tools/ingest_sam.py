@@ -533,6 +533,16 @@ def ingest(
                 continue
             if review_target == "leads":
                 lead = lead_radar.build_lead_row(row, verdict, today)
+                # build_lead_row seeds notes/next_action from the verdict only, so
+                # the set-aside decision made in record_to_row is lost on this
+                # branch (36C261-26-AP-3631, an SDVOSBC buy, arrived as a plain
+                # 'confirm scope' lead on 2026-09-17). Carry it across.
+                set_aside = next((p for p in row["notes"].split(" | ")
+                                  if p.startswith("Set-aside: ")), "")
+                if set_aside:
+                    lead["notes"] = " | ".join(p for p in (lead["notes"], set_aside) if p)
+                if row["next_action"].startswith("NO-BID CANDIDATE"):
+                    lead["next_action"] = row["next_action"]
                 keys = lead_radar.lead_match_keys(lead)
                 if keys & lead_ids or keys & lead_seen:
                     dupes.append(row)

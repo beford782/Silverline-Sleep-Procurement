@@ -96,6 +96,15 @@ append. Do it **once**, folding the external plan's PR3+PR4+PR5 together:
   feed-setup doc); the B > C > A conversion order is unchanged. **Exit criteria:** run two ingest cycles,
   count the rows that survive human triage, then decide on San Antonio (CKAN CSV, weekly full extracts).
   Houston's open-data portal only publishes monthly summaries and is unverified, so it is not queued.
+  **Checkpoint 2026-09-21 (two cycles run):** both live cycles (windows from 09-03 and 09-07) returned
+  `fetched 0`. Verified that is a true zero, not a broken query: the dataset is current (max issue_date
+  09-20; 142 Commercial BP permits since 09-07) and none carry a facility keyword. A 112-day backtest
+  (`--since-days 112 --dry-run`) fetched 29, accepted 5, rejected 5 (generator x2, parking garage, roof, demolition) - of the 5 accepted, about 2 are real room-count
+  signals (hotel room finish-out at 311 E 5th St; hotel room-combine remodel at 600 W 2nd St) and 3 are
+  triage rejects (suppression system, site improvement, a temporary-event permit). That is roughly one
+  surviving row every two months, all renovation-scale. **Recommendation: do not build San Antonio on this
+  evidence;** leave Austin running (it costs nothing) and revisit only if a permit row converts to a
+  conversation. Operator decision pending.
 - **Out of scope:** the Restonic / Spring Air **licensor channel** stays a classification tag only —
   operator-owned, never worked by the assistant.
 

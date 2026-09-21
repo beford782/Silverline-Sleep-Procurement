@@ -8,7 +8,7 @@
 | Portal | SAM.gov Sources Sought (email-back; no portal submission) |
 | Posted | 2026-09-14 |
 | Q&A deadline | none stated (questions to POCs by email) |
-| Response due | Sources Sought response date 2026-09-16 11:00 AM CDT — **met** (capability response sent 2026-09-15). Quote deadline: asked 09-15, **not yet stated** (no reply as of 2026-09-18) |
+| Response due | Sources Sought response date 2026-09-16 11:00 AM CDT — **met** (capability response sent 2026-09-15). Quote deadline: asked 09-15, **not yet stated** (no reply as of 2026-09-21) |
 | Award expected | not stated; RFQ expected to follow the market research |
 | Vendor | [continental_silverline](../../vendor-profiles/continental_silverline.md) |
 | Owner | Blake |
@@ -85,6 +85,10 @@ buyer's 2026-09-15 email said no removal (install onto empty frames). Ask in the
 - **2026-09-18** — Outlook checked: the 09-15 08:52 clarifying email is the last message in the
   thread; no reply from either POC. Timetable question is answered by the SOW on SAM (§2a).
   Plan: if still silent on 2026-09-22, send one short nudge with the budgetary quote attached.
+- **2026-09-21** — Outlook re-checked: still no reply from either POC (last buyer message is
+  Paynter 09-15 08:29). SAM notice unchanged: Sources Sought, archived 09-17, no related RFQ
+  linked. The 09-22 nudge needs the budgetary quote, which is not priced yet - pricing is the
+  blocker.
 
 ## 4. Quote plan
 

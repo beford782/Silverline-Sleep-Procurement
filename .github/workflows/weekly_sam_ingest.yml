@@ -303,7 +303,7 @@ jobs:
             echo
             echo "## What to do"
             echo "1. Open the failed run above and read the first red step."
-            echo "2. Common causes: missing/expired \`SAM_API_KEY\` secret, SAM.gov throttling/outage, or a code error."
+            echo "2. Common causes: missing/expired \`SAM_API_KEY\` secret (SAM public API keys expire 90 days after issue -> HTTP 401 Invalid Credentials; regenerate at sam.gov Account Details -> Public API Key, then \`gh secret set SAM_API_KEY\`), SAM.gov throttling/outage, or a code error."
             echo "3. Fix the cause, then use \"Re-run all jobs\" on that run."
           } > /tmp/fail.md
           ISSUE_NUMBER=$(gh issue list --state open --search "\"${TITLE}\" in:title" --json number,title \

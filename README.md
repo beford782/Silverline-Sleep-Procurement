@@ -128,7 +128,7 @@ SAM.gov public API into the active pipeline. Stdlib only — no new
 dependencies.
 
 ```sh
-export SAM_API_KEY=...    # never commit; sign up at sam.gov
+export SAM_API_KEY=...    # never commit; sign up at sam.gov (public API keys EXPIRE after 90 days - regenerate under Account Details)
 
 python tools/ingest_sam.py \
     --title "mattress" \
@@ -189,7 +189,11 @@ ingest every Monday and Thursday at 13:00 UTC (08:00 Houston CDT) and on manual
 never auto-archives, never auto-submits, and never pushes to `main`.
 Requires the `SAM_API_KEY` repo secret to be set
 (*Settings → Secrets and variables → Actions*); the workflow fails
-fast with a clear error if it is missing.
+fast with a clear error if it is missing. SAM.gov public API keys
+**expire 90 days after issue** (the run then fails with `HTTP 401
+Invalid Credentials`, seen 2026-09-24): regenerate the key at sam.gov
+→ *Account Details* → *Public API Key*, then `gh secret set SAM_API_KEY`
+and "Re-run all jobs" on the failed run. Rotate every ~80 days.
 
 ### 6. Track commodity codes
 

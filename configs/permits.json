@@ -20,7 +20,8 @@
       "generator", "parking garage", "concrete repair", "concrete repairs", "signage", "sign permit",
       "antenna", "cell site", "elevator modernization", "roof", "roofing",
       "hvac replacement", "fire alarm", "sprinkler", "irrigation", "fence",
-      "retaining wall", "solar", "ev charger"
+      "retaining wall", "solar", "ev charger",
+      "festival", "special event", "special events", "tent", "tents", "music stages"
     ],
     "notes": "Issued Construction Permits (Socrata). BP only: one project = one signal; EP/MP/PP are trade siblings. Commercial class only. exclude_terms and keywords are re-applied locally as whole words/phrases (the LIKE clauses over-fetch), so no_keyword rejects occur in live runs by design. 'suites' deliberately absent: in permit text it means office/tenant suites far more often than hotel suites (first live dry run 2026-09-11)."
   }

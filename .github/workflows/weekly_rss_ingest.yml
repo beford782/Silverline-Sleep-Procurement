@@ -44,9 +44,12 @@ jobs:
           GH_REPO: ${{ github.repository }}
           WORKFLOW_FILE: weekly_rss_ingest.yml
         run: |
-          TODAY=$(date -u +%F)
+          # Last 20 hours, not the UTC calendar date: a cron that fires hours
+          # late can land after 00:00 UTC (the digest double-sent that way on
+          # 2026-09-28).
+          SINCE=$(date -u -d "20 hours ago" +%FT%TZ)
           # The in-flight run is not "completed", so it cannot match itself.
-          JQ="[.workflow_runs[] | select(.conclusion == \"success\") | select(.created_at | startswith(\"${TODAY}\"))] | length"
+          JQ="[.workflow_runs[] | select(.conclusion == \"success\") | select(.created_at >= \"${SINCE}\")] | length"
           COUNT=$(gh api "repos/${GH_REPO}/actions/workflows/${WORKFLOW_FILE}/runs?per_page=50&status=completed" --jq "$JQ" 2>/dev/null || echo 0)
           if [ "${COUNT:-0}" -gt 0 ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"

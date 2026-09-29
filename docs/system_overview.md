@@ -122,7 +122,7 @@ All adapters dedupe against prior rows **including archives**, so dead leads don
 | `daily_email_ingest.yml` | daily IMAP pull → triage PR (no email; rows surface in the digest) |
 | `weekly_rss_ingest.yml` / `weekly_sam_ingest.yml` | RSS + SAM sweeps |
 | `weekly_email_ingest.yml` | Graph fallback path for the email channel |
-| `procurement_digest.yml` | **the one report.** Assemble the digest (failed runs + pipe health + new rows since last digest + bids + leads + demand + calendar + readiness) and email it over SMTP to the `DIGEST_EMAIL_TO` secret (beford@silverlinesleep.com). Chained to the RSS ingest via `workflow_run`, one fallback cron, and a send-once guard (keys off the "Send digest email" step having succeeded today). Nothing is posted to a GitHub issue. The old standalone `email_watchdog.yml` is folded in as the "Email-alert pipe health" section |
+| `procurement_digest.yml` | **the one report.** Assemble the digest (failed runs + pipe health + new rows since last digest + bids + leads + demand + calendar + readiness) and email it over SMTP to the `DIGEST_EMAIL_TO` secret (beford@silverlinesleep.com). Chained to the RSS ingest via `workflow_run`, one fallback cron, and a send-once guard (keys off the "Send digest email" step having succeeded in the last 20 hours). Nothing is posted to a GitHub issue. The old standalone `email_watchdog.yml` is folded in as the "Email-alert pipe health" section |
 | `ci.yml` | tests + leak/PII checks + `workflow_check` |
 | `cleanup_auto_branches.yml` | hygiene |
 

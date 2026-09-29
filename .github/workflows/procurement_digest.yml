@@ -39,7 +39,7 @@ env:
 
 jobs:
   # Send-once guard. A trigger is skipped when a run of this workflow already
-  # SENT today's digest: we look for a completed run created today whose
+  # SENT today's digest: we look for a completed run from the last 20 hours whose
   # "Send digest email" step concluded success (a skipped run also concludes
   # "success", so run conclusion alone is not enough). Manual dispatches always
   # send a fresh digest.
@@ -59,10 +59,14 @@ jobs:
           WORKFLOW_FILE: procurement_digest.yml
           SEND_STEP: Send digest email
         run: |
-          TODAY=$(date -u +%F)
+          # "Today" is the last 20 hours, NOT the UTC calendar date: on
+          # 2026-09-28 the 20:40 UTC fallback cron fired at 00:31 UTC the next
+          # day, the date had rolled over, and a second digest went out.
+          # Mon/Thu slots are 3+ days apart, so 20 h cannot hide the next slot.
+          SINCE=$(date -u -d "20 hours ago" +%FT%TZ)
           # The in-flight run is not "completed", so it cannot match itself.
           IDS=$(gh api "repos/${GH_REPO}/actions/workflows/${WORKFLOW_FILE}/runs?per_page=50&status=completed" \
-            --jq ".workflow_runs[] | select(.conclusion == \"success\") | select(.created_at | startswith(\"${TODAY}\")) | .id" 2>/dev/null || true)
+            --jq ".workflow_runs[] | select(.conclusion == \"success\") | select(.created_at >= \"${SINCE}\") | .id" 2>/dev/null || true)
           SENT=0
           for id in $IDS; do
             n=$(gh api "repos/${GH_REPO}/actions/runs/${id}/jobs" \

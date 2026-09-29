@@ -26,6 +26,10 @@ Facts the design is built around (verified on live Austin data):
   - Keyword hits contain trade noise ("Generator replacement ... shelter
     building", "concrete repairs in the Hotels Parking Garage"). A small
     config `exclude_terms` list sends those to the reject log; no heavy NLP.
+  - Temporary special-event permits (festival stages, tents) are BP /
+    Commercial / work_class New and mention "hospitality programs", so the
+    ACL festival read as a new hotel. They lead the description with the
+    event date (YYYY/MM/DD); that prefix rejects them as `temporary_event`.
   - Contractor person names / phones / addresses are NEVER requested or
     stored. contractor_company_name is free text and may be an owner-builder's
     personal name, so it is noted as "GC: <name>" only when it carries a
@@ -122,6 +126,10 @@ _ADDRESS_UNIT_RE = re.compile(
 _MAIN_SUFFIX_RE = re.compile(r"[\s*]*\bMAIN\b[\s*]*$", re.I)
 _SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
 _WS_RE = re.compile(r"\s+")
+# Austin's temporary special-event permits (festival stages, tents) lead the
+# description with the event date ("2026/10/02 - 2026/10/04 - Weekend 1| ...").
+# Construction permits never do. Verified on live data 2026-09-29.
+_EVENT_DATE_LEAD_RE = re.compile(r"^\W*20\d{2}/\d{1,2}/\d{1,2}\b")
 # contractor_company_name is free text; an owner-builder permit carries a
 # person's name there. Only a value with a business marker is noted.
 _BUSINESS_MARKER_RE = re.compile(
@@ -403,8 +411,8 @@ def _reject(rec: dict, source: str, reason: str, today: str) -> dict:
 
 def filter_records(records: list[dict], src: dict, today: str
                    ) -> tuple[list[dict], list[dict]]:
-    """Per-record gates, in order: permit type, work class, exclude terms,
-    whole-word keyword. Returns (kept, rejected_log_rows)."""
+    """Per-record gates, in order: permit type, work class, temporary event,
+    exclude terms, whole-word keyword. Returns (kept, rejected_log_rows)."""
     ptypes = {p.upper() for p in (src.get("permit_types") or [])}
     excluded_wc = {w.lower() for w in (src.get("exclude_work_class") or [])}
     keywords = relevance._compile([k.strip() for k in (src.get("keywords") or []) if k.strip()])
@@ -422,6 +430,9 @@ def filter_records(records: list[dict], src: dict, today: str
             rejected.append(_reject(rec, source, f"work_class_excluded:{wc}", today))
             continue
         desc = _collapse(rec.get("description"))
+        if _EVENT_DATE_LEAD_RE.match(desc):
+            rejected.append(_reject(rec, source, "temporary_event", today))
+            continue
         term = _first_match(desc, excludes)
         if term:
             rejected.append(_reject(rec, source, f"exclude_term:{term}", today))

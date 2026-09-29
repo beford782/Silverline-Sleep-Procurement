@@ -198,6 +198,28 @@ class FilterTests(unittest.TestCase):
         self.assertEqual(kept, [])
         self.assertTrue(rejected[0]["reason"].startswith("exclude_term:"), rejected[0]["reason"])
 
+    def test_temporary_event_permits_are_rejected(self) -> None:
+        # The 2026 ACL festival permits read as a new hotel ("hospitality programs").
+        acl = ("2026/10/02 - 2026/10/04 - Weekend 1| 2026/10/09 - 2026/10/11 - Weekend 2 | "
+               "(2026/09/14) | Music stages food vendors art vendors & hospitality programs. "
+               "October 2-4 & 9-11 2026 in Zilker Park.")
+        kept, rejected = ingest_permits.filter_records(
+            [_make_record(description=acl, work_class="New")], self.src, TODAY)
+        self.assertEqual(kept, [])
+        self.assertEqual(rejected[0]["reason"], "temporary_event")
+        # No leading date: the committed exclude terms still catch it.
+        kept, rejected = ingest_permits.filter_records(
+            [_make_record(description="2025 Inn Cahoots Tent for a special event")],
+            ingest_permits.load_config(CONFIG)[0], TODAY)
+        self.assertEqual(kept, [])
+        self.assertTrue(rejected[0]["reason"].startswith("exclude_term:"), rejected[0]["reason"])
+
+    def test_date_inside_a_construction_description_is_not_an_event(self) -> None:
+        rec = _make_record(description="Hotel guestroom renovation per plans dated 2026/05/01")
+        kept, rejected = ingest_permits.filter_records([rec], self.src, TODAY)
+        self.assertEqual(len(kept), 1)
+        self.assertEqual(rejected, [])
+
     def test_reject_rows_carry_the_reject_schema(self) -> None:
         for r in self.rejected:
             self.assertEqual(list(r.keys()), ingest_permits.REJECT_HEADER)

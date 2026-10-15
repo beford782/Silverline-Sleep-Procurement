@@ -57,7 +57,14 @@ portfolio). Most will be `channel`/`spec-position`, not direct sells — that's 
 ```
 ("property improvement plan" OR "re-flag" OR reflag OR rebrand OR "brand conversion" OR "hotel conversion" OR "guestroom renovation" OR "soft goods" OR "soft-goods" OR "case goods") (hotel OR hospitality OR "extended stay" OR "extended-stay") (rooms OR keys OR guestrooms OR "guest rooms") <LOC>
 ```
-Clone across `<LOC>` = `Houston` · `("Dallas" OR "Fort Worth")` · `Austin` · `"San Antonio"` · `Texas` (statewide).
+Clone across `<LOC>` = `Houston (Texas OR TX)` · `("Dallas" OR "Fort Worth") (Texas OR TX)` · `Austin (Texas OR TX)` · `"San Antonio" (Texas OR TX)` · `Texas` (statewide).
+
+> **Tightened again (2026-10-15):** the four city feeds now require `(Texas OR TX)` on the page as well as the
+> city name, and **all 7 alerts have Region = United States** (was Any Region). Reason: 50 rows over 10-08 → 10-15
+> and only 1 keeper; the bare city word matched sidebars, people named Austin, and hotel groups with a Houston
+> property, and Any Region let Prague / London items through. Feed URLs (alert ids) did NOT change — no
+> `feeds.json` edit needed. Re-evaluate after the 2026-10-19 and 10-22 ingests: if noise is still >80%, the
+> next lever is `How many = Only the best results`, not more query terms.
 
 > **Already tightened (2026-06-29):** bare `PIP`, generic `renovation`, and bare `conversion` were removed to
 > cut noise — only the specific phrases stay (`"property improvement plan"`, `"brand conversion"`,
@@ -70,7 +77,7 @@ Clone across `<LOC>` = `Houston` · `("Dallas" OR "Fort Worth")` · `Austin` · 
 ```
 ("boutique hotel" OR "independent hotel" OR "locally owned hotel" OR "locally-owned hotel" OR "family owned hotel" OR "extended stay hotel" OR "extended-stay hotel") ("renovation" OR "rebrand" OR "set to open" OR "under construction" OR "breaks ground") (rooms OR keys OR guestrooms OR "guest rooms") <LOC>
 ```
-Clone across `<LOC>` = `Texas` (statewide) · `Houston`.  *(Swap Houston → `("Dallas" OR "Fort Worth")` if you prefer.)*
+Clone across `<LOC>` = `Texas` (statewide) · `Houston (Texas OR TX)`.  *(Swap Houston → `("Dallas" OR "Fort Worth")` if you prefer.)*  Both set to Region = United States on 2026-10-15 (see the Pilot A note above).
 
 ### The 7 starting feeds + `feeds.json` labels  ✅ LIVE (wired 2026-06-30, PR #96)
 These 7 are already in `configs/feeds.json`. Kept here as the canonical label list (for re-creating a feed

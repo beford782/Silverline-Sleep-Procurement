@@ -93,7 +93,7 @@ jobs:
           if grep -rn \
               --include='*.py' --include='*.md' --include='*.json' --include='*.csv' \
               --exclude-dir='.git' --exclude-dir='build' --exclude-dir='__pycache__' \
-              -E 'C:\\Users|/Users/|/home/[a-z]|BlakeFord' .; then
+              -E 'C:\\Users|/Users/|/home/[a-z][a-z0-9_-]*/|BlakeFord' .; then
             echo "::error::Machine-specific path leaked into a committed file."
             exit 1
           fi

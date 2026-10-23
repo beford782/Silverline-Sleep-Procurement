@@ -111,7 +111,8 @@ append. Do it **once**, folding the external plan's PR3+PR4+PR5 together:
   Region = United States) did not fix the region leakage: the two cycles after it (10-19, 10-22) returned
   17 rows, 16 of them out-of-region or not a project (94% noise). Next lever, agreed 2026-10-23: switch every
   Demand Radar alert's **How many** setting to **Only the best results** (feed URLs do not change, so
-  `configs/feeds.json` needs no edit). Pilot B Houston was switched 2026-10-23; the other 6 are pending.
+  `configs/feeds.json` needs no edit). All 7 alerts were switched and verified saved on 2026-10-23, so the two-cycle read covers the
+  2026-10-26 and 2026-10-29 ingests.
   **Stop line:** once all 7 are switched, read two full ingest cycles. If those two cycles produce **zero
   keepers**, turn the Google Alerts feeds off (remove the `kind: "demand"` entries from `configs/feeds.json`
   in one PR, archive any open `reviewing` rows) and keep only the SAM lane and the Austin permit adapter.

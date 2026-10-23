@@ -105,6 +105,18 @@ append. Do it **once**, folding the external plan's PR3+PR4+PR5 together:
   surviving row every two months, all renovation-scale. **Recommendation: do not build San Antonio on this
   evidence;** leave Austin running (it costs nothing) and revisit only if a permit row converts to a
   conversation. Operator decision pending.
+- **Google Alerts stop line (set 2026-10-23, Blake's decision).** Since the Demand Radar pilot went live
+  (2026-06-30) the 7 Google Alerts feeds have produced roughly 200 rows and 2 real keepers (Roanoke TX Cade
+  Hotel; San Antonio Echo Suites by Wyndham). The 2026-10-15 query tightening (city + `(Texas OR TX)`,
+  Region = United States) did not fix the region leakage: the two cycles after it (10-19, 10-22) returned
+  17 rows, 16 of them out-of-region or not a project (94% noise). Next lever, agreed 2026-10-23: switch every
+  Demand Radar alert's **How many** setting to **Only the best results** (feed URLs do not change, so
+  `configs/feeds.json` needs no edit). Pilot B Houston was switched 2026-10-23; the other 6 are pending.
+  **Stop line:** once all 7 are switched, read two full ingest cycles. If those two cycles produce **zero
+  keepers**, turn the Google Alerts feeds off (remove the `kind: "demand"` entries from `configs/feeds.json`
+  in one PR, archive any open `reviewing` rows) and keep only the SAM lane and the Austin permit adapter.
+  If they produce at least one keeper, keep running and re-count every two cycles. Decide on the count, not
+  on feel; the noise/keeper tally for each cycle is in the triage PR descriptions.
 - **Out of scope:** the Restonic / Spring Air **licensor channel** stays a classification tag only —
   operator-owned, never worked by the assistant.
 

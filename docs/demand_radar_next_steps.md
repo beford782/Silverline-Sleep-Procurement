@@ -113,6 +113,10 @@ append. Do it **once**, folding the external plan's PR3+PR4+PR5 together:
   Demand Radar alert's **How many** setting to **Only the best results** (feed URLs do not change, so
   `configs/feeds.json` needs no edit). All 7 alerts were switched and verified saved on 2026-10-23, so the two-cycle read covers the
   2026-10-26 and 2026-10-29 ingests.
+  **Cycle 1 of 2 (2026-10-26 ingest, triaged 2026-10-27):** the 7 alerts produced 1 row, a national trade
+  article (extended-stay share of the U.S. construction pipeline), archived no-fit. Keepers: 0. The Austin permit
+  adapter added 1 row the same cycle (foundation piles under a Ben White Blvd hotel, structural not guestroom),
+  also no-fit.
   **Stop line:** once all 7 are switched, read two full ingest cycles. If those two cycles produce **zero
   keepers**, turn the Google Alerts feeds off (remove the `kind: "demand"` entries from `configs/feeds.json`
   in one PR, archive any open `reviewing` rows) and keep only the SAM lane and the Austin permit adapter.

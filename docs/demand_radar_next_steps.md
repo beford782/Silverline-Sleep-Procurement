@@ -117,6 +117,17 @@ append. Do it **once**, folding the external plan's PR3+PR4+PR5 together:
   article (extended-stay share of the U.S. construction pipeline), archived no-fit. Keepers: 0. The Austin permit
   adapter added 1 row the same cycle (foundation piles under a Ben White Blvd hotel, structural not guestroom),
   also no-fit.
+  **Cycle 2 of 2 (2026-10-29 ingest, triaged 2026-10-30):** the 7 alerts produced 1 row, a 35-room hotel in
+  Saint Lucia (Caribbean; region leakage again), archived no-fit. Keepers: 0. Two-cycle tally after the
+  'Only the best results' switch: 2 rows, 0 keepers. The Austin permit adapter added 3 rows the same cycle,
+  2 of them real (South Congress Hotel 17k-sqft interior remodel; former Ace Motel $1M change-of-use remodel
+  at 2627 Manor Rd), 1 no-fit (60-sqft floor-truss repair).
+  **STOP LINE FIRED 2026-10-30.** Per the rule below, the 7 `kind: "demand"` entries were removed from
+  `configs/feeds.json` in the 2026-10-29 triage PR and every open Google Alerts `reviewing` row was decided
+  (4 in-region signals kept as `watching`: Holiday Inn Express Spring, Herring Hotel Amarillo, Compass by
+  Margaritaville Nassau Bay, Haggard Farm Plano; 3 archived no-fit: Nell NY, Driskill GM article, Saint Lucia).
+  Demand Radar now runs on the SAM lane + the Austin permit adapter only. The Google Alerts themselves still
+  exist in Blake's Google account and can be re-wired by re-adding the entries (URLs in git history, PR #96).
   **Stop line:** once all 7 are switched, read two full ingest cycles. If those two cycles produce **zero
   keepers**, turn the Google Alerts feeds off (remove the `kind: "demand"` entries from `configs/feeds.json`
   in one PR, archive any open `reviewing` rows) and keep only the SAM lane and the Austin permit adapter.

@@ -2,6 +2,11 @@
 
 - **For:** Blake / Continental Silverline Products, LLC
 - **Date:** 2026-06-28 · **Reframed:** 2026-06-29
+- **STATUS (2026-10-30): the Google Alerts feeds are OFF.** The stop line set 2026-10-23 fired: two ingest
+  cycles on 'Only the best results' (10-26, 10-29) produced 2 rows and 0 keepers (lifetime ~200 rows, 2 keepers),
+  so the 7 `kind:"demand"` entries were removed from `configs/feeds.json` (triage PR for the 2026-10-29 digest).
+  Demand Radar continues on the Austin permit adapter (§4b). The §1 feed-creation steps stay as reference only;
+  the alerts still exist in the Google account and can be re-wired by re-adding the entries (see PR #96).
 - **STATUS (2026-06-30): the pilot is LIVE.** All **7 feeds are created and wired** into
   `configs/feeds.json` as `kind:"demand"` (PR #96, merged to main). The Mon/Thu ingest now reads them;
   **0 demand rows captured so far** (feeds fill as Google finds matches). The feed-creation steps below are

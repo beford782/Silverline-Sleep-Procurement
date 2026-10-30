@@ -138,7 +138,9 @@ Everything upstream (find → classify → rank → position → alert) is autom
 ## 7. Live vs. needs setup
 - **Live now:** public procurement lane (RSS + SAM + email), relevance classification, Lead Radar,
   win-ranking, readiness, digest, reliability alerts.
-- **Demand Radar — LIVE (pilot, collecting data):** the engine + routing + surfacing are merged **and
+- **Demand Radar — Google Alerts feeds OFF since 2026-10-30.** The two-cycle stop line (set 2026-10-23) fired
+  with 0 keepers, so the 7 `kind:"demand"` entries were removed from `feeds.json`; the Austin permit adapter
+  (next bullet) is now the only demand source. History of the pilot, kept for context: the engine + routing + surfacing are merged **and
   7 Texas-first Google Alerts RSS feeds are wired into `feeds.json` with `kind:"demand"`** (Pilot A hotel
   PIP/re-flag ×5 + Pilot B independent hospitality ×2; PR #96, merged 2026-06-30). The Mon/Thu ingest now
   reads them. **Current state: 0 demand rows captured** — feeds start empty and fill as Google finds

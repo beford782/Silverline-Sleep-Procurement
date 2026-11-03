@@ -2,14 +2,14 @@
 
 | Field | Value |
 | --- | --- |
-| Status | no-bid (awarded to American Mfg. Bedding 2026-11-02) |
+| Status | no-bid |
 | Buyer | Dept. of the Air Force, AETC, Joint Base San Antonio — FA3016 502 CONS CL |
 | Solicitation # | FA301626Q7145 |
 | Portal | SAM.gov Sources Sought (email-back; no portal submission) |
 | Posted | 2026-09-14 |
 | Q&A deadline | none stated (questions to POCs by email) |
 | Response due | Sources Sought response date 2026-09-16 11:00 AM CDT — **met** (capability response sent 2026-09-15). Quote deadline was never stated to us; the office awarded without an RFQ reaching CSP |
-| Award expected | not stated; RFQ expected to follow the market research |
+| Award expected | **Awarded 2026-11-02** to American Mfg. Bedding (no RFQ ever reached CSP) |
 | Vendor | [continental_silverline](../../vendor-profiles/continental_silverline.md) |
 | Owner | Blake |
 | Fit score | 100 — core product, in-region (Lackland TX, ~3 h from Houston plant) |

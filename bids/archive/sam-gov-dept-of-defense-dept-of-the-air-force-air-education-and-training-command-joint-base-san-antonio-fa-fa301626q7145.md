@@ -2,19 +2,19 @@
 
 | Field | Value |
 | --- | --- |
-| Status | drafting |
+| Status | no-bid |
 | Buyer | Dept. of the Air Force, AETC, Joint Base San Antonio — FA3016 502 CONS CL |
 | Solicitation # | FA301626Q7145 |
 | Portal | SAM.gov Sources Sought (email-back; no portal submission) |
 | Posted | 2026-09-14 |
 | Q&A deadline | none stated (questions to POCs by email) |
-| Response due | Sources Sought response date 2026-09-16 11:00 AM CDT — **met** (capability response sent 2026-09-15). Quote deadline: asked 09-15, **not yet stated** (no reply as of 2026-09-21) |
-| Award expected | not stated; RFQ expected to follow the market research |
+| Response due | Sources Sought response date 2026-09-16 11:00 AM CDT — **met** (capability response sent 2026-09-15). Quote deadline was never stated to us; the office awarded without an RFQ reaching CSP |
+| Award expected | **Awarded 2026-11-02** to American Mfg. Bedding (no RFQ ever reached CSP) |
 | Vendor | [continental_silverline](../../vendor-profiles/continental_silverline.md) |
 | Owner | Blake |
 | Fit score | 100 — core product, in-region (Lackland TX, ~3 h from Houston plant) |
 | Risk level | low |
-| Estimated value | TBD (1,000 units + delivery/install) |
+| Estimated value | **$152,320 awarded** (1,000 units + delivery/install = $152.32/unit all-in) |
 
 ## 1. Scope summary
 
@@ -90,6 +90,12 @@ buyer's 2026-09-15 email said no removal (install onto empty frames). Ask in the
   linked. The 09-22 nudge needs the budgetary quote, which is not priced yet - pricing is the
   blocker.
 
+- **2026-09-29** — Blake sent a short follow-up nudge (10:52 CT) to Paynter + 1 on the thread; no
+  quote attached (still unpriced). No reply logged.
+- **2026-11-02** — Blake emailed Trevino asking award status. Trevino replied the same day: awarded
+  to **American Mfg. Bedding, $152,320.00**. Blake asked whether they were low bid and for guidance;
+  Trevino: evaluation factor was **LPTA**.
+
 ## 4. Quote plan
 
 - Price at 1,000 qty: unit cost (6/7/8" fiber core, welded coated-nylon cover, with and
@@ -110,3 +116,47 @@ buyer's 2026-09-15 email said no removal (install onto empty frames). Ask in the
 
 - Same office's July 2026 Sources Sought F2M3CH6099A001 (Tech Training Dorm Mattresses,
   Bldg 6578; innerspring Twin XL) — CSP responded 2026-07-02; row still watching for its RFQ.
+
+## 7. Outcome — NO-BID; awarded to a competitor (2026-11-02)
+
+- **Awardee:** American Mfg. Bedding — **$152,320.00** for 1,000 mattresses delivered and installed.
+- **Evaluation:** LPTA (lowest price technically acceptable). Everyone who met the Salient
+  Characteristics was ranked on price alone; local advantage counted only as cheaper freight/install.
+- **Notified by:** CO Ariana Trevino, 502 CONS, by email 2026-11-02, replying to Blake's award-status
+  ask on the original Sources Sought thread.
+- **Record truth:** CSP **never sent a quote**. The budgetary quote stayed unpriced from 2026-09-15
+  through award (seven weeks). This is a no-bid, not a loss on price — same failure as CRTC
+  W50S7K26A005 in September. The office also never sent CSP an RFQ or a quote deadline.
+- **Why American Bedding:** the Salient Characteristics ("Max-life fiber core", "Silver Ion
+  Technology", "Zero thread seams") were their catalog copy. They were the product the spec was
+  written around and priced to keep it.
+
+### Price breakdown (estimate; only the total is from the Air Force)
+
+| Piece of the job | Likely cost | Per mattress |
+| --- | --- | --- |
+| Award total | $152,320 | $152.32 |
+| Freight to Lackland (2–3 truckloads) | $5,000–8,000 | $5–8 |
+| Install: stair-carry into 7 dorm buildings, 300-lb elevator limit, on-site PM, packaging hauled off base | $10,000–17,000 | $10–17 |
+| Mattress itself (sealed welded cover, fiber core, TB 129) | $127,000–137,000 | $127–137 |
+
+Implied factory cost for the winner at a normal margin: roughly **$100–110 per unit**. Compare CRTC
+(Sept 2026): $237/unit all-in, but innerspring + encasements + removal; a fiber-core sealed unit with
+no removal is a cheaper build, so $152 is the real market rate for this product at 1,000 units.
+
+### Cost to CSP
+
+| | |
+| --- | --- |
+| Revenue missed | $152,320 |
+| Gross profit missed at a 20–25% margin, had we matched | ~$30,000–38,000 |
+
+### Decision for the next 502 CONS dorm buy
+
+Cost the sealed fiber-core 36×75 unit at 1,000 qty **now**, not when the RFQ posts. If the plant can
+build it under about $105 and land it under about $150 all-in delivered and installed, CSP can win the
+next LPTA buy from Houston. If not, stop chasing sealed fiber-core dorm bids and focus on the innerspring
+requirements (Bldg 6578, F2M3CH6099A001 — still watching).
+
+- **Reply:** thank Trevino for the LPTA information; ask to stay on the 502 CONS vendor list for the
+  next dorm mattress requirement. Do not reference a quote (none was sent).

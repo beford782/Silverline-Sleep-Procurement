@@ -13,8 +13,7 @@ name: Daily email-alert ingest (IMAP)
 #
 # Required repo secrets (Settings -> Secrets and variables -> Actions):
 #   GMAIL_ADDRESS, GMAIL_APP_PASSWORD   - the mailbox + 16-char app password
-# Optional:
-#   HEALTHCHECK_URL   - healthchecks.io ping URL (dead-man's-switch)
+# (HEALTHCHECK_URL is pinged only by procurement_digest.yml, not here.)
 # Never commit these. See docs/email_ingest_setup.md for the one-time setup.
 
 on:
@@ -147,16 +146,10 @@ jobs:
           echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
           echo "Opened $PR_URL"
 
-      - name: Ping healthcheck (dead-man's-switch)
-        if: success()
-        env:
-          HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL }}
-        run: |
-          if [ -n "$HEALTHCHECK_URL" ]; then
-            curl -fsS --retry 3 --max-time 20 "$HEALTHCHECK_URL" >/dev/null && echo "healthcheck pinged."
-          else
-            echo "HEALTHCHECK_URL not set; skipping dead-man's-switch ping."
-          fi
+      # No healthcheck ping here (removed 2026-11-24). HEALTHCHECK_URL is the
+      # Mon/Thu DIGEST check; a ping from this daily run could mark it up on a
+      # digest day even when the digest itself failed. This pipe's health is
+      # reported in the digest's "Email-alert pipe health" section instead.
 
       - name: Summary
         run: |

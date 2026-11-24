@@ -114,8 +114,9 @@ obscurity-only). Blake then chose email-to-self over Telegram.
 3. **`.github/workflows/daily_email_ingest.yml`** (clone the proven step order
    from the paused `weekly_email_ingest.yml`): daily cron + `workflow_dispatch`;
    fail-fast secret check -> `ingest_email.py --provider imap --since-days 7` ->
-   diff/re-score/CI -> open `auto/*` PR if a CSV changed -> `notify_push.py` ->
-   curl the `HEALTHCHECK_URL` on success. A **7-day** SINCE window (not 2)
+   diff/re-score/CI -> open `auto/*` PR if a CSV changed -> `notify_push.py`.
+   (It no longer pings `HEALTHCHECK_URL`, as of 2026-11-24: that check belongs
+   to the Mon/Thu digest alone, so an ingest ping can't mask a failed digest.) A **7-day** SINCE window (not 2)
    survives cron slippage; dedup keys keep the overlap idempotent.
 4. **`if: failure()` notify + issue step**: on any run exception, email Blake in
    addition to the existing failure issue.
@@ -131,8 +132,9 @@ obscurity-only). Blake then chose email-to-self over Telegram.
   starts and throws (auth break, etc.). (b) The **zero-message watchdog** catches
   the silent case where runs go green but no alerts arrive (broken forward,
   renamed label, dropped portal contact). (c) The **healthchecks.io
-  dead-man's-switch** is the only check external to GitHub - it emails Blake if
-  the scheduled run never starts at all (GitHub auto-disables crons after ~60
+  dead-man's-switch** is the only check external to GitHub - pinged by the
+  Mon/Thu digest only (since 2026-11-24), it emails Blake if the digest never
+  goes out, e.g. scheduled runs never start at all (GitHub auto-disables crons after ~60
   days of repo inactivity; a never-started run produces no failure event). These
   three close the "successful empty run = real silent miss" gap.
 - **Single best fallback if the email bridge breaks.** If App-Password IMAP auth

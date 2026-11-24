@@ -264,6 +264,16 @@ _FWD_FROM_RE = re.compile(r"^[ \t>]*From:[ \t]*(?P<sender>.+?)[ \t]*$",
                           re.IGNORECASE | re.MULTILINE)
 _FWD_SUBJECT_RE = re.compile(r"^[ \t>]*Subject:[ \t]*(?P<subject>.+?)[ \t]*$",
                              re.IGNORECASE | re.MULTILINE)
+# The Power Automate bridge (docs/awareness_system_design.md) prints the header
+# WITHOUT colons, as its first lines: "From txsmartbuy@cpa.texas.gov" then
+# "Subject Solicitation Posted". Accept that shape only when it opens the body,
+# the From value is a bare address, and Subject follows (blank lines allowed),
+# so prose like "From the desk of ..." is never mistaken for a header.
+_BRIDGE_HEADER_RE = re.compile(
+    r"\A\s*From[ \t]+(?P<sender>[^\s@<>]+@[^\s@<>]+)[ \t]*\r?\n"
+    r"(?:[ \t]*\r?\n)*[ \t]*Subject[ \t]+(?P<subject>[^\r\n]+?)[ \t]*$",
+    re.IGNORECASE | re.MULTILINE,
+)
 
 
 def unwrap_forwarded(msg: dict) -> dict:
@@ -276,6 +286,13 @@ def unwrap_forwarded(msg: dict) -> dict:
     received date parses; the quoted human "Sent:" string does not).
     """
     body = msg.get("body") or ""
+    bridge = _BRIDGE_HEADER_RE.match(body)
+    if bridge:
+        new = dict(msg)
+        new["sender"] = bridge.group("sender")
+        new["subject"] = bridge.group("subject").strip()
+        new["body"] = body[bridge.end():]
+        return new
     mfrom = _FWD_FROM_RE.search(body)
     if not mfrom:
         return msg
@@ -293,6 +310,40 @@ def unwrap_forwarded(msg: dict) -> dict:
     if subject:
         new["subject"] = subject
     new["body"] = tail
+    return new
+
+
+# --------------------------------------------------------------------------
+# Texas ESBD adapter
+# --------------------------------------------------------------------------
+# ESBD follow/saved-search alerts all share one generic subject ("Solicitation
+# Posted"), so a subject-based title gives every ESBD alert the same lead id and
+# each later alert is silently dropped as a duplicate. The body names the real
+# bid: "The Solicitation 26RFP90 <title> has been posted."
+_ESBD_BODY_RE = re.compile(
+    r"The\s+Solicitation\s+(?P<sol>[A-Za-z0-9][A-Za-z0-9._/-]*)\s+(?P<title>.+?)"
+    r"\s+has\s+been\s+[a-z]+",
+    re.IGNORECASE | re.DOTALL,
+)
+_ESBD_SENDERS = ("txsmartbuy.gov", "cpa.texas.gov", "comptroller.texas.gov")
+
+
+def adapt_esbd(msg: dict) -> dict:
+    """Retitle a Texas ESBD alert from its body (real title + solicitation id).
+
+    Returns `msg` unchanged for other senders, or when the body lacks the
+    standard "The Solicitation <id> <title> has been ..." sentence.
+    """
+    sender = (msg.get("sender") or "").lower()
+    if not any(d in sender for d in _ESBD_SENDERS):
+        return msg
+    m = _ESBD_BODY_RE.search(msg.get("body") or "")
+    if not m:
+        return msg
+    new = dict(msg)
+    new["subject"] = re.sub(r"\s+", " ", m.group("title")).strip()
+    if not (new.get("solicitation_number") or "").strip():
+        new["solicitation_number"] = m.group("sol")
     return new
 
 
@@ -481,7 +532,7 @@ def ingest(messages: Iterable[dict], existing_rows: list[dict], today: str,
     # digests into one unit per bid; other messages pass through unchanged.
     units: list[dict] = []
     for msg in messages:
-        msg = unwrap_forwarded(msg)
+        msg = adapt_esbd(unwrap_forwarded(msg))
         units.extend(split_ionwave_digest(msg) or [msg])
     for msg in units:
         row = parse_message(msg, today)

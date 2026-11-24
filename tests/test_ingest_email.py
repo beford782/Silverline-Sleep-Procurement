@@ -337,6 +337,49 @@ class ForwardedAlertTests(unittest.TestCase):
         # Original message date is preserved (it parses; the quoted "Sent:" does not).
         self.assertEqual(out["date"], msg["date"])
 
+    def _bridge_esbd(self, sol: str, title: str) -> dict:
+        # Shape of a real Power Automate bridge message (2026-11-20): header
+        # lines WITHOUT colons, generic ESBD subject, real bid named in body.
+        return {
+            "id": f"bridge-{sol}",
+            "sender": "Blake Ford <beford@silverlinesleep.com>",
+            "subject": "[PROC-ALERT] Solicitation Posted",
+            "date": "2026-11-20",
+            "body": (
+                "From txsmartbuy@cpa.texas.gov\n\nSubject Solicitation Posted\n\n"
+                "***This is an automated email.***\n\n"
+                f"The Solicitation {sol} {title} has been posted. "
+                "Please see link below for details.\n\n"
+                f"https://www.txsmartbuy.gov/esbd/{sol}\n"
+            ),
+        }
+
+    def test_bridge_header_without_colons_is_unwrapped(self) -> None:
+        out = ingest_email.unwrap_forwarded(self._bridge_esbd("26RFP90", "Furniture"))
+        self.assertEqual(out["sender"], "txsmartbuy@cpa.texas.gov")
+        self.assertEqual(out["subject"], "Solicitation Posted")
+        self.assertEqual(ingest_email.source_for_sender(out["sender"]), "Texas ESBD")
+
+    def test_prose_from_line_is_not_a_bridge_header(self) -> None:
+        msg = {"sender": "a@b.com", "subject": "x",
+               "body": "From the desk of the buyer\nSubject to change.\n"}
+        self.assertIs(ingest_email.unwrap_forwarded(msg), msg)
+
+    def test_esbd_alerts_get_distinct_titles_and_ids(self) -> None:
+        # Two ESBD alerts share the subject "Solicitation Posted"; each must
+        # keep its own title + solicitation number, not collapse to one lead.
+        a = self._bridge_esbd("26RFP90", "Juvenile Justice Center Addition - Furniture Package")
+        b = self._bridge_esbd("26RFP91", "Residence Hall Furniture Package")
+        _, leads, dupes, _, _ = ingest_email.ingest([a, b], [], TODAY)
+        self.assertEqual(len(dupes), 0)
+        self.assertEqual(len(leads), 2)
+        by_soln = {lead["solicitation_number"]: lead for lead in leads}
+        self.assertEqual(set(by_soln), {"26RFP90", "26RFP91"})
+        self.assertEqual(by_soln["26RFP90"]["title"],
+                         "Juvenile Justice Center Addition - Furniture Package")
+        self.assertEqual(by_soln["26RFP90"]["source"], "Texas ESBD")
+        self.assertNotEqual(by_soln["26RFP90"]["lead_id"], by_soln["26RFP91"]["lead_id"])
+
     def test_unwrap_is_noop_on_direct_alert(self) -> None:
         # A normal direct alert (no forwarded header block) is returned unchanged.
         direct = _load_fixture()[0]  # Bonfire direct alert

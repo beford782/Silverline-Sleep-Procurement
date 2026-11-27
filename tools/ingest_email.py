@@ -271,7 +271,7 @@ _FWD_SUBJECT_RE = re.compile(r"^[ \t>]*Subject:[ \t]*(?P<subject>.+?)[ \t]*$",
 # so prose like "From the desk of ..." is never mistaken for a header.
 _BRIDGE_HEADER_RE = re.compile(
     r"\A\s*From[ \t]+(?P<sender>[^\s@<>]+@[^\s@<>]+)[ \t]*\r?\n"
-    r"(?:[ \t]*\r?\n)*[ \t]*Subject[ \t]+(?P<subject>[^\r\n]+?)[ \t]*$",
+    r"(?:[ \t]*\r?\n)*[ \t]*Subject[ \t]+(?P<subject>[^\r\n]+?)[ \t]*\r?$",
     re.IGNORECASE | re.MULTILINE,
 )
 

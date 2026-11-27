@@ -360,6 +360,40 @@ class ForwardedAlertTests(unittest.TestCase):
         self.assertEqual(out["subject"], "Solicitation Posted")
         self.assertEqual(ingest_email.source_for_sender(out["sender"]), "Texas ESBD")
 
+    def test_bridge_header_with_crlf_line_endings_over_imap(self) -> None:
+        # The real bridge mail (Gmail, 2026-11-20) is quoted-printable text/plain
+        # with CRLF line endings. Before this fix the Subject line's trailing \r
+        # defeated the header match, so 26RFP90 (already closed no-fit) came
+        # back daily as a generic "[PROC-ALERT] Solicitation Posted" lead.
+        raw = (
+            b"From: Blake Ford <beford@silverlinesleep.com>\r\n"
+            b"Subject: [PROC-ALERT] Solicitation Posted\r\n"
+            b"Date: Fri, 20 Nov 2026 19:03:16 +0000\r\n"
+            b"Message-ID: <bridge-crlf@example>\r\n"
+            b"Content-Type: text/plain; charset=\"us-ascii\"\r\n"
+            b"Content-Transfer-Encoding: quoted-printable\r\n\r\n"
+            b"From txsmartbuy@cpa.texas.gov\r\n\r\nSubject Solicitation Posted\r\n\r\n\r\n"
+            b"***This is an automated email.***\r\n\r\n\r\n\r\n"
+            b"The Solicitation 26RFP90 Juvenile Justice Center Addition - Furniture Packa=\r\n"
+            b"ge has been posted. Please see link below for details.\r\n\r\n"
+            b"https://www.txsmartbuy.gov/esbd/26RFP90\r\n"
+        )
+        msg = ingest_email.normalize_imap_message(raw)
+        out = ingest_email.adapt_esbd(ingest_email.unwrap_forwarded(msg))
+        self.assertEqual(out["sender"], "txsmartbuy@cpa.texas.gov")
+        self.assertEqual(out["subject"],
+                         "Juvenile Justice Center Addition - Furniture Package")
+        self.assertEqual(out["solicitation_number"], "26RFP90")
+        # And it now dedupes against the human-closed Lead Radar row.
+        closed = {"lead_id": "texas-esbd-williamson-county-26rfp90", "status": "no-fit",
+                  "source": "Texas ESBD", "buyer": "Williamson County",
+                  "solicitation_number": "26RFP90",
+                  "title": "Juvenile Justice Center Addition - Furniture Package"}
+        _, leads, dupes, _, _ = ingest_email.ingest([msg], [], TODAY,
+                                                    existing_leads=[closed])
+        self.assertEqual(leads, [])
+        self.assertEqual(len(dupes), 1)
+
     def test_prose_from_line_is_not_a_bridge_header(self) -> None:
         msg = {"sender": "a@b.com", "subject": "x",
                "body": "From the desk of the buyer\nSubject to change.\n"}
